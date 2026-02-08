@@ -7,6 +7,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     PlainSerializer,
+    PrivateAttr,
     field_validator,
 )
 
@@ -78,3 +79,4 @@ class Media(LazyMedia):
         AfterValidator(lambda list: list.sort_by("best")),
         Field(min_length=1),
     ]
+    is_cache: Annotated[bool, PrivateAttr()] = False

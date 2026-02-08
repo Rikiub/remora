@@ -66,13 +66,12 @@ class MediaDownloader:
             Path to downloaded file.
         """
 
-        pipeline = DownloadBulk(
+        paths = DownloadBulk(
             media,
             format_config=self.config,
             extractor=self.extractor,
             on_progress=on_progress,
-        )
-        paths = pipeline.run()
+        ).run()
         return paths[0]
 
     def download_all(

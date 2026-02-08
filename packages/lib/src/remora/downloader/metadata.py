@@ -8,9 +8,7 @@ from remora.types import StrPath
 def download_thumbnail(filepath: StrPath, thumbnail: Thumbnail) -> Path:
     from remora.ydl.downloader import download_thumbnail as ydl
 
-    info = {"thumbnails": [thumbnail.to_ydl_dict()]}
-    path = ydl(filepath, info)
-    return path
+    return ydl(filepath, thumbnail.to_ydl_dict())
 
 
 def download_subtitles(filepath: StrPath, subtitles: Subtitles) -> list[Path]:

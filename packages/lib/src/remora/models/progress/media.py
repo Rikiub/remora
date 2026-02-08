@@ -21,26 +21,32 @@ class ResolvedState(State):
     media: Media
 
 
+class RetryingState(State):
+    status: Literal["retrying"] = "retrying"
+    reason: Literal["stale_cache"]
+
+
 class DownloadingState(FormatState, State):
     status: Literal["downloading"] = "downloading"
 
 
-class ErrorState(State):
-    status: Literal["error"] = "error"
+class WarningState(State):
+    status: Literal["warning"] = "warning"
     message: str
 
 
 class CompletedState(HasFile):
     status: Literal["completed"] = "completed"
-    reason: Literal["skip", "error", "success"]
+    reason: Literal["success", "incomplete", "skipped", "failed"]
 
 
 MediaDownloadState = Annotated[
     ResolvingState
     | ResolvedState
     | DownloadingState
+    | RetryingState
     | ProcessingState
-    | ErrorState
+    | WarningState
     | CompletedState,
     Field(discriminator="status"),
 ]

@@ -14,8 +14,8 @@ def debug_callback(progress: MediaDownloadState):
         case "completed":
             _log_debug(
                 progress.id,
-                'Final file saved in: "{filepath}".',
-                filepath=progress.filepath,
+                'Final file saved as "{extension}".',
+                extension=progress.extension,
             )
 
 
@@ -44,20 +44,17 @@ def _processor_callback(progress: ProcessingState):
             case "embed_subtitles":
                 _log_debug(
                     progress.id,
-                    'Subtitles embedded in "{file}".',
-                    file=progress.filepath,
+                    "Subtitles embedded.",
                 )
             case "embed_thumbnail":
                 _log_debug(
                     progress.id,
-                    'Thumbnail embedded in "{file}".',
-                    file=progress.filepath,
+                    "Thumbnail embedded.",
                 )
             case "embed_metadata":
                 _log_debug(
                     progress.id,
-                    'Metadata embedded in "{file}".',
-                    file=progress.filepath,
+                    "Metadata embedded.",
                 )
 
 

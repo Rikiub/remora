@@ -13,6 +13,10 @@ class DownloadError(MediaError, ConnectionError):
     """Download error."""
 
 
+class MetadataDownloadError(DownloadError):
+    "Metadata download error."
+
+
 class ProcessingError(MediaError):
     """Postprocessing error."""
 

@@ -32,8 +32,13 @@ class MediaExtractor:
         logger.debug("Extract URL: {url}", url=url)
 
         # Load from cache
-        if json := self.use_cache and load_info(url):
-            return ExtractAdapter.validate_json(json, by_alias=True)
+        if self.use_cache and (cached_json := load_info(url)):
+            model = ExtractAdapter.validate_json(cached_json, by_alias=True)
+
+            if isinstance(model, Media):
+                model.is_cache = True
+
+            return model
 
         # Extract info
         info = extract_info(url)
@@ -60,8 +65,8 @@ class MediaExtractor:
         )
 
         # Load from cache
-        if json := self.use_cache and load_info(query):
-            return Search.from_ydl_json(json)
+        if self.use_cache and (cached_json := load_info(query)):
+            return Search.from_ydl_json(cached_json)
 
         # Extract info
         info = extract_query(query, service, limit)

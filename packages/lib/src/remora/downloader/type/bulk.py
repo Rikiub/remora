@@ -1,4 +1,5 @@
 import concurrent.futures as cf
+from copy import copy
 import secrets
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from loguru import logger
 
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
+from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
@@ -28,7 +30,7 @@ class DownloadBulk:
         on_playlist: PlaylistDownloadCallback | None = None,
     ):
         # Internals
-        self.config = format_config or FormatConfig()
+        self.config = copy(format_config) or FormatConfig()
         self.extractor = extractor or MediaExtractor()
         self.threads = threads
 
@@ -77,16 +79,12 @@ class DownloadBulk:
                     try:
                         paths.append(future.result())
                         success += 1
-                    except ConnectionError as e:
-                        logger.error(f"Failed to download: {e}")
+                    except MediaError:
                         errors += 1
                     finally:
                         state.completed += 1
                         self.on_playlist(state)
             except KeyboardInterrupt:
-                logger.warning(
-                    "❗ Canceling downloads... (press Ctrl+C again to force)"
-                )
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise
 

@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
@@ -9,11 +8,7 @@ class State(BaseModel):
 
 
 class HasFile(State):
-    filepath: Path
-
-    @property
-    def extension(self) -> str:
-        return self.filepath.suffix[1:]
+    extension: str
 
 
 StageType = Literal["started", "completed"]

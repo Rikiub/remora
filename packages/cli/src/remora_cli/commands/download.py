@@ -106,12 +106,8 @@ What format you want request?
     ] = None,
     cache: Annotated[
         bool,
-        Option(
-            help="Process without use the cache.",
-            show_default=False,
-            hidden=True,
-        ),
-    ] = False,
+        Option(help="Process without use the cache."),
+    ] = True,
 ):
     """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
 

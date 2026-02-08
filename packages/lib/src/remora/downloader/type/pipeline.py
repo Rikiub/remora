@@ -1,3 +1,4 @@
+from copy import copy
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
@@ -8,7 +9,12 @@ from remora.downloader.config import FormatConfig
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import FormatSelector
 from remora.downloader.type.debug import debug_callback
-from remora.exceptions import DownloadError, MediaError, ProcessingError
+from remora.exceptions import (
+    DownloadError,
+    MediaError,
+    MetadataDownloadError,
+    ProcessingError,
+)
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.format.types import AudioFormat, Format, VideoFormat
@@ -16,10 +22,11 @@ from remora.models.progress.format import FormatState
 from remora.models.progress.media import (
     CompletedState,
     DownloadingState,
-    ErrorState,
+    WarningState,
     MediaDownloadCallback,
     ResolvedState,
     ResolvingState,
+    RetryingState,
 )
 from remora.models.progress.processor import (
     MergingProcessorState,
@@ -47,7 +54,7 @@ class DownloadPipeline:
         self.media = media
         self.config = format_config or FormatConfig("video")
         self.extractor = extractor or MediaExtractor()
-        self.error: bool = False
+        self.incomplete: bool = False
         self.progress = lambda d: None
 
         if on_progress:
@@ -82,29 +89,44 @@ class DownloadPipeline:
 
         try:
             # Download File
-            downloaded_file = self.download_formats(video_fmt, audio_fmt)
+            try:
+                downloaded_file = self.download_formats(video_fmt, audio_fmt)
+            except DownloadError as e:
+                if media.is_cache:
+                    extractor = copy(self.extractor)
+                    extractor.use_cache = False
+                    self.media = extractor.resolve(media)
+
+                    self.progress(WarningState(id=self.id, message=str(e)))
+                    self.progress(RetryingState(id=self.id, reason="stale_cache"))
+                    return self.run()
+                raise
 
             if self.config.ffmpeg_path:
                 # Process File
                 downloaded_file = self.process(downloaded_file, media, format)
         except MediaError as e:
-            self.progress(ErrorState(id=self.id, message=str(e)))
-            self.progress(CompletedState(id=self.id, filepath=output, reason="error"))
+            self.progress(WarningState(id=self.id, message=str(e)))
+            self.progress(
+                CompletedState(
+                    id=self.id,
+                    extension="",
+                    reason="failed",
+                )
+            )
             raise
 
         # Complete (Move to target)
         return self.move_to_final(downloaded_file, output)
 
     def resolve_media(self) -> Media:
-        media = self.media
+        self.progress(ResolvingState(id=self.id, media=self.media))
 
-        self.progress(ResolvingState(id=self.id, media=media))
+        if not isinstance(self.media, Media):
+            self.media = self.extractor.resolve(self.media)
 
-        if not isinstance(media, Media):
-            media = self.extractor.resolve(media)
-
-        self.progress(ResolvedState(id=self.id, media=media))
-        return media
+        self.progress(ResolvedState(id=self.id, media=self.media))
+        return self.media
 
     def check_output_duplicate(self, output: Path, format: Format) -> Path | None:
         for path in output.parent.iterdir():
@@ -116,8 +138,8 @@ class DownloadPipeline:
                     self.progress(
                         CompletedState(
                             id=self.id,
-                            filepath=path,
-                            reason="skip",
+                            extension=path.suffix.lstrip("."),
+                            reason="skipped",
                         )
                     )
                     return path
@@ -199,7 +221,7 @@ class DownloadPipeline:
 
             merging = MergingProcessorState(
                 id=self.id,
-                filepath=filepath,
+                extension=filepath.suffix.lstrip("."),
                 stage="started",
                 video_format=video_fmt,
                 audio_format=audio_fmt,
@@ -231,10 +253,10 @@ class DownloadPipeline:
         prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
         @contextmanager
-        def track_prc(name: ProcessorStateType):
+        def track_prc(name: ProcessorStateType, raise_exceptions: bool = False):
             state = ProcessorState(
                 id=self.id,
-                filepath=prc.filepath,
+                extension=prc.filepath.suffix.lstrip("."),
                 stage="started",
                 processor=name,
             )
@@ -242,12 +264,15 @@ class DownloadPipeline:
 
             try:
                 yield
+                state.extension = prc.filepath.suffix.lstrip(".")
                 state.stage = "completed"
-                state.filepath = prc.filepath
                 self.progress(state)
-            except ProcessingError as error:
-                self.error = True
-                self.progress(ErrorState(id=self.id, message=str(error)))
+            except (ProcessingError, MetadataDownloadError) as error:
+                if raise_exceptions:
+                    raise
+
+                self.incomplete = True
+                self.progress(WarningState(id=self.id, message=str(error)))
 
         # Remuxing
         if isinstance(format, VideoFormat):
@@ -262,22 +287,23 @@ class DownloadPipeline:
         elif isinstance(format, AudioFormat):
             if self.config.convert and self.config.convert != format.extension:
                 try:
-                    with track_prc("change_container"):
+                    with track_prc("change_container", True):
                         prc.change_container(self.config.convert)
                 except ProcessingError:
                     with track_prc("convert_audio"):
                         prc.convert_audio(self.config.convert)
 
         # Metadata
+        # Must run before embed the thumbnail.
+        if self.config.embed_metadata:
+            with track_prc("embed_metadata"):
+                prc.embed_metadata(media, media.is_music)
+
         if media.thumbnails:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
                 with track_prc("embed_thumbnail"):
                     thumbnail = download_thumbnail(get_tempfile(), media.thumbnails[-1])
                     prc.embed_thumbnail(thumbnail, square=media.is_music)
-
-        if self.config.embed_metadata:
-            with track_prc("embed_metadata"):
-                prc.embed_metadata(media, media.is_music)
 
         return prc.filepath
 
@@ -289,8 +315,8 @@ class DownloadPipeline:
         self.progress(
             CompletedState(
                 id=self.id,
-                filepath=final_path,
-                reason="error" if self.error else "success",
+                extension=final_path.suffix.lstrip("."),
+                reason="incomplete" if self.incomplete else "success",
             )
         )
 

@@ -57,19 +57,22 @@ class ProgressCallback(DownloadProgress):
                     total=progress.total_bytes,
                     status="Downloading",
                 )
-            case "error":
-                logger.error(
-                    self.fmt_log(
-                        progress,
-                        "Error: {progress.message}",
-                    )
-                )
             case "processing":
                 self.processor_callback(progress)
+            case "warning":
+                logger.warning(
+                    self.fmt_log(progress, f"Warning: {progress.message}", "⚠️")
+                )
             case "completed":
                 task = self.get(progress)
 
-                if progress.reason == "skip":
+                if progress.reason == "success":
+                    logger.info(self.fmt_log(progress, "Completed", "☑️"))
+                    self.update(task.task_id, status="Completed")
+                elif progress.reason == "incomplete":
+                    logger.warning(self.fmt_log(progress, "Completed with errors", "⚠️"))
+                    self.update(task.task_id, status="Completed")
+                elif progress.reason == "skipped":
                     logger.info(
                         self.fmt_log(
                             progress,
@@ -78,14 +81,9 @@ class ProgressCallback(DownloadProgress):
                         )
                     )
                     self.update(task.task_id, status="Skipped")
-                elif progress.reason == "error":
-                    logger.warning(
-                        self.fmt_log(progress, "Completed with errors", "❌")
-                    )
-                    self.update(task.task_id, status="Completed")
-                elif progress.reason == "success":
-                    logger.info(self.fmt_log(progress, "Completed", "☑️"))
-                    self.update(task.task_id, status="Completed")
+                elif progress.reason == "failed":
+                    logger.error(self.fmt_log(progress, "Download failed", "❌"))
+                    self.update(task.task_id, status="Error")
 
                 self.counter.advance()
                 time.sleep(1.0)
@@ -96,10 +94,10 @@ class ProgressCallback(DownloadProgress):
             case "started":
                 self.counter.reset(total=progress.total)
                 self.start()
-            case "completed":
-                self.stop()
             case "update":
                 self.counter.update(completed=progress.completed)
+            case "completed":
+                self.stop()
 
     def processor_callback(self, progress: ProcessingState):
         match progress.processor:
@@ -124,9 +122,11 @@ class ProgressCallback(DownloadProgress):
     def get(self, progress: MediaDownloadState):
         return self.ids[progress.id]
 
-    def fmt_log(self, progress: MediaDownloadState, text: str, prefix: str = "") -> str:
+    def fmt_log(
+        self, progress: MediaDownloadState, text: str, prefix: str = "  "
+    ) -> str:
         task = self.get(progress)
-        return f'   {prefix} "{task.name}": {text}.'
+        return f'   {prefix} "{task.name}": {text}'
 
     def _media_display_name(self, media: LazyMedia) -> str:
         """Get pretty representation of media name."""

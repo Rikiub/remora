@@ -4,7 +4,7 @@ from typing import Any
 
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
-from remora.exceptions import DownloadError
+from remora.exceptions import DownloadError, MetadataDownloadError
 from remora.types import StrPath
 from remora.ydl.messages import format_except_message
 from remora.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
@@ -53,7 +53,7 @@ def download_from_info(info: YDLExtractInfo, params: YDLParams) -> Path:
         raise DownloadError(msg)
 
 
-def download_thumbnail(filepath: StrPath, info: YDLExtractInfo) -> Path:
+def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
     ydl = YDL(
         {
             "writethumbnail": True,
@@ -64,6 +64,7 @@ def download_thumbnail(filepath: StrPath, info: YDLExtractInfo) -> Path:
         }
     )
 
+    info = {"thumbnails": [thumbnail]}
     final = ydl._write_thumbnails(  # type: ignore
         label=filepath,
         info_dict=info,
@@ -73,18 +74,22 @@ def download_thumbnail(filepath: StrPath, info: YDLExtractInfo) -> Path:
     if final:
         return Path(final[0][0])
     else:
-        raise DownloadError("Unable to download thumbnail.")
+        raise MetadataDownloadError("Unable to download thumbnail.")
 
 
-def download_subtitles(filepath: StrPath, info: YDLExtractInfo) -> list[Path]:
+def download_subtitles(
+    filepath: StrPath,
+    subtitles: YDLExtractInfo,
+    automatic_captions: YDLExtractInfo = {},
+) -> list[Path]:
     ydl = YDL({"writesubtitles": True, "allsubtitles": True})
 
     subs = ydl.process_subtitles(
         str(filepath),
-        info.get("subtitles", {}),
-        info.get("automatic_captions", {}),
+        subtitles,
+        automatic_captions,
     )
-    info |= {"requested_subtitles": subs}  # type: ignore
+    info = {"requested_subtitles": subs}
 
     final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
         info_dict=info,
@@ -95,4 +100,4 @@ def download_subtitles(filepath: StrPath, info: YDLExtractInfo) -> list[Path]:
         result = [Path(entry[0]) for entry in final]
         return result
     else:
-        raise DownloadError("Unable to download subtitles.")
+        raise MetadataDownloadError("Unable to download subtitles.")
