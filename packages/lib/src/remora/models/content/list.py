@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Literal
 
 from pydantic import AliasChoices, Field, HttpUrl, SkipValidation, computed_field
 
@@ -72,5 +72,5 @@ class Search(MediaList):
     entries: EntriesField  # type: ignore
 
 
-Entries: TypeAlias = list[LazyMedia | LazyPlaylist]
+Entries = list[LazyMedia | LazyPlaylist]
 EntriesField = Annotated[Entries, Field(alias="entries", min_length=1)]
