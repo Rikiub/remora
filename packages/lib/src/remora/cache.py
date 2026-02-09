@@ -23,6 +23,15 @@ def save_info(url: str, content: str):
     file.write_text(content)
 
 
+def remove_info(url: str) -> bool:
+    file = CACHE_DIR / _url_hash(url)
+
+    if file.exists():
+        file.unlink()
+        return True
+    return False
+
+
 def _url_hash(url: StrUrl) -> str:
     hash = hashlib.sha256(str(url).encode()).hexdigest()
     return f"{hash}.json"

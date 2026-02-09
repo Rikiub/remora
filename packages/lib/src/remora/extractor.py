@@ -4,12 +4,12 @@ from typing import overload
 
 from loguru import logger
 
-from remora.cache import load_info, save_info
+from remora.cache import load_info, remove_info, save_info
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import ExtractAdapter
-from remora.types import StrUrl
-from remora.ydl.extractor import SEARCH_SERVICE, extract_info, extract_query
+from remora.types import SEARCH_SERVICE, StrUrl
+from remora.ydl.extractor import extract_info, extract_query
 
 
 class MediaExtractor:
@@ -39,6 +39,8 @@ class MediaExtractor:
                 model.is_cache = True
 
             return model
+        else:
+            remove_info(url)
 
         # Extract info
         info = await extract_info(url)
@@ -67,6 +69,8 @@ class MediaExtractor:
         # Load from cache
         if self.use_cache and (cached_json := load_info(query)):
             return Search.from_ydl_json(cached_json)
+        else:
+            remove_info(query)
 
         # Extract info
         info = await extract_query(query, service, limit)
