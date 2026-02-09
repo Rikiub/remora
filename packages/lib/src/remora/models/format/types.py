@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -15,8 +14,6 @@ from pydantic import (
 from typing_extensions import override
 
 from remora.models.base import YDLSerializable
-from remora.models.progress.format import FormatDownloadCallback, FormatState
-from remora.types import StrPath
 from remora.ydl.types import SupportedExtensions, YDLFormatInfo
 
 Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
@@ -39,26 +36,6 @@ class Format(ABC, YDLArgs, YDLSerializable):
     filesize: int | None = None
     bitrate: Annotated[float, Field(alias="tbr")] = 0
     audio_codec: Annotated[Codec | None, AudioCodecField] = None
-
-    def download(
-        self,
-        filepath: StrPath,
-        on_progress: FormatDownloadCallback | None = None,
-    ) -> Path:
-        from remora.ydl.downloader import download_format
-
-        state = FormatState()
-        path = download_format(
-            filepath,
-            format_info=self.to_ydl_dict(),
-            callback=lambda data: state._ydl_progress(
-                data,
-                on_progress,  # type: ignore
-            )
-            if on_progress
-            else None,
-        )
-        return path
 
     def to_ydl_dict(self) -> YDLFormatInfo:
         return super().to_ydl_dict()

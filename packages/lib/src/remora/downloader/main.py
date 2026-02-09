@@ -51,7 +51,7 @@ class MediaDownloader:
         self.extractor = extractor
         self.threads = threads
 
-    def download(
+    async def download(
         self,
         media: LazyMedia,
         on_progress: MediaDownloadCallback | None = None,
@@ -66,7 +66,7 @@ class MediaDownloader:
             Path to downloaded file.
         """
 
-        paths = DownloadBulk(
+        paths = await DownloadBulk(
             media,
             format_config=self.config,
             extractor=self.extractor,
@@ -74,7 +74,7 @@ class MediaDownloader:
         ).run()
         return paths[0]
 
-    def download_all(
+    async def download_all(
         self,
         data: MediaResult,
         on_progress: MediaDownloadCallback | None = None,
@@ -86,7 +86,7 @@ class MediaDownloader:
             List of paths to downloaded files.
         """
 
-        return DownloadBulk(
+        return await DownloadBulk(
             data,
             self.config,
             self.extractor,

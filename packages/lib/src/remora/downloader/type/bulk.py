@@ -1,9 +1,7 @@
-import concurrent.futures as cf
+import asyncio
 from copy import copy
 import secrets
 from pathlib import Path
-
-from loguru import logger
 
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
@@ -41,8 +39,11 @@ class DownloadBulk:
         if on_playlist:
             self.on_playlist = on_playlist
 
-        # State
-        self.medias, self.playlist = self._resolve_data(data)
+        # Data
+        self.id = ""
+        self._data = data
+        self.medias: list[LazyMedia] = []
+        self.playlist: Playlist | None = None
 
         if self.playlist:
             self.id = self.playlist.id
@@ -53,73 +54,67 @@ class DownloadBulk:
         else:
             self.id = secrets.token_urlsafe(6)
 
-    def run(self) -> list[Path]:
-        paths: list[Path] = []
-        success = 0
-        errors = 0
-
-        state = PlaylistState(
+        # State
+        self.state = PlaylistState(
             id=self.id,
             stage="started",
             completed=0,
             total=len(self.medias),
         )
-        self.on_playlist(state)
 
-        with cf.ThreadPoolExecutor(max_workers=self.threads) as executor:
-            state.stage = "update"
+    async def run(self) -> list[Path]:
+        # Setup
+        await self._setup()
+        self.on_playlist(self.state)
 
-            futures = {
-                executor.submit(self._run_pipeline, media): media
-                for media in self.medias
-            }
+        # Tasks
+        semaphore = asyncio.Semaphore(self.threads)
 
-            try:
-                for future in cf.as_completed(futures):
-                    try:
-                        paths.append(future.result())
-                        success += 1
-                    except MediaError:
-                        errors += 1
-                    finally:
-                        state.completed += 1
-                        self.on_playlist(state)
-            except KeyboardInterrupt:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
+        tasks = [self._run_pipeline(media, semaphore) for media in self.medias]
+        results = await asyncio.gather(*tasks)
 
-        state.stage = "completed"
-        self.on_playlist(state)
+        # Completed
+        self.state.stage = "completed"
+        self.on_playlist(self.state)
 
-        logger.debug(
-            "{current} of {total} medias completed. {errors} errors.",
-            current=success,
-            total=len(self.medias),
-            errors=errors,
-        )
-
+        paths = [p for p in results if p]
         return paths
 
-    def _run_pipeline(
-        self,
-        media: LazyMedia,
-    ) -> Path:
-        return DownloadPipeline(
-            media,
-            self.config,
-            self.extractor,
-            self.on_progress,
-        ).run()
+    async def _run_pipeline(
+        self, media: LazyMedia, semaphore: asyncio.Semaphore
+    ) -> Path | None:
+        async with semaphore:
+            try:
+                path = await DownloadPipeline(
+                    media,
+                    self.config,
+                    self.extractor,
+                    self.on_progress,
+                ).run()
+            except MediaError:
+                path = None
 
-    def _resolve_data(
-        self, data: MediaResult
-    ) -> tuple[list[LazyMedia], Playlist | None]:
+            self.state.completed += 1
+            self.on_playlist(
+                PlaylistState(
+                    id=self.id,
+                    stage="update",
+                    completed=self.state.completed,
+                    total=self.state.total,
+                )
+            )
+
+            return path
+
+    async def _setup(self):
+        data = self._data
         medias = []
         playlist = None
 
+        # Get real data
         match data:
             case LazyPlaylist():
-                playlist = self.extractor.resolve(data)
+                playlist = await self.extractor.resolve(data)
             case Playlist():
                 playlist = data
 
@@ -133,4 +128,20 @@ class DownloadBulk:
             case _:
                 raise TypeError("Unable to unpack media.")
 
-        return medias, playlist
+        self.medias = medias
+        self.playlist = playlist
+
+        # Set config
+        if playlist:
+            self.id = playlist.id
+            self.config.output = generate_output_template(
+                self.config.output,
+                playlist=playlist,
+            )
+        else:
+            self.id = secrets.token_urlsafe(6)
+
+        self.state.id = self.id
+        self.state.stage = "started"
+        self.state.completed = 0
+        self.state.total = len(self.medias)

@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from typing import Sequence, TypedDict
 
@@ -53,17 +54,17 @@ class YDLProcessor:
         return self.filepath.suffix[1:]
 
     @catch
-    def change_container(self, format: str) -> Self:
+    async def change_container(self, format: str) -> Self:
         pp = FFmpegVideoRemuxerPP(
             None,
             preferedformat=format,
         )
-        _, data = pp.run(self.params)
+        _, data = await asyncio.to_thread(pp.run, self.params)
         self._update_filepath(data)
         return self
 
     @catch
-    def convert_audio(
+    async def convert_audio(
         self,
         format: str = "",
         quality: int | None = None,
@@ -75,22 +76,22 @@ class YDLProcessor:
             preferredquality=quality,
         )
 
-        _, data = pp.run(self.params)
+        _, data = await asyncio.to_thread(pp.run, self.params)
         self._update_filepath(data)
         return self
 
     @catch
-    def embed_metadata(self, data: YDLExtractInfo):
+    async def embed_metadata(self, data: YDLExtractInfo):
         pp = FFmpegMetadataPP(
             None,
             add_metadata=True,
             add_chapters=True,
         )
-        pp.run(self.params | data)
+        await asyncio.to_thread(pp.run, self.params | data)
         return self
 
     @catch
-    def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
+    async def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
         pp = EmbedThumbnailPP()
 
         info = self.params | {
@@ -111,11 +112,11 @@ class YDLProcessor:
                 }
             }
 
-        pp.run(info)
+        await asyncio.to_thread(pp.run, info)
         return self
 
     @catch
-    def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
+    async def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
         pp = FFmpegEmbedSubtitlePP()
 
         dict_subs: dict[str, dict] = {}
@@ -132,12 +133,14 @@ class YDLProcessor:
                 },
             }
 
-        pp.run(self.params | {"requested_subtitles": dict_subs})
+        await asyncio.to_thread(
+            pp.run, self.params | {"requested_subtitles": dict_subs}
+        )
         return self
 
     @classmethod
     @catch
-    def from_formats_merge(
+    async def from_formats_merge(
         cls,
         filepath: StrPath,
         formats: RequestedFormats,
@@ -146,12 +149,13 @@ class YDLProcessor:
         cls = cls(filepath, ffmpeg_path=ffmpeg_path)
 
         pp = FFmpegMergerPP()
-        _, data = pp.run(
+        _, data = await asyncio.to_thread(
+            pp.run,
             cls.params
             | {
                 "requested_formats": formats,
                 "__files_to_merge": [item["filepath"] for item in formats],
-            }
+            },
         )
         cls._update_filepath(data)
         return cls

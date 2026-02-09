@@ -1,4 +1,6 @@
+import asyncio
 from enum import Enum
+from functools import wraps
 from pathlib import Path
 from typing import Annotated
 
@@ -25,8 +27,17 @@ class HelpPanel(str, Enum):
 app = Typer()
 
 
+def make_async(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(func(*args, **kwargs))
+
+    return wrapper
+
+
 @app.command(no_args_is_help=True)
-def download(
+@make_async
+async def download(
     query: Annotated[
         list[str],
         Argument(
@@ -151,7 +162,7 @@ What format you want request?
             with Status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('🔎 Extract URL: "{url}".', url=entry)
-                    result = extractor.extract_url(entry)
+                    result = await extractor.extract_url(entry)
 
                     if result.type == "playlist":
                         logger.info('🔎 Playlist title: "{title}".', title=result.title)
@@ -168,7 +179,7 @@ What format you want request?
                         query=entry,
                     )
 
-                    result = extractor.extract_search(entry, target)
+                    result = await extractor.extract_search(entry, target)
 
                     if not result.medias:
                         logger.warning("❗ No results found.")
@@ -176,7 +187,7 @@ What format you want request?
 
                     result = result.medias[0]
 
-            downloader.download_all(result, on_progress, on_playlist)
+            await downloader.download_all(result, on_progress, on_playlist)
             logger.info("✅ Download Finished.")
         except MediaError as err:
             logger.error("❌ {error}", error=str(err))

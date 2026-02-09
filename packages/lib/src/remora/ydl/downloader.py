@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,7 @@ from remora.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora.ydl.wrapper import YDL
 
 
-def download_format(
+async def download_format(
     filepath: StrPath,
     format_info: YDLFormatInfo,
     callback: Callable[[dict[str, Any]], None] | None = None,
@@ -32,17 +33,19 @@ def download_format(
         "formats": [format_info],
     }
 
-    return download_from_info(info, params)
+    return await download_from_info(info, params)
 
 
-def download_from_info(info: YDLExtractInfo, params: YDLParams) -> Path:
+async def download_from_info(info: YDLExtractInfo, params: YDLParams) -> Path:
     retries: YDLParams = {"retries": 0, "fragment_retries": 0}
 
     try:
-        result = YDL(
+        ydl = YDL(
             params=retries | params,
             auto_init=True,
-        ).process_ie_result(
+        )
+        result = await asyncio.to_thread(
+            ydl.process_ie_result,
             info,  # type: ignore
             download=True,
         )
@@ -53,7 +56,7 @@ def download_from_info(info: YDLExtractInfo, params: YDLParams) -> Path:
         raise DownloadError(msg)
 
 
-def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
+async def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
     ydl = YDL(
         {
             "writethumbnail": True,
@@ -65,7 +68,8 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
     )
 
     info = {"thumbnails": [thumbnail]}
-    final = ydl._write_thumbnails(  # type: ignore
+    final = await asyncio.to_thread(
+        ydl._write_thumbnails,  # type: ignore
         label=filepath,
         info_dict=info,
         filename=str(filepath),
@@ -77,7 +81,7 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
         raise MetadataDownloadError("Unable to download thumbnail.")
 
 
-def download_subtitles(
+async def download_subtitles(
     filepath: StrPath,
     subtitles: YDLExtractInfo,
     automatic_captions: YDLExtractInfo = {},
@@ -91,7 +95,8 @@ def download_subtitles(
     )
     info = {"requested_subtitles": subs}
 
-    final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
+    final: list[tuple[str, str]] = await asyncio.to_thread(
+        ydl._write_subtitles,  # type: ignore
         info_dict=info,
         filename=str(filepath),
     )

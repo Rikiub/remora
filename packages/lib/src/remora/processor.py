@@ -17,19 +17,19 @@ FormatPaths = list[tuple[Format, Path]]
 
 class MediaProcessor(YDLProcessor):
     @override
-    def change_container(self, format: str | EXTENSION):
-        return super().change_container(format)
+    async def change_container(self, format: str | EXTENSION):
+        return await super().change_container(format)
 
     @override
-    def convert_audio(
+    async def convert_audio(
         self,
         format: str | AUDIO_EXTENSION = "",
         quality: int | None = None,
     ):
-        return super().convert_audio(format, quality)
+        return await super().convert_audio(format, quality)
 
     @override
-    def embed_metadata(
+    async def embed_metadata(
         self,
         data: YDLExtractInfo | Media,
         include_music: bool = False,
@@ -41,12 +41,12 @@ class MediaProcessor(YDLProcessor):
         else:
             info = data
 
-        super().embed_metadata(info)
+        await super().embed_metadata(info)
         return self
 
     @override
     @classmethod
-    def from_formats_merge(
+    async def from_formats_merge(
         cls,
         filepath: StrPath,
         formats: RequestedFormats | FormatPaths,
@@ -63,7 +63,7 @@ class MediaProcessor(YDLProcessor):
                 fmt = {"filepath": str(path)} | format.to_ydl_dict()
             real_formats.append(fmt)  # type: ignore
 
-        cls = super().from_formats_merge(
+        cls = await super().from_formats_merge(
             filepath,
             formats=real_formats,
             ffmpeg_path=ffmpeg_path,

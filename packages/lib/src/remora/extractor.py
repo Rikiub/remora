@@ -17,15 +17,15 @@ class MediaExtractor:
         self.use_cache = use_cache
 
     @overload
-    def resolve(self, item: LazyMedia) -> Media: ...
+    async def resolve(self, item: LazyMedia) -> Media: ...
 
     @overload
-    def resolve(self, item: LazyPlaylist) -> Playlist: ...
+    async def resolve(self, item: LazyPlaylist) -> Playlist: ...
 
-    def resolve(self, item: LazyMedia | LazyPlaylist):
-        return self.extract_url(str(item.url))
+    async def resolve(self, item: LazyMedia | LazyPlaylist):
+        return await self.extract_url(str(item.url))
 
-    def extract_url(self, url: StrUrl) -> Media | Playlist:
+    async def extract_url(self, url: StrUrl) -> Media | Playlist:
         """Extract media from URL."""
 
         url = str(url)
@@ -41,7 +41,7 @@ class MediaExtractor:
             return model
 
         # Extract info
-        info = extract_info(url)
+        info = await extract_info(url)
         result = ExtractAdapter.validate_python(info, by_alias=True)
 
         # Save to cache
@@ -50,7 +50,7 @@ class MediaExtractor:
 
         return result
 
-    def extract_search(
+    async def extract_search(
         self,
         query: str,
         service: SEARCH_SERVICE,
@@ -69,7 +69,7 @@ class MediaExtractor:
             return Search.from_ydl_json(cached_json)
 
         # Extract info
-        info = extract_query(query, service, limit)
+        info = await extract_query(query, service, limit)
         result = Search(query=query, service=service, **info)
 
         # Save to cache

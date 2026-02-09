@@ -1,10 +1,8 @@
-from pathlib import Path
 from typing import Annotated
 
 from pydantic import BeforeValidator, Field, RootModel
 
 from remora.models.content.base import YDLSerializable
-from remora.types import StrPath
 
 
 def _validate_artists(value: list[str]) -> list[str]:
@@ -40,18 +38,8 @@ class Thumbnail(YDLSerializable):
     width: int = 0
     height: int = 0
 
-    def download(self, filepath: StrPath) -> Path:
-        from remora.downloader.metadata import download_thumbnail
-
-        return download_thumbnail(filepath, self)
-
 
 class Subtitles(YDLSerializable, RootModel[dict[str, list[Subtitle]]]):
-    def download(self, filepath: StrPath) -> list[Path]:
-        from remora.downloader.metadata import download_subtitles
-
-        return download_subtitles(filepath, self)
-
     def __getitem__(self, index: int | str) -> list[Subtitle]:
         match index:
             case int():

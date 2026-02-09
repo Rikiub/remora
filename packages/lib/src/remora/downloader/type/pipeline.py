@@ -1,3 +1,4 @@
+import asyncio
 from copy import copy
 import shutil
 from contextlib import contextmanager
@@ -6,7 +7,11 @@ from pathlib import Path
 from loguru import logger
 
 from remora.downloader.config import FormatConfig
-from remora.downloader.metadata import download_subtitles, download_thumbnail
+from remora.downloader.metadata import (
+    download_format,
+    download_subtitles,
+    download_thumbnail,
+)
 from remora.downloader.selector import FormatSelector
 from remora.downloader.type.debug import debug_callback
 from remora.exceptions import (
@@ -64,9 +69,9 @@ class DownloadPipeline:
 
         logger.debug(self.config)
 
-    def run(self) -> Path:
+    async def run(self) -> Path:
         # Resolve Data
-        media = self.resolve_media()
+        media = await self.resolve_media()
 
         # Select Formats
         video_fmt, audio_fmt = FormatSelector(self.config).resolve(media)
@@ -84,27 +89,27 @@ class DownloadPipeline:
         )
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        if duplicate := self.check_output_duplicate(output, format):
+        if duplicate := await self.check_output_duplicate(output, format):
             return duplicate
 
         try:
             # Download File
             try:
-                downloaded_file = self.download_formats(video_fmt, audio_fmt)
+                downloaded_file = await self.download_formats(video_fmt, audio_fmt)
             except DownloadError as e:
                 if media.is_cache:
                     extractor = copy(self.extractor)
                     extractor.use_cache = False
-                    self.media = extractor.resolve(media)
+                    self.media = await extractor.resolve(media)
 
                     self.progress(WarningState(id=self.id, message=str(e)))
                     self.progress(RetryingState(id=self.id, reason="stale_cache"))
-                    return self.run()
+                    return await self.run()
                 raise
 
             if self.config.ffmpeg_path:
                 # Process File
-                downloaded_file = self.process(downloaded_file, media, format)
+                downloaded_file = await self.process(downloaded_file, media, format)
         except MediaError as e:
             self.progress(WarningState(id=self.id, message=str(e)))
             self.progress(
@@ -117,34 +122,37 @@ class DownloadPipeline:
             raise
 
         # Complete (Move to target)
-        return self.move_to_final(downloaded_file, output)
+        return await self.move_to_final(downloaded_file, output)
 
-    def resolve_media(self) -> Media:
+    async def resolve_media(self) -> Media:
         self.progress(ResolvingState(id=self.id, media=self.media))
 
         if not isinstance(self.media, Media):
-            self.media = self.extractor.resolve(self.media)
+            self.media = await self.extractor.resolve(self.media)
 
         self.progress(ResolvedState(id=self.id, media=self.media))
         return self.media
 
-    def check_output_duplicate(self, output: Path, format: Format) -> Path | None:
-        for path in output.parent.iterdir():
-            if path.is_file() and path.stem == output.name:
-                if (
-                    format.extension in SupportedExtensions.video
-                    or format.extension in SupportedExtensions.audio
-                ):
-                    self.progress(
-                        CompletedState(
-                            id=self.id,
-                            extension=path.suffix.lstrip("."),
-                            reason="skipped",
+    async def check_output_duplicate(self, output: Path, format: Format) -> Path | None:
+        def run():
+            for path in output.parent.iterdir():
+                if path.is_file() and path.stem == output.name:
+                    if (
+                        format.extension in SupportedExtensions.video
+                        or format.extension in SupportedExtensions.audio
+                    ):
+                        self.progress(
+                            CompletedState(
+                                id=self.id,
+                                extension=path.suffix.lstrip("."),
+                                reason="skipped",
+                            )
                         )
-                    )
-                    return path
+                        return path
 
-    def download_formats(
+        return await asyncio.to_thread(run)
+
+    async def download_formats(
         self,
         video_fmt: VideoFormat | None = None,
         audio_fmt: AudioFormat | None = None,
@@ -194,21 +202,36 @@ class DownloadPipeline:
                 quality=format.quality,
             )
 
+        video_task = None
+        audio_task = None
+
         # Download Audio
         if audio_fmt:
             _log(audio_fmt)
-            audio_file = audio_fmt.download(
-                get_tempfile(),
-                lambda s: _update_progress(s, is_video=False),
+            audio_task = asyncio.create_task(
+                download_format(
+                    get_tempfile(),
+                    audio_fmt,
+                    lambda s: _update_progress(s, is_video=False),
+                )
             )
 
         # Download Video
         if video_fmt:
             _log(video_fmt)
-            video_file = video_fmt.download(
-                get_tempfile(),
-                lambda s: _update_progress(s, is_video=True),
+            video_task = asyncio.create_task(
+                download_format(
+                    get_tempfile(),
+                    video_fmt,
+                    lambda s: _update_progress(s, is_video=True),
+                )
             )
+
+        tasks = [t for t in [audio_task, video_task] if t is not None]
+        await asyncio.gather(*tasks)
+
+        video_file = video_task.result() if video_task else None
+        audio_file = audio_task.result() if audio_task else None
 
         # Merge if necessary
         if (
@@ -227,7 +250,7 @@ class DownloadPipeline:
                 audio_format=audio_fmt,
             )
 
-            prc = MediaProcessor.from_formats_merge(
+            prc = await MediaProcessor.from_formats_merge(
                 filepath,
                 formats=[(video_fmt, video_file), (audio_fmt, audio_file)],
                 ffmpeg_path=self.config.ffmpeg_path,
@@ -244,7 +267,7 @@ class DownloadPipeline:
         else:
             raise DownloadError("Formats not founded.")
 
-    def process(
+    async def process(
         self,
         filepath: Path,
         media: Media,
@@ -277,41 +300,46 @@ class DownloadPipeline:
         # Remuxing
         if isinstance(format, VideoFormat):
             with track_prc("change_container"):
-                prc.change_container(self.config.convert or "mp4")
+                await prc.change_container(self.config.convert or "mp4")
 
             if media.subtitles:
                 with track_prc("embed_subtitles"):
-                    subtitles = download_subtitles(get_tempfile(), media.subtitles)
-                    prc.embed_subtitles(subtitles)
+                    subtitles = await download_subtitles(
+                        get_tempfile(), media.subtitles
+                    )
+                    await prc.embed_subtitles(subtitles)
 
         elif isinstance(format, AudioFormat):
             if self.config.convert and self.config.convert != format.extension:
                 try:
                     with track_prc("change_container", True):
-                        prc.change_container(self.config.convert)
+                        await prc.change_container(self.config.convert)
                 except ProcessingError:
                     with track_prc("convert_audio"):
-                        prc.convert_audio(self.config.convert)
+                        await prc.convert_audio(self.config.convert)
 
         # Metadata
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
             with track_prc("embed_metadata"):
-                prc.embed_metadata(media, media.is_music)
+                await prc.embed_metadata(media, media.is_music)
 
         if media.thumbnails:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
                 with track_prc("embed_thumbnail"):
-                    thumbnail = download_thumbnail(get_tempfile(), media.thumbnails[-1])
-                    prc.embed_thumbnail(thumbnail, square=media.is_music)
+                    thumbnail = await download_thumbnail(
+                        get_tempfile(), media.thumbnails[-1]
+                    )
+                    await prc.embed_thumbnail(thumbnail, square=media.is_music)
 
         return prc.filepath
 
-    def move_to_final(self, src: Path, dest: Path) -> Path:
+    async def move_to_final(self, src: Path, dest: Path) -> Path:
         final_path = dest.parent / f"{dest.name}{src.suffix}"
         final_path.parent.mkdir(parents=True, exist_ok=True)
 
-        shutil.move(src, final_path)
+        await asyncio.to_thread(shutil.move, src, final_path)
+
         self.progress(
             CompletedState(
                 id=self.id,
