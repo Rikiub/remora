@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -8,11 +9,11 @@ from remora.extractor import MediaExtractor
 
 @pytest.fixture
 def download(tmp_path: Path):
-    def _wrap(url: str):
+    async def wrap(url: str):
         extractor = MediaExtractor(use_cache=False)
-        result = extractor.extract_url(url)
+        result = await extractor.extract_url(url)
 
-        paths = MediaDownloader(
+        paths = await MediaDownloader(
             quality=1,
             output=tmp_path,
             extractor=extractor,
@@ -24,7 +25,10 @@ def download(tmp_path: Path):
             if not path.is_file():
                 raise FileNotFoundError(path)
 
-    return _wrap
+    def run(url: str):
+        asyncio.run(wrap(url))
+
+    return run
 
 
 def test_media(download):
