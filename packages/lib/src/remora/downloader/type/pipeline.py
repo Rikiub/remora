@@ -1,8 +1,9 @@
 import asyncio
 from copy import copy
 import shutil
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from pathlib import Path
+import time
 
 from loguru import logger
 
@@ -27,6 +28,7 @@ from remora.models.progress.format import FormatState
 from remora.models.progress.media import (
     CompletedState,
     DownloadingState,
+    MediaDownloadState,
     WarningState,
     MediaDownloadCallback,
     ResolvedState,
@@ -60,14 +62,16 @@ class DownloadPipeline:
         self.config = format_config or FormatConfig("video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
-        self.progress = lambda d: None
-
-        if on_progress:
-            self.progress = lambda state: [
-                f(state) for f in (on_progress, debug_callback)
-            ]
+        self._on_progress = on_progress
 
         logger.debug(self.config)
+
+    async def progress(self, state: MediaDownloadState):
+        tasks = [
+            asyncio.to_thread(self._on_progress, state) if self._on_progress else None,
+            asyncio.to_thread(debug_callback, state),
+        ]
+        await asyncio.gather(*[t for t in tasks if t])
 
     async def run(self) -> Path:
         # Resolve Data
@@ -89,7 +93,7 @@ class DownloadPipeline:
         )
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        if duplicate := await self.check_output_duplicate(output, format):
+        if duplicate := await self.check_output_duplicate(output):
             return duplicate
 
         try:
@@ -102,8 +106,8 @@ class DownloadPipeline:
                     extractor.use_cache = False
                     self.media = await extractor.resolve(media)
 
-                    self.progress(WarningState(id=self.id, message=str(e)))
-                    self.progress(RetryingState(id=self.id, reason="stale_cache"))
+                    await self.progress(WarningState(id=self.id, message=str(e)))
+                    await self.progress(RetryingState(id=self.id, reason="stale_cache"))
                     return await self.run()
                 raise
 
@@ -111,8 +115,8 @@ class DownloadPipeline:
                 # Process File
                 downloaded_file = await self.process(downloaded_file, media, format)
         except MediaError as e:
-            self.progress(WarningState(id=self.id, message=str(e)))
-            self.progress(
+            await self.progress(WarningState(id=self.id, message=str(e)))
+            await self.progress(
                 CompletedState(
                     id=self.id,
                     extension="",
@@ -125,32 +129,35 @@ class DownloadPipeline:
         return await self.move_to_final(downloaded_file, output)
 
     async def resolve_media(self) -> Media:
-        self.progress(ResolvingState(id=self.id, media=self.media))
+        await self.progress(ResolvingState(id=self.id, media=self.media))
 
         if not isinstance(self.media, Media):
             self.media = await self.extractor.resolve(self.media)
 
-        self.progress(ResolvedState(id=self.id, media=self.media))
+        await self.progress(ResolvedState(id=self.id, media=self.media))
         return self.media
 
-    async def check_output_duplicate(self, output: Path, format: Format) -> Path | None:
+    async def check_output_duplicate(self, output: Path) -> Path | None:
         def run():
             for path in output.parent.iterdir():
                 if path.is_file() and path.stem == output.name:
+                    path_extension = path.suffix.lstrip(".")
+
                     if (
-                        format.extension in SupportedExtensions.video
-                        or format.extension in SupportedExtensions.audio
+                        path_extension in SupportedExtensions.video
+                        or path_extension in SupportedExtensions.audio
                     ):
-                        self.progress(
-                            CompletedState(
-                                id=self.id,
-                                extension=path.suffix.lstrip("."),
-                                reason="skipped",
-                            )
-                        )
                         return path
 
-        return await asyncio.to_thread(run)
+        if path := await asyncio.to_thread(run):
+            await self.progress(
+                CompletedState(
+                    id=self.id,
+                    extension=path.suffix.lstrip("."),
+                    reason="skipped",
+                )
+            )
+            return path
 
     async def download_formats(
         self,
@@ -159,38 +166,60 @@ class DownloadPipeline:
     ) -> Path:
         """Orchestrates the physical download of bytes."""
 
-        downloading = DownloadingState(id=self.id)
+        loop = asyncio.get_running_loop()
+        progress_queue = asyncio.Queue()
 
-        video_file = None
-        audio_file = None
+        formats_states = {
+            "video": FormatState(
+                downloaded_bytes=0,
+                total_bytes=video_fmt.filesize or 0 if video_fmt else 0,
+            ),
+            "audio": FormatState(
+                downloaded_bytes=0,
+                total_bytes=audio_fmt.filesize or 0 if audio_fmt else 0,
+            ),
+        }
 
-        video_bytes = 0
-        audio_bytes = 0
-        total_video_bytes = 0
-        total_audio_bytes = 0
+        def _sync_progress(state: FormatState, is_video: bool):
+            formats_states["video" if is_video else "audio"] = state
+            loop.call_soon_threadsafe(progress_queue.put_nowait, True)
 
-        if video_fmt:
-            total_video_bytes = video_fmt.filesize or 0
-        if audio_fmt:
-            total_audio_bytes = audio_fmt.filesize or 0
+        async def _progress_consumer():
+            last_update = 0
+            # Target: 30 FPS = ~0.033s | 60 FPS = ~0.016s
+            MIN_INTERVAL = 0.1
 
-        def _update_progress(fmt_state: FormatState, is_video: bool):
-            nonlocal video_bytes, audio_bytes, total_video_bytes, total_audio_bytes
+            while True:
+                # Check queue
+                if not await progress_queue.get():
+                    break
 
-            if is_video:
-                video_bytes = fmt_state.downloaded_bytes
-                total_video_bytes = fmt_state.total_bytes
-            else:
-                audio_bytes = fmt_state.downloaded_bytes
-                total_audio_bytes = fmt_state.total_bytes
+                while not progress_queue.empty():
+                    if not progress_queue.get_nowait():
+                        return
 
-            downloading.downloaded_bytes = video_bytes + audio_bytes
-            downloading.total_bytes = total_video_bytes + total_audio_bytes
+                # Delay for fluid progress
+                current_time = time.time()
 
-            downloading.speed = fmt_state.speed
-            downloading.elapsed = fmt_state.elapsed
+                if current_time - last_update < MIN_INTERVAL:
+                    progress_queue.task_done()
+                    continue
 
-            self.progress(downloading)
+                last_update = current_time
+
+                # Send progress to callback
+                v, a = formats_states["video"], formats_states["audio"]
+
+                await self.progress(
+                    DownloadingState(
+                        id=self.id,
+                        downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
+                        total_bytes=v.total_bytes + a.total_bytes,
+                        speed=v.speed + a.speed,
+                        elapsed=max(v.elapsed, a.elapsed),
+                    )
+                )
+                progress_queue.task_done()
 
         def _log(format: Format):
             type = "video" if isinstance(format, VideoFormat) else "audio"
@@ -212,7 +241,7 @@ class DownloadPipeline:
                 download_format(
                     get_tempfile(),
                     audio_fmt,
-                    lambda s: _update_progress(s, is_video=False),
+                    lambda s: _sync_progress(s, is_video=False),
                 )
             )
 
@@ -223,12 +252,18 @@ class DownloadPipeline:
                 download_format(
                     get_tempfile(),
                     video_fmt,
-                    lambda s: _update_progress(s, is_video=True),
+                    lambda s: _sync_progress(s, is_video=True),
                 )
             )
 
-        tasks = [t for t in [audio_task, video_task] if t is not None]
-        await asyncio.gather(*tasks)
+        consumer_task = asyncio.create_task(_progress_consumer())
+
+        try:
+            tasks = [t for t in [audio_task, video_task] if t is not None]
+            await asyncio.gather(*tasks)
+        finally:
+            progress_queue.put_nowait(None)
+            await consumer_task
 
         video_file = video_task.result() if video_task else None
         audio_file = audio_task.result() if audio_task else None
@@ -257,7 +292,7 @@ class DownloadPipeline:
             )
 
             merging.stage = "completed"
-            self.progress(merging)
+            await self.progress(merging)
 
             return prc.filepath
         elif video_file:
@@ -275,35 +310,35 @@ class DownloadPipeline:
     ) -> Path:
         prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
-        @contextmanager
-        def track_prc(name: ProcessorStateType, raise_exceptions: bool = False):
+        @asynccontextmanager
+        async def track_prc(name: ProcessorStateType, raise_exceptions: bool = False):
             state = ProcessorState(
                 id=self.id,
                 extension=prc.filepath.suffix.lstrip("."),
                 stage="started",
                 processor=name,
             )
-            self.progress(state)
+            await self.progress(state)
 
             try:
                 yield
                 state.extension = prc.filepath.suffix.lstrip(".")
                 state.stage = "completed"
-                self.progress(state)
+                await self.progress(state)
             except (ProcessingError, MetadataDownloadError) as error:
                 if raise_exceptions:
                     raise
 
                 self.incomplete = True
-                self.progress(WarningState(id=self.id, message=str(error)))
+                await self.progress(WarningState(id=self.id, message=str(error)))
 
         # Remuxing
         if isinstance(format, VideoFormat):
-            with track_prc("change_container"):
+            async with track_prc("change_container"):
                 await prc.change_container(self.config.convert or "mp4")
 
             if media.subtitles:
-                with track_prc("embed_subtitles"):
+                async with track_prc("embed_subtitles"):
                     subtitles = await download_subtitles(
                         get_tempfile(), media.subtitles
                     )
@@ -312,21 +347,21 @@ class DownloadPipeline:
         elif isinstance(format, AudioFormat):
             if self.config.convert and self.config.convert != format.extension:
                 try:
-                    with track_prc("change_container", True):
+                    async with track_prc("change_container", True):
                         await prc.change_container(self.config.convert)
                 except ProcessingError:
-                    with track_prc("convert_audio"):
+                    async with track_prc("convert_audio"):
                         await prc.convert_audio(self.config.convert)
 
         # Metadata
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
-            with track_prc("embed_metadata"):
+            async with track_prc("embed_metadata"):
                 await prc.embed_metadata(media, media.is_music)
 
         if media.thumbnails:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
-                with track_prc("embed_thumbnail"):
+                async with track_prc("embed_thumbnail"):
                     thumbnail = await download_thumbnail(
                         get_tempfile(), media.thumbnails[-1]
                     )
@@ -340,7 +375,7 @@ class DownloadPipeline:
 
         await asyncio.to_thread(shutil.move, src, final_path)
 
-        self.progress(
+        await self.progress(
             CompletedState(
                 id=self.id,
                 extension=final_path.suffix.lstrip("."),
