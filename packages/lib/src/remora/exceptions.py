@@ -22,10 +22,6 @@ class ExtractError(MediaConnectionError):
 class DownloadError(MediaConnectionError):
     """Download error."""
 
-    def __init__(self, message: str, status_code: int = 0):
-        super().__init__(message)
-        self.status_code = status_code
-
 
 class MetadataDownloadError(DownloadError):
     "Metadata download error."
