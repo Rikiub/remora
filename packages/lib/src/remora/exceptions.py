@@ -9,7 +9,17 @@ class OutputTemplateError(MediaError, KeyError):
     """Output template error."""
 
 
-class DownloadError(MediaError, ConnectionError):
+class MediaConnectionError(MediaError, ConnectionError):
+    def __init__(self, message: str, status_code: int = 0):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class ExtractError(MediaConnectionError):
+    """Extraction error."""
+
+
+class DownloadError(MediaConnectionError):
     """Download error."""
 
     def __init__(self, message: str, status_code: int = 0):
@@ -23,7 +33,3 @@ class MetadataDownloadError(DownloadError):
 
 class ProcessingError(MediaError):
     """Postprocessing error."""
-
-
-class ExtractError(MediaError, ConnectionError):
-    """Extraction error."""
