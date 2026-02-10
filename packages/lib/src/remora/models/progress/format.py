@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Awaitable
 
 from pydantic import BaseModel
 from typing_extensions import Self
@@ -35,4 +36,4 @@ class FormatState(BaseModel):
         callback(self)
 
 
-FormatDownloadCallback = Callable[[FormatState], None]
+FormatDownloadCallback = Callable[[FormatState], Awaitable[None]]

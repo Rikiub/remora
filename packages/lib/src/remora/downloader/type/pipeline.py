@@ -3,13 +3,12 @@ from copy import copy
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
-import time
 
 from loguru import logger
 
 from remora.downloader.config import FormatConfig
+from remora.downloader.format import AsyncFormatDownloader
 from remora.downloader.metadata import (
-    download_format,
     download_subtitles,
     download_thumbnail,
 )
@@ -99,7 +98,9 @@ class DownloadPipeline:
         try:
             # Download File
             try:
-                downloaded_file = await self.download_formats(video_fmt, audio_fmt)
+                downloaded_file = await self.download_formats(
+                    video_fmt, audio_fmt, media.duration
+                )
             except DownloadError as e:
                 if media.is_cache:
                     extractor = copy(self.extractor)
@@ -163,11 +164,9 @@ class DownloadPipeline:
         self,
         video_fmt: VideoFormat | None = None,
         audio_fmt: AudioFormat | None = None,
+        duration: float | None = None,
     ) -> Path:
         """Orchestrates the physical download of bytes."""
-
-        loop = asyncio.get_running_loop()
-        progress_queue = asyncio.Queue()
 
         formats_states = {
             "video": FormatState(
@@ -180,46 +179,21 @@ class DownloadPipeline:
             ),
         }
 
-        def _sync_progress(state: FormatState, is_video: bool):
+        async def _sync_progress(state: FormatState, is_video: bool):
             formats_states["video" if is_video else "audio"] = state
-            loop.call_soon_threadsafe(progress_queue.put_nowait, True)
 
-        async def _progress_consumer():
-            last_update = 0
-            # Target: 30 FPS = ~0.033s | 60 FPS = ~0.016s
-            MIN_INTERVAL = 0.1
+            v = formats_states["video"]
+            a = formats_states["audio"]
 
-            while True:
-                # Check queue
-                if not await progress_queue.get():
-                    break
-
-                while not progress_queue.empty():
-                    if not progress_queue.get_nowait():
-                        return
-
-                # Delay for fluid progress
-                current_time = time.time()
-
-                if current_time - last_update < MIN_INTERVAL:
-                    progress_queue.task_done()
-                    continue
-
-                last_update = current_time
-
-                # Send progress to callback
-                v, a = formats_states["video"], formats_states["audio"]
-
-                await self.progress(
-                    DownloadingState(
-                        id=self.id,
-                        downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
-                        total_bytes=v.total_bytes + a.total_bytes,
-                        speed=v.speed + a.speed,
-                        elapsed=max(v.elapsed, a.elapsed),
-                    )
+            await self.progress(
+                DownloadingState(
+                    id=self.id,
+                    downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
+                    total_bytes=v.total_bytes + a.total_bytes,
+                    speed=v.speed + a.speed,
+                    elapsed=max(v.elapsed, a.elapsed),
                 )
-                progress_queue.task_done()
+            )
 
         def _log(format: Format):
             type = "video" if isinstance(format, VideoFormat) else "audio"
@@ -238,32 +212,28 @@ class DownloadPipeline:
         if audio_fmt:
             _log(audio_fmt)
             audio_task = asyncio.create_task(
-                download_format(
+                AsyncFormatDownloader(
                     get_tempfile(),
                     audio_fmt,
+                    duration,
                     lambda s: _sync_progress(s, is_video=False),
-                )
+                ).download()
             )
 
         # Download Video
         if video_fmt:
             _log(video_fmt)
             video_task = asyncio.create_task(
-                download_format(
+                AsyncFormatDownloader(
                     get_tempfile(),
                     video_fmt,
+                    duration,
                     lambda s: _sync_progress(s, is_video=True),
-                )
+                ).download()
             )
 
-        consumer_task = asyncio.create_task(_progress_consumer())
-
-        try:
-            tasks = [t for t in [audio_task, video_task] if t is not None]
-            await asyncio.gather(*tasks)
-        finally:
-            progress_queue.put_nowait(None)
-            await consumer_task
+        tasks = [t for t in [audio_task, video_task] if t is not None]
+        await asyncio.gather(*tasks)
 
         video_file = video_task.result() if video_task else None
         audio_file = audio_task.result() if audio_task else None
