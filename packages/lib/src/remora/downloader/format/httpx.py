@@ -10,7 +10,7 @@ from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback, FormatState
 
 
-class AsyncFormatDownloader:
+class HttpxFormatDownloader:
     def __init__(
         self,
         filepath: Path,
@@ -27,25 +27,30 @@ class AsyncFormatDownloader:
         self.format_state = FormatState()
 
     async def download(self) -> Path:
-        async with httpx.AsyncClient(
-            headers=self._get_headers(),
-            cookies=self._get_cookies(),
-            follow_redirects=True,
-            timeout=None,
-        ) as client:
-            if self.format.protocol in (
-                "m3u8",
-                "m3u8_native",
-                "http_dash_segments",
-            ):
-                await self._download_fragments(client)
-            else:
-                await self._download_multi_part(client)
+        try:
+            async with httpx.AsyncClient(
+                headers=self._get_headers(),
+                cookies=self._get_cookies(),
+                follow_redirects=True,
+                timeout=None,
+            ) as client:
+                if self.format.protocol in (
+                    "m3u8",
+                    "m3u8_native",
+                    "http_dash_segments",
+                ):
+                    await self._download_fragments(client)
+                else:
+                    await self._download_multi_part(client)
+        except httpx.HTTPStatusError as e:
+            raise DownloadError(str(e), status_code=e.response.status_code) from e
+
         return await self._move_file()
 
     async def _download_multi_part(self, client: httpx.AsyncClient):
         # Check if the server explicitly supports ranges
         async with client.stream("GET", str(self.format.url)) as res:
+            res.raise_for_status()
             supports_range: bool = res.headers.get("Accept-Ranges") == "bytes"
             total_size = int(res.headers.get("Content-Length", 0))
 
@@ -134,9 +139,9 @@ class AsyncFormatDownloader:
                             written += len(chunk)
                             await self._update_progress(len(chunk))
                 return
-            except Exception as e:
+            except Exception:
                 if attempt == self.max_retries - 1:
-                    raise DownloadError(str(e)) from e
+                    raise
                 await asyncio.sleep(2**attempt)
 
     async def _fetch_with_retry(self, client: httpx.AsyncClient, url: str) -> bytes:
@@ -147,9 +152,9 @@ class AsyncFormatDownloader:
                 response = await client.get(url)
                 response.raise_for_status()
                 return response.content
-            except Exception as e:
+            except Exception:
                 if attempt == self.max_retries - 1:
-                    raise DownloadError(str(e)) from e
+                    raise
                 await asyncio.sleep(2**attempt)
         return b""
 

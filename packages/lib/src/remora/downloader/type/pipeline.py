@@ -7,11 +7,8 @@ from pathlib import Path
 from loguru import logger
 
 from remora.downloader.config import FormatConfig
-from remora.downloader.format import AsyncFormatDownloader
-from remora.downloader.metadata import (
-    download_subtitles,
-    download_thumbnail,
-)
+from remora.downloader.format.mix import FormatDownloader
+from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import FormatSelector
 from remora.downloader.type.debug import debug_callback
 from remora.exceptions import (
@@ -212,11 +209,11 @@ class DownloadPipeline:
         if audio_fmt:
             _log(audio_fmt)
             audio_task = asyncio.create_task(
-                AsyncFormatDownloader(
-                    get_tempfile(),
-                    audio_fmt,
-                    duration,
-                    lambda s: _sync_progress(s, is_video=False),
+                FormatDownloader(
+                    filepath=get_tempfile(),
+                    format=audio_fmt,
+                    duration=self.media.duration,
+                    on_progress=lambda s: _sync_progress(s, is_video=False),
                 ).download()
             )
 
@@ -224,11 +221,11 @@ class DownloadPipeline:
         if video_fmt:
             _log(video_fmt)
             video_task = asyncio.create_task(
-                AsyncFormatDownloader(
-                    get_tempfile(),
-                    video_fmt,
-                    duration,
-                    lambda s: _sync_progress(s, is_video=True),
+                FormatDownloader(
+                    filepath=get_tempfile(),
+                    format=video_fmt,
+                    duration=self.media.duration,
+                    on_progress=lambda s: _sync_progress(s, is_video=True),
                 ).download()
             )
 
