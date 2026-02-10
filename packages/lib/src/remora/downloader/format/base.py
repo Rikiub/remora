@@ -8,6 +8,8 @@ DEFAULT_RETRIES = 3
 
 
 class BaseFormatDownloader(ABC):
+    SUPPORTED_PROTOCOLS: list[str]
+
     def __init__(
         self,
         filepath: StrPath,

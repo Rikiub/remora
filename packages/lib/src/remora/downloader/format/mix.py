@@ -33,6 +33,7 @@ class FormatDownloader(BaseFormatDownloader):
                 duration=self.duration,
             ).download()
         except DownloadError as e:
+            print("XDDD")
             if e.status_code == 403:
                 return await YDLFormatDownloader(
                     self.filepath,

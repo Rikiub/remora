@@ -12,8 +12,20 @@ from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback
 from remora.types import StrPath
 
+_HTTP_PROTOCOLS = [
+    "http",
+    "https",
+]
+_LIST_PROTOCOLS = [
+    "m3u8",
+    "m3u8_native",
+    "http_dash_segments",
+]
+
 
 class HttpxFormatDownloader(BaseFormatDownloader):
+    SUPPORTED_PROTOCOLS = [*_HTTP_PROTOCOLS, *_LIST_PROTOCOLS]
+
     def __init__(
         self,
         filepath: StrPath,
@@ -24,8 +36,19 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         duration: float | None = None,
     ):
         super().__init__(filepath, format, on_progress, retries)
-        self.max_workers = max_workers
         self.duration = duration
+
+        # Calculate filesize
+        total = self.format.filesize or 0
+
+        if not total and self.format.bitrate and self.duration:
+            total = int((self.format.bitrate * 1000 * self.duration) / 8)
+
+        self.format_state.total_bytes = total
+
+        # Workers
+        self.max_workers = max_workers
+        self.semaphore = asyncio.Semaphore(self.max_workers)
 
     @override
     async def download(self) -> Path:
@@ -36,14 +59,14 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                 follow_redirects=True,
                 timeout=None,
             ) as client:
-                if self.format.protocol in (
-                    "m3u8",
-                    "m3u8_native",
-                    "http_dash_segments",
-                ):
-                    await self._download_fragments(client)
+                if self.format.protocol in _HTTP_PROTOCOLS:
+                    parts = await self._download_multi_part(client)
+                elif self.format.protocol in _LIST_PROTOCOLS:
+                    parts = await self._download_fragments(client)
                 else:
-                    await self._download_multi_part(client)
+                    raise DownloadError(
+                        f"Unable to handle protocol: {self.format.protocol}"
+                    )
         except Exception as e:
             status_code = 0
 
@@ -52,9 +75,11 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
             raise DownloadError(str(e), status_code=status_code) from e
 
-        return await self._move_file()
+        filepath = await self._build_parts(parts)
+        filepath = await self._rename_extension(filepath)
+        return filepath
 
-    async def _download_multi_part(self, client: httpx.AsyncClient):
+    async def _download_multi_part(self, client: httpx.AsyncClient) -> list[Path]:
         # Check if the server explicitly supports ranges
         async with client.stream("GET", str(self.format.url)) as res:
             res.raise_for_status()
@@ -68,36 +93,27 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         # Calculate filesize
         if total_size:
             self.format_state.total_bytes = total_size
-        else:
-            total = self.format.filesize or 0
-
-            if not total and self.format.bitrate and self.duration:
-                total = int((self.format.bitrate * 1000 * self.duration) / 8)
-
-            self.format_state.total_bytes = total
 
         chunk_size = total_size // workers
         tasks = []
-        part_files: list[Path] = []
 
         for i in range(workers):
             start = i * chunk_size
             end = (i + 1) * chunk_size - 1 if i < workers - 1 else total_size - 1
 
-            part_path = Path(f"{self.filepath}.part{i}")
-            part_files.append(part_path)
+            tasks.append(
+                self._save_range(
+                    client,
+                    path=self._gen_part_file(i),
+                    url=str(self.format.url),
+                    start=start,
+                    end=end,
+                )
+            )
 
-            tasks.append(self._save_range(client, start, end, part_path))
+        return await asyncio.gather(*tasks)
 
-        await asyncio.gather(*tasks)
-
-        async with aiofiles.open(self.filepath, "wb") as final_file:
-            for part in part_files:
-                async with aiofiles.open(part, "rb") as pf:
-                    await final_file.write(await pf.read())
-                part.unlink()
-
-    async def _download_fragments(self, client: httpx.AsyncClient):
+    async def _download_fragments(self, client: httpx.AsyncClient) -> list[Path]:
         response = await client.get(str(self.format.url))
         urls = [
             urljoin(str(self.format.url), line.strip())
@@ -105,67 +121,72 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             if line.strip() and not line.startswith("#")
         ]
 
-        # HLS is sequential; we write directly to the main file
-        async with aiofiles.open(self.filepath, "wb") as f:
-            for url in urls:
-                data = await self._fetch_with_retry(client, url)
-                await f.write(data)
-                await self._update_progress(len(data))
+        tasks = [
+            self._save_range(
+                client,
+                path=self._gen_part_file(index),
+                url=url,
+            )
+            for index, url in enumerate(urls)
+        ]
+
+        return await asyncio.gather(*tasks)
 
     async def _save_range(
         self,
         client: httpx.AsyncClient,
-        start: int,
-        end: int | None,
         path: Path,
+        url: str,
+        start: int = 0,
+        end: int = 0,
     ):
         """Downloads a specific byte range to a file with resume support."""
 
-        written = 0
+        async with self.semaphore:
+            if not path.exists():
+                path.touch()
 
-        for attempt in range(self.retries):
-            current_start = start + written
+            for attempt in range(self.retries):
+                current_file_size = path.stat().st_size
+                current_start = start + current_file_size
 
-            if end and current_start > end:
-                return
+                if end and current_start > end:
+                    break
 
-            try:
-                async with client.stream(
-                    "GET",
-                    str(self.format.url),
-                    headers={"Range": f"bytes={current_start}-{end}"},
-                ) as res:
-                    res.raise_for_status()
+                headers = {}
+                if end:
+                    headers |= {"Range": f"bytes={current_start}-{end}"}
 
-                    async with aiofiles.open(path, "ab" if written > 0 else "wb") as f:
-                        async for chunk in res.aiter_bytes():
-                            await f.write(chunk)
-                            written += len(chunk)
-                            await self._update_progress(len(chunk))
-                return
-            except Exception:
-                if attempt == self.retries - 1:
-                    raise
-                await asyncio.sleep(2**attempt)
+                try:
+                    async with client.stream(
+                        "GET",
+                        url,
+                        headers=headers,
+                    ) as res:
+                        res.raise_for_status()
 
-    async def _fetch_with_retry(self, client: httpx.AsyncClient, url: str) -> bytes:
-        """Generic retry fetch for small fragments."""
+                        async with aiofiles.open(path, "ab") as f:
+                            async for chunk in res.aiter_bytes():
+                                await f.write(chunk)
+                                await self._update_progress(len(chunk))
+                except Exception:
+                    if attempt == self.retries - 1:
+                        raise
+                    await asyncio.sleep(2**attempt)
+        return path
 
-        for attempt in range(self.retries):
-            try:
-                response = await client.get(url)
-                response.raise_for_status()
-                return response.content
-            except Exception:
-                if attempt == self.retries - 1:
-                    raise
-                await asyncio.sleep(2**attempt)
-        return b""
+    async def _build_parts(self, parts: list[Path]) -> Path:
+        async with aiofiles.open(self.filepath, "wb") as final_file:
+            for part in parts:
+                async with aiofiles.open(part, "rb") as pf:
+                    await final_file.write(await pf.read())
+                part.unlink()
 
-    async def _move_file(self) -> Path:
-        old_file = self.filepath
-        new_file = old_file.with_suffix(f".{self.format.extension}")
-        return await asyncio.to_thread(old_file.rename, new_file)
+            return self.filepath
+
+    async def _rename_extension(self, filepath: Path) -> Path:
+        new_file = filepath.with_suffix(f".{self.format.extension}")
+        return await asyncio.to_thread(filepath.rename, new_file)
 
     async def _update_progress(self, size: int):
         state = self.format_state
@@ -213,3 +234,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             cookie_dict[key] = val
 
         return cookie_dict
+
+    def _gen_part_file(self, index) -> Path:
+        return Path(f"{self.filepath}.part{index}")
