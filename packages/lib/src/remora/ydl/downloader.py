@@ -44,11 +44,11 @@ async def download_from_info(
     params: YDLParams,
     retries: int = DEFAULT_RETRIES,
 ) -> Path:
-    retries: YDLParams = {"retries": retries, "fragment_retries": retries}
+    config: YDLParams = {"retries": retries, "fragment_retries": retries}
 
     try:
         ydl = YDL(
-            params=retries | params,
+            params=config | params,
             auto_init=True,
         )
         result = await asyncio.to_thread(

@@ -20,11 +20,11 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         format: Format,
         on_progress: FormatDownloadCallback | None = None,
         retries: int = DEFAULT_RETRIES,
-        threads: int = 8,
+        max_workers: int = 8,
         duration: float | None = None,
     ):
         super().__init__(filepath, format, on_progress, retries)
-        self.chunks = threads
+        self.max_workers = max_workers
         self.duration = duration
 
     @override
@@ -63,7 +63,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
         # Determine chunks: Use user preference OR 1 if ranges aren't supported
         # Also use 1 if total_size is unknown (0)
-        chunks = self.chunks if (supports_range and total_size) else 1
+        workers = self.max_workers if (supports_range and total_size) else 1
 
         # Calculate filesize
         if total_size:
@@ -76,13 +76,13 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
             self.format_state.total_bytes = total
 
-        chunk_size = total_size // chunks
+        chunk_size = total_size // workers
         tasks = []
         part_files: list[Path] = []
 
-        for i in range(chunks):
+        for i in range(workers):
             start = i * chunk_size
-            end = (i + 1) * chunk_size - 1 if i < chunks - 1 else total_size - 1
+            end = (i + 1) * chunk_size - 1 if i < workers - 1 else total_size - 1
 
             part_path = Path(f"{self.filepath}.part{i}")
             part_files.append(part_path)
@@ -124,19 +124,16 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         written = 0
 
         for attempt in range(self.retries):
+            current_start = start + written
+
+            if end and current_start > end:
+                return
+
             try:
-                current_start = start + written
-                headers = self._get_headers()
-
-                if end:
-                    if current_start > end:
-                        return
-                    headers["Range"] = f"bytes={current_start}-{end}"
-
                 async with client.stream(
                     "GET",
                     str(self.format.url),
-                    headers=headers,
+                    headers={"Range": f"bytes={current_start}-{end}"},
                 ) as res:
                     res.raise_for_status()
 
@@ -171,19 +168,17 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         return await asyncio.to_thread(old_file.rename, new_file)
 
     async def _update_progress(self, size: int):
-        self.format_state.downloaded_bytes += size
+        state = self.format_state
+        state.downloaded_bytes += size
 
-        if self.format_state.downloaded_bytes > self.format_state.total_bytes:
-            self.format_state.total_bytes = self.format_state.downloaded_bytes
+        if state.downloaded_bytes > state.total_bytes:
+            state.total_bytes = state.downloaded_bytes
 
         if self.progress:
             await self.progress(self.format_state)
 
     def _get_headers(self) -> dict[str, str]:
-        headers = {
-            **self.format.http_headers,
-            "Accept-Encoding": "identity",
-        }
+        headers = self.format.http_headers
         return headers
 
     def _get_cookies(self):
