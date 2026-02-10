@@ -1,27 +1,28 @@
 import asyncio
 from pathlib import Path
 import time
+from typing_extensions import override
 
+from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback, FormatState
 from remora.types import StrPath
 
 
-class YDLFormatDownloader:
+class YDLFormatDownloader(BaseFormatDownloader):
     def __init__(
         self,
         filepath: StrPath,
         format: Format,
         on_progress: FormatDownloadCallback | None = None,
+        retries: int = DEFAULT_RETRIES,
     ):
-        self.filepath = Path(filepath)
-        self.format = format
-        self.progress = on_progress
+        super().__init__(filepath, format, on_progress, retries)
 
         self.loop = asyncio.get_running_loop()
         self.queue = asyncio.Queue()
-        self.state = FormatState()
 
+    @override
     async def download(self) -> Path:
         from remora.ydl.downloader import download_format
 
@@ -31,7 +32,7 @@ class YDLFormatDownloader:
             path = await download_format(
                 self.filepath,
                 format_info=self.format.to_ydl_dict(),
-                callback=lambda data: self.state._ydl_progress(
+                callback=lambda data: self.format_state._ydl_progress(
                     data,
                     self._sync_progress,
                 )
@@ -45,7 +46,7 @@ class YDLFormatDownloader:
         return path
 
     def _sync_progress(self, state: FormatState):
-        self.state = state
+        self.format_state = state
         self.loop.call_soon_threadsafe(self.queue.put_nowait, True)
 
     async def _progress_consumer(self):
@@ -73,6 +74,6 @@ class YDLFormatDownloader:
 
             # Send progress to callback
             if self.progress:
-                await self.progress(self.state)
+                await self.progress(self.format_state)
 
             self.queue.task_done()

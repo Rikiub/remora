@@ -1,34 +1,44 @@
 from pathlib import Path
 
+
+from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.downloader.format.httpx import HttpxFormatDownloader
 from remora.downloader.format.ydl import YDLFormatDownloader
 from remora.exceptions import DownloadError
-from remora.models.format.types import Format
+from remora.models.format.types import Format, override
 from remora.models.progress.format import FormatDownloadCallback
+from remora.types import StrPath
 
 
-class FormatDownloader:
+class FormatDownloader(BaseFormatDownloader):
     def __init__(
         self,
-        filepath: Path,
+        filepath: StrPath,
         format: Format,
-        duration: float | None = None,
         on_progress: FormatDownloadCallback | None = None,
+        duration: float | None = None,
+        retries: int = DEFAULT_RETRIES,
     ):
-        self.filepath = filepath
-        self.format = format
+        super().__init__(filepath, format, on_progress, retries)
         self.duration = duration
-        self.progress = on_progress
 
-    async def download(self):
+    @override
+    async def download(self) -> Path:
         try:
             return await HttpxFormatDownloader(
-                self.filepath, self.format, self.duration, self.progress
+                self.filepath,
+                self.format,
+                self.progress,
+                self.retries,
+                duration=self.duration,
             ).download()
         except DownloadError as e:
             if e.status_code == 403:
                 return await YDLFormatDownloader(
-                    self.filepath, self.format, self.progress
+                    self.filepath,
+                    self.format,
+                    self.progress,
+                    self.retries,
                 ).download()
 
             raise

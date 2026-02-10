@@ -11,11 +11,14 @@ from remora.ydl.messages import format_except_message
 from remora.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora.ydl.wrapper import YDL
 
+DEFAULT_RETRIES = 3
+
 
 async def download_format(
     filepath: StrPath,
     format_info: YDLFormatInfo,
     callback: Callable[[dict[str, Any]], None] | None = None,
+    retries: int = DEFAULT_RETRIES,
 ) -> Path:
     filepath = Path(filepath)
     params = {}
@@ -33,11 +36,15 @@ async def download_format(
         "formats": [format_info],
     }
 
-    return await download_from_info(info, params)
+    return await download_from_info(info, params, retries)
 
 
-async def download_from_info(info: YDLExtractInfo, params: YDLParams) -> Path:
-    retries: YDLParams = {"retries": 0, "fragment_retries": 0}
+async def download_from_info(
+    info: YDLExtractInfo,
+    params: YDLParams,
+    retries: int = DEFAULT_RETRIES,
+) -> Path:
+    retries: YDLParams = {"retries": retries, "fragment_retries": retries}
 
     try:
         ydl = YDL(

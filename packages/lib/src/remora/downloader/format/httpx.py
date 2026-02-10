@@ -1,32 +1,33 @@
 import asyncio
 from pathlib import Path
+from typing_extensions import override
 from urllib.parse import urljoin
 
 import httpx
 import aiofiles
 
+from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
-from remora.models.progress.format import FormatDownloadCallback, FormatState
+from remora.models.progress.format import FormatDownloadCallback
 from remora.types import StrPath
 
 
-class HttpxFormatDownloader:
+class HttpxFormatDownloader(BaseFormatDownloader):
     def __init__(
         self,
         filepath: StrPath,
         format: Format,
-        duration: float | None = None,
         on_progress: FormatDownloadCallback | None = None,
+        retries: int = DEFAULT_RETRIES,
+        threads: int = 8,
+        duration: float | None = None,
     ):
-        self.filepath = Path(filepath)
-        self.format = format
-        self.chunks = 8
-        self.max_retries = 3
-        self.progress = on_progress
+        super().__init__(filepath, format, on_progress, retries)
+        self.chunks = threads
         self.duration = duration
-        self.format_state = FormatState()
 
+    @override
     async def download(self) -> Path:
         try:
             async with httpx.AsyncClient(
@@ -122,7 +123,7 @@ class HttpxFormatDownloader:
 
         written = 0
 
-        for attempt in range(self.max_retries):
+        for attempt in range(self.retries):
             try:
                 current_start = start + written
                 headers = self._get_headers()
@@ -146,20 +147,20 @@ class HttpxFormatDownloader:
                             await self._update_progress(len(chunk))
                 return
             except Exception:
-                if attempt == self.max_retries - 1:
+                if attempt == self.retries - 1:
                     raise
                 await asyncio.sleep(2**attempt)
 
     async def _fetch_with_retry(self, client: httpx.AsyncClient, url: str) -> bytes:
         """Generic retry fetch for small fragments."""
 
-        for attempt in range(self.max_retries):
+        for attempt in range(self.retries):
             try:
                 response = await client.get(url)
                 response.raise_for_status()
                 return response.content
             except Exception:
-                if attempt == self.max_retries - 1:
+                if attempt == self.retries - 1:
                     raise
                 await asyncio.sleep(2**attempt)
         return b""
