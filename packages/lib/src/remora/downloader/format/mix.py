@@ -20,14 +20,14 @@ class FormatDownloader:
         self.duration = duration
         self.progress = on_progress
 
-    def download(self):
+    async def download(self):
         try:
-            return HttpxFormatDownloader(
+            return await HttpxFormatDownloader(
                 self.filepath, self.format, self.duration, self.progress
             ).download()
         except DownloadError as e:
             if e.status_code == 403:
-                return YDLFormatDownloader(
+                return await YDLFormatDownloader(
                     self.filepath, self.format, self.progress
                 ).download()
 

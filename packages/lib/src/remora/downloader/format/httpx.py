@@ -8,12 +8,13 @@ import aiofiles
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback, FormatState
+from remora.types import StrPath
 
 
 class HttpxFormatDownloader:
     def __init__(
         self,
-        filepath: Path,
+        filepath: StrPath,
         format: Format,
         duration: float | None = None,
         on_progress: FormatDownloadCallback | None = None,
@@ -42,8 +43,13 @@ class HttpxFormatDownloader:
                     await self._download_fragments(client)
                 else:
                     await self._download_multi_part(client)
-        except httpx.HTTPStatusError as e:
-            raise DownloadError(str(e), status_code=e.response.status_code) from e
+        except Exception as e:
+            status_code = 0
+
+            if isinstance(e, httpx.HTTPStatusError):
+                status_code = e.response.status_code
+
+            raise DownloadError(str(e), status_code=status_code) from e
 
         return await self._move_file()
 
