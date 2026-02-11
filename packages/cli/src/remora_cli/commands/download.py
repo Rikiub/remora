@@ -1,12 +1,11 @@
 from enum import Enum
-from functools import wraps
 from pathlib import Path
 from typing import Annotated
 
-import anyio
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
+from remora_cli.helpers import make_async
 from typer import Argument, BadParameter, Exit, Option, Typer
 
 from remora_cli.completions import (
@@ -25,16 +24,6 @@ class HelpPanel(str, Enum):
 
 
 app = Typer()
-
-
-def make_async(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        from functools import partial
-
-        return anyio.run(partial(func, *args, **kwargs))
-
-    return wrapper
 
 
 @app.command(no_args_is_help=True)
@@ -99,10 +88,9 @@ What format you want request?
             file_okay=False,
         ),
     ] = DEFAULT_OUTPUT_TEMPLATE,
-    threads: Annotated[
+    max_workers: Annotated[
         int,
         Option(
-            "--threads",
             help="Limit of simultaneous downloads.",
             rich_help_panel=HelpPanel.downloader,
         ),
@@ -119,7 +107,7 @@ What format you want request?
     ] = None,
     cache: Annotated[
         bool,
-        Option(help="Process without use the cache."),
+        Option(help="Process using cache."),
     ] = True,
 ):
     """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
@@ -147,7 +135,7 @@ What format you want request?
             format=format,
             quality=quality,
             output=output,
-            threads=threads,
+            max_workers=max_workers,
             ffmpeg_path=ffmpeg_path,
             extractor=extractor,
         )

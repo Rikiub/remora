@@ -20,7 +20,7 @@ class MediaDownloader:
         format: FILE_FORMAT = "video",
         quality: int | None = None,
         output: StrPath = DEFAULT_OUTPUT_TEMPLATE,
-        threads: int = 4,
+        max_workers: int = 4,
         ffmpeg_path: StrPath | None = None,
         embed_metadata: bool = True,
         extractor: MediaExtractor | None = None,
@@ -49,7 +49,7 @@ class MediaDownloader:
             embed_metadata=embed_metadata,
         )
         self.extractor = extractor
-        self.threads = threads
+        self.max_workers = max_workers
 
     async def download(
         self,
@@ -90,7 +90,7 @@ class MediaDownloader:
             data,
             self.config,
             self.extractor,
-            self.threads,
+            self.max_workers,
             on_progress,
             on_playlist,
         ).run()

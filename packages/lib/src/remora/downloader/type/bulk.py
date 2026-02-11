@@ -23,14 +23,14 @@ class DownloadBulk:
         data: MediaResult,
         format_config: FormatConfig | None = None,
         extractor: MediaExtractor | None = None,
-        threads: int = 5,
+        max_workers: int = 5,
         on_progress: MediaDownloadCallback | None = None,
         on_playlist: PlaylistDownloadCallback | None = None,
     ):
         # Internals
         self.config = copy(format_config) or FormatConfig()
         self.extractor = extractor or MediaExtractor()
-        self.semaphore = anyio.Semaphore(threads)
+        self.semaphore = anyio.Semaphore(max_workers)
 
         self.on_progress = on_progress
         self._on_playlist = on_playlist
