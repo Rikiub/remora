@@ -11,6 +11,7 @@ members = [
 
 [manifest.dependency-groups]
 dev = [
+    { name = "anyio", specifier = ">=4.12.1" },
     { name = "pytest", specifier = ">=9.0.0" },
     { name = "ruff", specifier = ">=0.8.0" },
 ]
