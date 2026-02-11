@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any
 
-from yt_dlp.downloader import PROTOCOL_MAP
+from yt_dlp.downloader import PROTOCOL_MAP  # type: ignore
 from yt_dlp.utils import MEDIA_EXTENSIONS
 
 
@@ -12,8 +12,8 @@ class SupportedExtensions(frozenset[str], Enum):
     audio = frozenset(MEDIA_EXTENSIONS.audio)
 
 
-SupportedProtocols: set[str] = frozenset(PROTOCOL_MAP.keys())
-ThumbnailSupport = frozenset(
+SupportedProtocols = frozenset[str](PROTOCOL_MAP.keys())
+ThumbnailSupport = frozenset[str](
     {
         "mp3",
         "mkv",
