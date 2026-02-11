@@ -5,7 +5,7 @@ import anyio
 from anyio import Path
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
-from remora.exceptions import CancelledError, MediaError
+from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
@@ -70,8 +70,6 @@ class DownloadBulk:
             async with anyio.create_task_group() as tg:
                 for media in self.medias:
                     tg.start_soon(self._run_pipeline, media, paths)
-        except anyio.get_cancelled_exc_class() as e:
-            raise CancelledError() from e
         finally:
             self.state.stage = "completed"
             await self.on_playlist(self.state)
