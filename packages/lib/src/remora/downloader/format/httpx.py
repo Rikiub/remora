@@ -94,18 +94,20 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             self.format_state.total_bytes = total_size
 
         chunk_size = total_size // workers
-        part_files = []
+        part_files: list[Path] = []
 
         async with anyio.create_task_group() as tg:
             for i in range(workers):
                 start = i * chunk_size
                 end = (i + 1) * chunk_size - 1 if i < workers - 1 else total_size - 1
 
+                part = self._gen_part_file(i)
+                part_files.append(part)
+
                 tg.start_soon(
                     self._save_range,
                     client,
-                    self._gen_part_file(i),
-                    part_files,
+                    part,
                     str(self.format.url),
                     start,
                     end,
@@ -121,15 +123,17 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             if line.strip() and not line.startswith("#")
         ]
 
-        part_files = []
+        part_files: list[Path] = []
 
         async with anyio.create_task_group() as tg:
             for index, url in enumerate(urls):
+                part = self._gen_part_file(index)
+                part_files.append(part)
+
                 tg.start_soon(
                     self._save_range,
                     client,
-                    self._gen_part_file(index),
-                    part_files,
+                    part,
                     url,
                 )
 
@@ -139,7 +143,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         self,
         client: httpx.AsyncClient,
         path: Path,
-        part_files: list[Path],
         url: str,
         start: int = 0,
         end: int = 0,
@@ -178,7 +181,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                     if attempt == self.retries - 1:
                         raise
                     await anyio.sleep(2**attempt)
-        return part_files.append(path)
 
     async def _build_parts(self, parts: list[Path]) -> Path:
         async with await self.filepath.open("wb") as final_file:
