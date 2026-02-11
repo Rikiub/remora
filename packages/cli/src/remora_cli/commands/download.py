@@ -4,6 +4,7 @@ from typing import Annotated
 
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
+from remora.exceptions import CancelledError
 from remora.types import FILE_FORMAT
 from remora_cli.completions import (
     complete_output,
@@ -177,6 +178,8 @@ What format you want request?
 
             await downloader.download_all(result, on_progress, on_playlist)
             logger.info("✅ Download Finished.")
+        except CancelledError:
+            logger.warning("❗ Download cancelled.")
         except MediaError as err:
             logger.error("❌ {error}", error=str(err))
         finally:
