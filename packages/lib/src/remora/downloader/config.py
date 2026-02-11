@@ -2,6 +2,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, cast, get_args
 
+from remora.exceptions import ProcessingError
+from remora.path import get_ffmpeg
 from remora.types import (
     AUDIO_EXTENSION,
     EXTENSION,
@@ -35,12 +37,15 @@ class FormatConfig:
     embed_metadata: bool = True
 
     def __post_init__(self):
-        from remora.path import get_ffmpeg
         from remora.template.parser import validate_output
 
-        self.ffmpeg_path = get_ffmpeg(self.ffmpeg_path)
         self.output = Path(self.output)
         validate_output(self.output)
+
+    async def validate_ffmpeg(self):
+        self.ffmpeg_path = await get_ffmpeg(self.ffmpeg_path)
+        if not self.ffmpeg_path:
+            raise ProcessingError("FFmpeg is needed for use processors.")
 
     @property
     def type(self) -> FORMAT_TYPE:

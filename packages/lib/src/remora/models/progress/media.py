@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Annotated, Literal
+from typing import Annotated, Awaitable, Literal
 
 from pydantic import Field
 
@@ -52,4 +52,4 @@ MediaDownloadState = Annotated[
 ]
 
 
-MediaDownloadCallback = Callable[[MediaDownloadState], None]
+MediaDownloadCallback = Callable[[MediaDownloadState], Awaitable[None]]

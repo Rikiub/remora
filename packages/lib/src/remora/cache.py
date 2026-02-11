@@ -1,33 +1,38 @@
 import hashlib
 import time
 
-from remora.path import CACHE_DIR
+from remora.path import get_cache_dir
 from remora.types import StrUrl
 
 EXPIRATION = 24 * 60 * 60
 
 
-def load_info(url: StrUrl) -> str | None:
-    file = CACHE_DIR / _url_hash(url)
+async def load_info(url: StrUrl) -> str | None:
+    dir = await get_cache_dir()
+    file = dir / _url_hash(url)
 
-    if file.exists():
-        age = time.time() - file.stat().st_mtime
+    if await file.exists():
+        stats = await file.stat()
+        age = time.time() - stats.st_mtime
+
         if age < EXPIRATION:
-            return file.read_text()
+            return await file.read_text()
 
     return None
 
 
-def save_info(url: str, content: str):
-    file = CACHE_DIR / _url_hash(url)
-    file.write_text(content)
+async def save_info(url: str, content: str):
+    dir = await get_cache_dir()
+    file = dir / _url_hash(url)
+    await file.write_text(content)
 
 
-def remove_info(url: str) -> bool:
-    file = CACHE_DIR / _url_hash(url)
+async def remove_info(url: str) -> bool:
+    dir = await get_cache_dir()
+    file = dir / _url_hash(url)
 
-    if file.exists():
-        file.unlink()
+    if await file.exists():
+        await file.unlink()
         return True
     return False
 

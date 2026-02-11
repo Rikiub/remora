@@ -23,7 +23,7 @@ class ProgressCallback(DownloadProgress):
         super().__init__(disable)
         self.ids: dict[str, Task] = {}
 
-    def callback_media(self, progress: MediaDownloadState):
+    async def callback_media(self, progress: MediaDownloadState):
         match progress.status:
             case "resolving":
                 item = self.ids[progress.id] = Task(
@@ -58,7 +58,7 @@ class ProgressCallback(DownloadProgress):
                     status="Downloading",
                 )
             case "processing":
-                self.processor_callback(progress)
+                await self.processor_callback(progress)
             case "warning":
                 logger.warning(
                     self.fmt_log(progress, f"Warning: {progress.message}", "⚠️")
@@ -89,7 +89,7 @@ class ProgressCallback(DownloadProgress):
                 time.sleep(1.0)
                 self.remove_task(self.get(progress).task_id)
 
-    def callback_playlist(self, progress: PlaylistDownloadState):
+    async def callback_playlist(self, progress: PlaylistDownloadState):
         match progress.stage:
             case "started":
                 self.counter.reset(total=progress.total)
@@ -99,7 +99,7 @@ class ProgressCallback(DownloadProgress):
             case "completed":
                 self.stop()
 
-    def processor_callback(self, progress: ProcessingState):
+    async def processor_callback(self, progress: ProcessingState):
         match progress.processor:
             case "convert_audio":
                 if progress.stage == "started":

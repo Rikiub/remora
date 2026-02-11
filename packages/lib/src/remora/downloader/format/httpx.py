@@ -1,10 +1,9 @@
-import asyncio
-from pathlib import Path
 from typing_extensions import override
 from urllib.parse import urljoin
 
+import anyio
+from anyio import Path
 import httpx
-import aiofiles
 
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.exceptions import DownloadError
@@ -48,7 +47,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
         # Workers
         self.max_workers = max_workers
-        self.semaphore = asyncio.Semaphore(self.max_workers)
+        self.semaphore = anyio.Semaphore(self.max_workers)
 
     @override
     async def download(self) -> Path:
@@ -95,23 +94,24 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             self.format_state.total_bytes = total_size
 
         chunk_size = total_size // workers
-        tasks = []
+        part_files = []
 
-        for i in range(workers):
-            start = i * chunk_size
-            end = (i + 1) * chunk_size - 1 if i < workers - 1 else total_size - 1
+        async with anyio.create_task_group() as tg:
+            for i in range(workers):
+                start = i * chunk_size
+                end = (i + 1) * chunk_size - 1 if i < workers - 1 else total_size - 1
 
-            tasks.append(
-                self._save_range(
+                tg.start_soon(
+                    self._save_range,
                     client,
-                    path=self._gen_part_file(i),
-                    url=str(self.format.url),
-                    start=start,
-                    end=end,
+                    self._gen_part_file(i),
+                    part_files,
+                    str(self.format.url),
+                    start,
+                    end,
                 )
-            )
 
-        return await asyncio.gather(*tasks)
+        return part_files
 
     async def _download_fragments(self, client: httpx.AsyncClient) -> list[Path]:
         response = await client.get(str(self.format.url))
@@ -121,21 +121,25 @@ class HttpxFormatDownloader(BaseFormatDownloader):
             if line.strip() and not line.startswith("#")
         ]
 
-        tasks = [
-            self._save_range(
-                client,
-                path=self._gen_part_file(index),
-                url=url,
-            )
-            for index, url in enumerate(urls)
-        ]
+        part_files = []
 
-        return await asyncio.gather(*tasks)
+        async with anyio.create_task_group() as tg:
+            for index, url in enumerate(urls):
+                tg.start_soon(
+                    self._save_range,
+                    client,
+                    self._gen_part_file(index),
+                    part_files,
+                    url,
+                )
+
+        return part_files
 
     async def _save_range(
         self,
         client: httpx.AsyncClient,
         path: Path,
+        part_files: list[Path],
         url: str,
         start: int = 0,
         end: int = 0,
@@ -143,11 +147,12 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         """Downloads a specific byte range to a file with resume support."""
 
         async with self.semaphore:
-            if not path.exists():
-                path.touch()
+            if not await path.exists():
+                await path.touch()
 
             for attempt in range(self.retries):
-                current_file_size = path.stat().st_size
+                stats = await path.stat()
+                current_file_size = stats.st_size
                 current_start = start + current_file_size
 
                 if end and current_start > end:
@@ -165,28 +170,28 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                     ) as res:
                         res.raise_for_status()
 
-                        async with aiofiles.open(path, "ab") as f:
+                        async with await path.open("ab") as f:
                             async for chunk in res.aiter_bytes():
                                 await f.write(chunk)
                                 await self._update_progress(len(chunk))
                 except Exception:
                     if attempt == self.retries - 1:
                         raise
-                    await asyncio.sleep(2**attempt)
-        return path
+                    await anyio.sleep(2**attempt)
+        return part_files.append(path)
 
     async def _build_parts(self, parts: list[Path]) -> Path:
-        async with aiofiles.open(self.filepath, "wb") as final_file:
+        async with await self.filepath.open("wb") as final_file:
             for part in parts:
-                async with aiofiles.open(part, "rb") as pf:
-                    await final_file.write(await pf.read())
-                part.unlink()
-
-            return self.filepath
+                async with await part.open("rb") as pf:
+                    data = await pf.read()
+                    await final_file.write(data)
+                await part.unlink()
+        return self.filepath
 
     async def _rename_extension(self, filepath: Path) -> Path:
         new_file = filepath.with_suffix(f".{self.format.extension}")
-        return await asyncio.to_thread(filepath.rename, new_file)
+        return await filepath.rename(new_file)
 
     async def _update_progress(self, size: int):
         state = self.format_state

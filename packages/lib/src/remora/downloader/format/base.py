@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from pathlib import Path
+from anyio import Path
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback, FormatState
 from remora.types import StrPath

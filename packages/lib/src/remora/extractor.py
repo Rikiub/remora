@@ -32,7 +32,7 @@ class MediaExtractor:
         logger.debug("Extract URL: {url}", url=url)
 
         # Load from cache
-        if self.use_cache and (cached_json := load_info(url)):
+        if self.use_cache and (cached_json := await load_info(url)):
             model = ExtractAdapter.validate_json(cached_json, by_alias=True)
 
             if isinstance(model, Media):
@@ -40,7 +40,7 @@ class MediaExtractor:
 
             return model
         else:
-            remove_info(url)
+            await remove_info(url)
 
         # Extract info
         info = await extract_info(url)
@@ -48,7 +48,7 @@ class MediaExtractor:
 
         # Save to cache
         if self.use_cache:
-            save_info(str(result.url), result.to_ydl_json())
+            await save_info(str(result.url), result.to_ydl_json())
 
         return result
 
@@ -67,10 +67,10 @@ class MediaExtractor:
         )
 
         # Load from cache
-        if self.use_cache and (cached_json := load_info(query)):
+        if self.use_cache and (cached_json := await load_info(query)):
             return Search.from_ydl_json(cached_json)
         else:
-            remove_info(query)
+            await remove_info(query)
 
         # Extract info
         info = await extract_query(query, service, limit)
@@ -78,6 +78,6 @@ class MediaExtractor:
 
         # Save to cache
         if self.use_cache:
-            save_info(result.query, result.to_ydl_json())
+            await save_info(result.query, result.to_ydl_json())
 
         return result

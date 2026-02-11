@@ -1,6 +1,6 @@
-import asyncio
-from pathlib import Path
-import time
+import anyio
+from anyio import Path
+
 from typing_extensions import override
 
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
@@ -19,61 +19,39 @@ class YDLFormatDownloader(BaseFormatDownloader):
     ):
         super().__init__(filepath, format, on_progress, retries)
 
-        self.loop = asyncio.get_running_loop()
-        self.queue = asyncio.Queue()
+        self.send_stream, self.receive_stream = anyio.create_memory_object_stream(
+            max_buffer_size=100
+        )
 
     @override
     async def download(self) -> Path:
         from remora.ydl.downloader import download_format
 
-        consumer_task = asyncio.create_task(self._progress_consumer())
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self._progress_consumer)
 
-        try:
-            path = await download_format(
-                self.filepath,
-                format_info=self.format.to_ydl_dict(),
-                callback=lambda data: self.format_state._ydl_progress(
-                    data,
-                    self._sync_progress,
+            try:
+                path = await download_format(
+                    self.filepath,
+                    self.format.to_ydl_dict(),
+                    lambda data: self.format_state._ydl_progress(
+                        data,
+                        self._sync_progress,
+                    )
+                    if self.progress
+                    else None,
                 )
-                if self.progress
-                else None,
-            )
-        finally:
-            self.queue.put_nowait(None)
-            await consumer_task
+            finally:
+                await self.send_stream.aclose()
 
-        return path
+        return Path(path)  # type: ignore
 
     def _sync_progress(self, state: FormatState):
         self.format_state = state
-        self.loop.call_soon_threadsafe(self.queue.put_nowait, True)
+        self.send_stream.send_nowait(True)
 
     async def _progress_consumer(self):
-        last_update = 0
-        # Target: 30 FPS = ~0.033s | 60 FPS = ~0.016s
-        MIN_INTERVAL = 0.1
-
-        while True:
-            # Check queue
-            if not await self.queue.get():
-                break
-
-            while not self.queue.empty():
-                if not self.queue.get_nowait():
-                    return
-
-            # Delay for fluid progress
-            current_time = time.time()
-
-            if current_time - last_update < MIN_INTERVAL:
-                self.queue.task_done()
-                continue
-
-            last_update = current_time
-
-            # Send progress to callback
-            if self.progress:
-                await self.progress(self.format_state)
-
-            self.queue.task_done()
+        async with self.receive_stream:
+            async for _ in self.receive_stream:
+                if self.progress:
+                    await self.progress(self.format_state)

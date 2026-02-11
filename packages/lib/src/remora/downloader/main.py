@@ -1,4 +1,4 @@
-from pathlib import Path
+from anyio import Path
 
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE, FormatConfig
 from remora.downloader.type.bulk import DownloadBulk

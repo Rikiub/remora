@@ -3,14 +3,14 @@ from loguru import logger
 from remora.models.progress.media import MediaDownloadState, ProcessingState
 
 
-def debug_callback(progress: MediaDownloadState):
+async def debug_callback(progress: MediaDownloadState):
     match progress.status:
         case "resolving":
             _log_debug(progress.id, "Resolving Media")
         case "resolved":
             _log_debug(progress.id, "Media resolved")
         case "processing":
-            _processor_callback(progress)
+            await _processor_callback(progress)
         case "completed":
             _log_debug(
                 progress.id,
@@ -19,7 +19,7 @@ def debug_callback(progress: MediaDownloadState):
             )
 
 
-def _processor_callback(progress: ProcessingState):
+async def _processor_callback(progress: ProcessingState):
     if progress.stage == "completed":
         match progress.processor:
             case "change_container":

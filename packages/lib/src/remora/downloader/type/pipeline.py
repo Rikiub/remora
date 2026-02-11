@@ -1,8 +1,9 @@
-import asyncio
+import anyio
+from anyio.to_thread import run_sync
+from anyio import Path
 from copy import copy
 import shutil
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from loguru import logger
 
@@ -63,13 +64,18 @@ class DownloadPipeline:
         logger.debug(self.config)
 
     async def progress(self, state: MediaDownloadState):
-        tasks = [
-            asyncio.to_thread(self._on_progress, state) if self._on_progress else None,
-            asyncio.to_thread(debug_callback, state),
-        ]
-        await asyncio.gather(*[t for t in tasks if t])
+        async with anyio.create_task_group() as tg:
+            if self._on_progress:
+                tg.start_soon(self._on_progress, state)
+            tg.start_soon(debug_callback, state)
 
     async def run(self) -> Path:
+        # Check ffmpeg existence
+        try:
+            await self.config.validate_ffmpeg()
+        except FileNotFoundError as e:
+            raise ProcessingError(str(e)) from e
+
         # Resolve Data
         media = await self.resolve_media()
 
@@ -87,7 +93,8 @@ class DownloadPipeline:
             format=format,
             default_missing="NA",
         )
-        output.parent.mkdir(parents=True, exist_ok=True)
+        output = Path(output)
+        await output.parent.mkdir(parents=True, exist_ok=True)
 
         if duplicate := await self.check_output_duplicate(output):
             return duplicate
@@ -136,26 +143,22 @@ class DownloadPipeline:
         return self.media
 
     async def check_output_duplicate(self, output: Path) -> Path | None:
-        def run():
-            for path in output.parent.iterdir():
-                if path.is_file() and path.stem == output.name:
-                    path_extension = path.suffix.lstrip(".")
+        async for path in output.parent.iterdir():
+            if await path.is_file() and path.stem == output.name:
+                path_extension = path.suffix.lstrip(".")
 
-                    if (
-                        path_extension in SupportedExtensions.video
-                        or path_extension in SupportedExtensions.audio
-                    ):
-                        return path
-
-        if path := await asyncio.to_thread(run):
-            await self.progress(
-                CompletedState(
-                    id=self.id,
-                    extension=path.suffix.lstrip("."),
-                    reason="skipped",
-                )
-            )
-            return path
+                if (
+                    path_extension in SupportedExtensions.video
+                    or path_extension in SupportedExtensions.audio
+                ):
+                    await self.progress(
+                        CompletedState(
+                            id=self.id,
+                            extension=path.suffix.lstrip("."),
+                            reason="skipped",
+                        )
+                    )
+                    return path
 
     async def download_formats(
         self,
@@ -202,38 +205,43 @@ class DownloadPipeline:
                 quality=format.quality,
             )
 
-        video_task = None
-        audio_task = None
+        video_file = None
+        audio_file = None
 
-        # Download Audio
-        if audio_fmt:
-            _log(audio_fmt)
-            audio_task = asyncio.create_task(
-                FormatDownloader(
-                    filepath=get_tempfile(),
-                    format=audio_fmt,
-                    duration=self.media.duration,
-                    on_progress=lambda s: _sync_progress(s, is_video=False),
-                ).download()
-            )
+        async def download_video():
+            nonlocal video_file
 
-        # Download Video
-        if video_fmt:
-            _log(video_fmt)
-            video_task = asyncio.create_task(
-                FormatDownloader(
-                    filepath=get_tempfile(),
+            if video_fmt:
+                _log(video_fmt)
+                downloader = FormatDownloader(
+                    filepath=await get_tempfile(),
                     format=video_fmt,
-                    duration=self.media.duration,
+                    duration=duration,
                     on_progress=lambda s: _sync_progress(s, is_video=True),
-                ).download()
-            )
+                )
+                video_file = await downloader.download()
 
-        tasks = [t for t in [audio_task, video_task] if t is not None]
-        await asyncio.gather(*tasks)
+        async def download_audio():
+            nonlocal audio_file
 
-        video_file = video_task.result() if video_task else None
-        audio_file = audio_task.result() if audio_task else None
+            if audio_fmt:
+                _log(audio_fmt)
+                downloader = FormatDownloader(
+                    filepath=await get_tempfile(),
+                    format=audio_fmt,
+                    duration=duration,
+                    on_progress=lambda s: _sync_progress(s, is_video=False),
+                )
+                audio_file = await downloader.download()
+
+        async with anyio.create_task_group() as tg:
+            # Download Audio
+            if audio_fmt:
+                tg.start_soon(download_audio)
+
+            # Download Video
+            if video_fmt:
+                tg.start_soon(download_video)
 
         # Merge if necessary
         if (
@@ -242,7 +250,7 @@ class DownloadPipeline:
             and (audio_file and audio_fmt)
         ):
             extension = self.config.convert or "mp4"
-            filepath = Path(f"{get_tempfile()}.{extension}")
+            filepath = Path(f"{await get_tempfile()}.{extension}")
 
             merging = MergingProcessorState(
                 id=self.id,
@@ -307,7 +315,7 @@ class DownloadPipeline:
             if media.subtitles:
                 async with track_prc("embed_subtitles"):
                     subtitles = await download_subtitles(
-                        get_tempfile(), media.subtitles
+                        await get_tempfile(), media.subtitles
                     )
                     await prc.embed_subtitles(subtitles)
 
@@ -330,7 +338,8 @@ class DownloadPipeline:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
                 async with track_prc("embed_thumbnail"):
                     thumbnail = await download_thumbnail(
-                        get_tempfile(), media.thumbnails[-1]
+                        await get_tempfile(),
+                        media.thumbnails[-1],
                     )
                     await prc.embed_thumbnail(thumbnail, square=media.is_music)
 
@@ -338,9 +347,10 @@ class DownloadPipeline:
 
     async def move_to_final(self, src: Path, dest: Path) -> Path:
         final_path = dest.parent / f"{dest.name}{src.suffix}"
-        final_path.parent.mkdir(parents=True, exist_ok=True)
+        await final_path.parent.mkdir(parents=True, exist_ok=True)
 
-        await asyncio.to_thread(shutil.move, src, final_path)
+        # Use shutil.move for compability between cross filesystems
+        await run_sync(shutil.move, src, final_path)
 
         await self.progress(
             CompletedState(

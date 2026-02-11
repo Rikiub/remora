@@ -1,7 +1,7 @@
-import asyncio
+import anyio
+from anyio import Path
 from copy import copy
 import secrets
-from pathlib import Path
 
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
@@ -30,14 +30,10 @@ class DownloadBulk:
         # Internals
         self.config = copy(format_config) or FormatConfig()
         self.extractor = extractor or MediaExtractor()
-        self.threads = threads
+        self.semaphore = anyio.Semaphore(threads)
 
         self.on_progress = on_progress
-        self.on_playlist = lambda a: None
-
-        # Callbacks
-        if on_playlist:
-            self.on_playlist = on_playlist
+        self._on_playlist = on_playlist
 
         # Data
         self.id = ""
@@ -65,25 +61,22 @@ class DownloadBulk:
     async def run(self) -> list[Path]:
         # Setup
         await self._setup()
-        self.on_playlist(self.state)
+        await self.on_playlist(self.state)
 
         # Tasks
-        semaphore = asyncio.Semaphore(self.threads)
-
-        tasks = [self._run_pipeline(media, semaphore) for media in self.medias]
-        results = await asyncio.gather(*tasks)
+        paths: list[Path] = []
+        async with anyio.create_task_group() as tg:
+            for media in self.medias:
+                tg.start_soon(self._run_pipeline, media, paths)
 
         # Completed
         self.state.stage = "completed"
-        self.on_playlist(self.state)
+        await self.on_playlist(self.state)
 
-        paths = [p for p in results if p]
         return paths
 
-    async def _run_pipeline(
-        self, media: LazyMedia, semaphore: asyncio.Semaphore
-    ) -> Path | None:
-        async with semaphore:
+    async def _run_pipeline(self, media: LazyMedia, results: list[Path]):
+        async with self.semaphore:
             try:
                 path = await DownloadPipeline(
                     media,
@@ -91,11 +84,13 @@ class DownloadBulk:
                     self.extractor,
                     self.on_progress,
                 ).run()
+
+                results.append(path)
             except MediaError:
-                path = None
+                pass
 
             self.state.completed += 1
-            self.on_playlist(
+            await self.on_playlist(
                 PlaylistState(
                     id=self.id,
                     stage="update",
@@ -103,8 +98,6 @@ class DownloadBulk:
                     total=self.state.total,
                 )
             )
-
-            return path
 
     async def _setup(self):
         data = self._data
@@ -145,3 +138,7 @@ class DownloadBulk:
         self.state.stage = "started"
         self.state.completed = 0
         self.state.total = len(self.medias)
+
+    async def on_playlist(self, state: PlaylistState):
+        if self._on_playlist:
+            await self._on_playlist(state)

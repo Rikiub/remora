@@ -1,9 +1,9 @@
-import asyncio
 from enum import Enum
 from functools import wraps
 from pathlib import Path
 from typing import Annotated
 
+import anyio
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
@@ -30,7 +30,9 @@ app = Typer()
 def make_async(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        return asyncio.run(func(*args, **kwargs))
+        from functools import partial
+
+        return anyio.run(partial(func, *args, **kwargs))
 
     return wrapper
 

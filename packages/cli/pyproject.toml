@@ -2,7 +2,12 @@
 name = "remora-cli"
 version = "3.0.0"
 description = "Download any video/audio you want from a simple URL ✨"
-dependencies = ["remora", "typer>=0.21.0", "rich>=14.0.0"]
+dependencies = [
+    "remora",
+    "typer>=0.21.0",
+    "rich>=14.0.0",
+    "anyio>=4.12.1",
+]
 
 [project.scripts]
 remora = "remora_cli:run"

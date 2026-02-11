@@ -1,5 +1,6 @@
-import asyncio
-from pathlib import Path
+from anyio import Path
+from anyio.to_thread import run_sync
+
 from typing import Sequence, TypedDict
 
 from typing_extensions import Self
@@ -14,15 +15,14 @@ from yt_dlp.postprocessor.ffmpeg import (
 )
 
 from remora.exceptions import ProcessingError
-from remora.path import get_ffmpeg
 from remora.types import StrPath
 from remora.ydl.types import YDLExtractInfo
 
 
 def catch(func):
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            return func(*args, **kwargs)
+            return await func(*args, **kwargs)
         except FFmpegPostProcessorError as e:
             raise ProcessingError(str(e))
 
@@ -41,13 +41,10 @@ RequestedFormats = list[RequestedFormat]
 class YDLProcessor:
     def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None) -> None:
         self.filepath = Path(filepath)
+        self.ffmpeg_path = ffmpeg_path
 
         if not self.extension:
             raise ValueError(f'"{self.filepath}" must have a file extension.')
-
-        self.ffmpeg_path = get_ffmpeg(ffmpeg_path)
-        if not self.ffmpeg_path:
-            raise ProcessingError("FFmpeg is needed for use postprocessors.")
 
     @property
     def extension(self) -> str:
@@ -59,7 +56,7 @@ class YDLProcessor:
             None,
             preferedformat=format,
         )
-        _, data = await asyncio.to_thread(pp.run, self.params)
+        _, data = await run_sync(pp.run, self.params)
         self._update_filepath(data)
         return self
 
@@ -76,7 +73,7 @@ class YDLProcessor:
             preferredquality=quality,
         )
 
-        _, data = await asyncio.to_thread(pp.run, self.params)
+        _, data = await run_sync(pp.run, self.params)
         self._update_filepath(data)
         return self
 
@@ -87,7 +84,7 @@ class YDLProcessor:
             add_metadata=True,
             add_chapters=True,
         )
-        await asyncio.to_thread(pp.run, self.params | data)
+        await run_sync(pp.run, self.params | data)
         return self
 
     @catch
@@ -112,7 +109,7 @@ class YDLProcessor:
                 }
             }
 
-        await asyncio.to_thread(pp.run, info)
+        await run_sync(pp.run, info)
         return self
 
     @catch
@@ -133,9 +130,7 @@ class YDLProcessor:
                 },
             }
 
-        await asyncio.to_thread(
-            pp.run, self.params | {"requested_subtitles": dict_subs}
-        )
+        await run_sync(pp.run, self.params | {"requested_subtitles": dict_subs})
         return self
 
     @classmethod
@@ -149,7 +144,7 @@ class YDLProcessor:
         cls = cls(filepath, ffmpeg_path=ffmpeg_path)
 
         pp = FFmpegMergerPP()
-        _, data = await asyncio.to_thread(
+        _, data = await run_sync(
             pp.run,
             cls.params
             | {
