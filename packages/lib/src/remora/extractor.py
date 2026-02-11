@@ -3,13 +3,13 @@
 from typing import overload
 
 from loguru import logger
+from anyio.to_thread import run_sync
 
 from remora.cache import load_info, remove_info, save_info
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import ExtractAdapter
 from remora.types import SEARCH_SERVICE, StrUrl
-from remora.ydl.extractor import extract_info, extract_query
 
 
 class MediaExtractor:
@@ -28,6 +28,8 @@ class MediaExtractor:
     async def extract_url(self, url: StrUrl) -> Media | Playlist:
         """Extract media from URL."""
 
+        from remora.ydl.extractor import extract_info
+
         url = str(url)
         logger.debug("Extract URL: {url}", url=url)
 
@@ -43,7 +45,7 @@ class MediaExtractor:
             await remove_info(url)
 
         # Extract info
-        info = await extract_info(url)
+        info = await run_sync(extract_info, url)
         result = ExtractAdapter.validate_python(info, by_alias=True)
 
         # Save to cache
@@ -60,6 +62,8 @@ class MediaExtractor:
     ) -> Search:
         """Extract media from search service."""
 
+        from remora.ydl.extractor import extract_query
+
         logger.debug(
             'Search from "{service}": "{query}".',
             service=service,
@@ -73,7 +77,7 @@ class MediaExtractor:
             await remove_info(query)
 
         # Extract info
-        info = await extract_query(query, service, limit)
+        info = await run_sync(extract_query, query, service, limit)
         result = Search(query=query, service=service, **info)
 
         # Save to cache

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 from typing import cast
 
@@ -30,7 +29,7 @@ SEARCH_QUERIES = [
 ]
 
 
-async def extract_query(
+def extract_query(
     query: str,
     service: str | SEARCH_SERVICE,
     limit: int = 20,
@@ -43,10 +42,10 @@ async def extract_query(
     except IndexError:
         raise ValueError(f"{service} is invalid. Should be: {SEARCH_SERVICE}")
 
-    return await extract_info(result.build(query, limit))
+    return extract_info(result.build(query, limit))
 
 
-async def extract_info(query: str) -> YDLExtractInfo:
+def extract_info(query: str) -> YDLExtractInfo:
     try:
         ydl = YDL(
             params={
@@ -55,7 +54,7 @@ async def extract_info(query: str) -> YDLExtractInfo:
             },
             auto_init=True,
         )
-        info = await asyncio.to_thread(ydl.extract_info, query, download=False)
+        info = ydl.extract_info(query, download=False)
     except (YDLDownloadError, RequestError) as err:
         msg = format_except_message(err)
         raise ExtractError(msg)
@@ -64,6 +63,6 @@ async def extract_info(query: str) -> YDLExtractInfo:
     # In this case, we need do another request.
     if info.get("extractor_key") == "Generic" and info.get("url") != query:
         if url := info.get("url"):
-            return await extract_info(url)
+            return extract_info(url)
 
     return cast(YDLExtractInfo, info)

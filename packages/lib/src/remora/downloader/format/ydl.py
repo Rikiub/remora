@@ -1,4 +1,5 @@
 import anyio
+from anyio.to_thread import run_sync
 from anyio import Path
 
 from typing_extensions import override
@@ -31,7 +32,8 @@ class YDLFormatDownloader(BaseFormatDownloader):
             tg.start_soon(self._progress_consumer)
 
             try:
-                path = await download_format(
+                path = await run_sync(
+                    download_format,
                     self.filepath,
                     self.format.to_ydl_dict(),
                     lambda data: self.format_state._ydl_progress(
