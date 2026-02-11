@@ -1,9 +1,8 @@
 from typing import Generic, TypeVar, overload
 
 from pydantic import BaseModel, RootModel
-from typing_extensions import Self
-
 from remora.ydl.types import YDLExtractInfo
+from typing_extensions import Self
 
 
 class YDLSerializable(BaseModel):

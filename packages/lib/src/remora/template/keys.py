@@ -24,7 +24,6 @@ def _generate_keys() -> set[str]:
     """Should be executed only one time."""
 
     from pydantic import BaseModel
-
     from remora.models.content.list import Playlist
     from remora.models.content.media import Media
     from remora.models.format.types import AudioFormat, Format, VideoFormat, YDLArgs

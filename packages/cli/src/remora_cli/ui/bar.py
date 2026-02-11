@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from remora_cli.ui.rich import CONSOLE
 from rich.console import Group, RenderableType
 from rich.progress import (
     BarColumn,
@@ -10,8 +11,6 @@ from rich.progress import (
     TotalFileSizeColumn,
 )
 from rich.table import Column
-
-from remora_cli.ui.rich import CONSOLE
 
 
 class CounterProgress:

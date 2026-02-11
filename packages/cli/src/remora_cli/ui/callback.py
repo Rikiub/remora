@@ -6,9 +6,8 @@ from remora.models.content.media import LazyMedia
 from remora.models.progress.list import PlaylistDownloadState
 from remora.models.progress.media import MediaDownloadState
 from remora.models.progress.processor import ProcessingState
-from rich.progress import TaskID
-
 from remora_cli.ui.bar import DownloadProgress
+from rich.progress import TaskID
 
 
 @dataclass(slots=True)

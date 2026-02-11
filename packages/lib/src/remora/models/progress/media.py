@@ -4,7 +4,6 @@ from collections.abc import Callable
 from typing import Annotated, Awaitable, Literal
 
 from pydantic import Field
-
 from remora.models.content.media import LazyMedia, Media
 from remora.models.progress.base import HasFile, State
 from remora.models.progress.format import FormatState

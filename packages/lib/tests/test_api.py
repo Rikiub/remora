@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from remora import AudioFormat, MediaDownloader, VideoFormat
 from remora.extractor import MediaExtractor
 from remora.models.format.list import FormatList

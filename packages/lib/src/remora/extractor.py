@@ -2,8 +2,8 @@
 
 from typing import overload
 
-from loguru import logger
 from anyio.to_thread import run_sync
+from loguru import logger
 
 from remora.cache import load_info, remove_info, save_info
 from remora.models.content.list import LazyPlaylist, Playlist, Search

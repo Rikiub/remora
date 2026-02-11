@@ -1,12 +1,11 @@
 from anyio import Path
-from typing_extensions import override
-
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.downloader.format.httpx import HttpxFormatDownloader
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback
 from remora.types import StrPath
+from typing_extensions import override
 
 
 class FormatDownloader(BaseFormatDownloader):

@@ -1,8 +1,8 @@
+import secrets
+from copy import copy
+
 import anyio
 from anyio import Path
-from copy import copy
-import secrets
-
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
 from remora.exceptions import MediaError

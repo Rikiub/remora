@@ -1,9 +1,8 @@
 from pathlib import Path
 from typing import Annotated
 
-from typer import Option, Typer
-
 from remora_cli.config import CONFIG
+from typer import Option, Typer
 
 
 def show_version(show: bool) -> None:

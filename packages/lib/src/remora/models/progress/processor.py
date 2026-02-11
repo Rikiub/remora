@@ -1,7 +1,6 @@
 from typing import Annotated, Literal
 
 from pydantic import Field
-
 from remora.models.format.types import AudioFormat, VideoFormat
 from remora.models.progress.base import HasFile, StageType
 

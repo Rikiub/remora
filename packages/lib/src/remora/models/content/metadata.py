@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from pydantic import BeforeValidator, Field, RootModel
-
 from remora.models.content.base import YDLSerializable
 
 

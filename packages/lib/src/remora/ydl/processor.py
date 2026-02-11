@@ -1,8 +1,7 @@
-from anyio import Path
-from anyio.to_thread import run_sync
-
 from typing import Sequence, TypedDict
 
+from anyio import Path
+from anyio.to_thread import run_sync
 from typing_extensions import Self
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
 from yt_dlp.postprocessor.ffmpeg import (

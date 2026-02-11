@@ -1,5 +1,4 @@
 from anyio import Path
-
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE, FormatConfig
 from remora.downloader.type.bulk import DownloadBulk
 from remora.extractor import MediaExtractor

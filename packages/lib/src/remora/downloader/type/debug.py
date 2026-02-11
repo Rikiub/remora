@@ -1,5 +1,4 @@
 from loguru import logger
-
 from remora.models.progress.media import MediaDownloadState, ProcessingState
 
 

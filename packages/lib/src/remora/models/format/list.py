@@ -5,12 +5,11 @@ from functools import cached_property
 from typing import Generic, Iterator, Literal, overload
 
 from pydantic import OnErrorOmit
-from typing_extensions import Self, TypeVar, override
-
 from remora.models.base import BaseList
 from remora.models.format.codecs import get_codec_rank
 from remora.models.format.types import AudioFormat, Format, VideoFormat
 from remora.types import FORMAT_TYPE
+from typing_extensions import Self, TypeVar, override
 
 
 def format_sort(format: Format):

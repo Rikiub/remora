@@ -1,5 +1,4 @@
 import pytest
-
 from remora.exceptions import ExtractError
 from remora.extractor import MediaExtractor
 from remora.models.content.list import Playlist

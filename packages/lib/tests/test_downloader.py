@@ -2,7 +2,6 @@ import asyncio
 from pathlib import Path
 
 import pytest
-
 from remora.downloader.main import MediaDownloader
 from remora.extractor import MediaExtractor
 

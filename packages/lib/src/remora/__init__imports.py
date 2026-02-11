@@ -2,11 +2,11 @@
 
 from remora.downloader.main import MediaDownloader
 from remora.exceptions import (
-    MediaError,
     DownloadError,
     ExtractError,
-    ProcessingError,
+    MediaError,
     OutputTemplateError,
+    ProcessingError,
 )
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist, Search

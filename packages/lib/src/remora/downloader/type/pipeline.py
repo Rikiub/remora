@@ -1,12 +1,11 @@
-import anyio
-from anyio.to_thread import run_sync
-from anyio import Path
-from copy import copy
 import shutil
 from contextlib import asynccontextmanager
+from copy import copy
 
+import anyio
+from anyio import Path
+from anyio.to_thread import run_sync
 from loguru import logger
-
 from remora.downloader.config import FormatConfig
 from remora.downloader.format.mix import FormatDownloader
 from remora.downloader.metadata import download_subtitles, download_thumbnail
@@ -25,12 +24,12 @@ from remora.models.progress.format import FormatState
 from remora.models.progress.media import (
     CompletedState,
     DownloadingState,
-    MediaDownloadState,
-    WarningState,
     MediaDownloadCallback,
+    MediaDownloadState,
     ResolvedState,
     ResolvingState,
     RetryingState,
+    WarningState,
 )
 from remora.models.progress.processor import (
     MergingProcessorState,

@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Any
 
-from yt_dlp.utils import MEDIA_EXTENSIONS
 from yt_dlp.downloader import PROTOCOL_MAP
+from yt_dlp.utils import MEDIA_EXTENSIONS
 
 
 class SupportedExtensions(frozenset[str], Enum):

@@ -5,9 +5,6 @@ from typing import Annotated
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
-from remora_cli.helpers import make_async
-from typer import Argument, BadParameter, Exit, Option, Typer
-
 from remora_cli.completions import (
     complete_output,
     complete_query,
@@ -15,7 +12,9 @@ from remora_cli.completions import (
     parse_queries,
 )
 from remora_cli.config import CONFIG
+from remora_cli.helpers import make_async
 from remora_cli.ui.rich import Status
+from typer import Argument, BadParameter, Exit, Option, Typer
 
 
 class HelpPanel(str, Enum):
@@ -117,7 +116,6 @@ What format you want request?
         from remora.downloader.main import MediaDownloader
         from remora.exceptions import MediaError
         from remora.extractor import MediaExtractor
-
         from remora_cli.ui.callback import ProgressCallback
 
     # Initialize

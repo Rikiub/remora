@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl
-
 from remora.models.base import YDLSerializable
 
 # Types
