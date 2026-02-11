@@ -30,7 +30,7 @@ class DownloadBulk:
         # Internals
         self.config = copy(format_config) or FormatConfig()
         self.extractor = extractor or MediaExtractor()
-        self.semaphore = anyio.Semaphore(max_workers)
+        self.limiter = anyio.CapacityLimiter(max_workers)
 
         self.on_progress = on_progress
         self._on_playlist = on_playlist
@@ -76,7 +76,7 @@ class DownloadBulk:
         return paths
 
     async def _run_pipeline(self, media: LazyMedia, results: list[Path]):
-        async with self.semaphore:
+        async with self.limiter:
             try:
                 path = await DownloadPipeline(
                     media,

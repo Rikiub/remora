@@ -46,7 +46,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
         # Workers
         self.max_workers = max_workers
-        self.semaphore = anyio.Semaphore(self.max_workers)
+        self.limiter = anyio.CapacityLimiter(self.max_workers)
 
     @override
     async def download(self) -> Path:
@@ -148,7 +148,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
     ):
         """Downloads a specific byte range to a file with resume support."""
 
-        async with self.semaphore:
+        async with self.limiter:
             if not await path.exists():
                 await path.touch()
 

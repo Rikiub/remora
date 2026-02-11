@@ -2,7 +2,6 @@ import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
-from remora.exceptions import DownloadError
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback, FormatState
 from remora.types import StrPath
@@ -11,7 +10,7 @@ from typing_extensions import override
 
 
 class YDLFormatDownloader(BaseFormatDownloader):
-    SUPPORTED_PROTOCOLS = SupportedProtocols
+    SUPPORTED_PROTOCOLS = list(SupportedProtocols)
 
     def __init__(
         self,
@@ -46,12 +45,10 @@ class YDLFormatDownloader(BaseFormatDownloader):
                     else None,
                 )
                 path = Path(path)
-            except DownloadError:
-                raise
             finally:
                 await self.send_stream.aclose()
 
-        return path
+        return path  # type: ignore
 
     def _sync_progress(self, state: FormatState):
         self.format_state = state
