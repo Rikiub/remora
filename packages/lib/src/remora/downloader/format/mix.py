@@ -1,9 +1,12 @@
-from anyio import Path
+from typing import AsyncIterable
+
+from loguru import logger
+from remora.models.progress.format import FormatState
+
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.downloader.format.httpx import HttpxFormatDownloader
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
-from remora.models.progress.format import FormatDownloadCallback
 from remora.types import StrPath
 from typing_extensions import override
 
@@ -13,36 +16,57 @@ class FormatDownloader(BaseFormatDownloader):
         self,
         filepath: StrPath,
         format: Format,
-        on_progress: FormatDownloadCallback | None = None,
         duration: float | None = None,
         retries: int = DEFAULT_RETRIES,
+        max_workers: int = 8,
     ):
-        super().__init__(filepath, format, on_progress, retries)
+        super().__init__(
+            filepath,
+            format,
+            retries=retries,
+        )
         self.duration = duration
+        self.max_workers = max_workers
 
     @override
-    async def download(self) -> Path:
+    async def download(self) -> AsyncIterable[FormatState]:  # type: ignore
         try:
-            return await HttpxFormatDownloader(
+            async with HttpxFormatDownloader(
                 self.filepath,
                 self.format,
-                self.progress,
-                self.retries,
+                retries=self.retries,
+                max_workers=self.max_workers,
                 duration=self.duration,
-            ).download()
-        except (TypeError, DownloadError) as e:
-            if (
-                isinstance(e, TypeError)
-                or isinstance(e, DownloadError)
-                and e.status_code == 403
-            ):
+            ) as client:
+                async for state in client.download():
+                    yield state
+        except* (TypeError, DownloadError) as eg:
+            error = eg.exceptions[0]
+
+            is_type_error = isinstance(error, TypeError)
+            # TikTok throws 403.
+            is_forbidden = isinstance(error, DownloadError) and error.status_code == 403
+
+            if is_type_error or is_forbidden:
+                # Logs
+                if is_type_error:
+                    logger.debug(
+                        f'Protocol "{self.format.protocol}" incompatible with httpx downloader.'
+                    )
+                elif is_forbidden:
+                    logger.debug("Webpage blocking access to resource (403 Forbidden).")
+
+                logger.debug("Trying again.")
+
+                # Downloader
                 from remora.downloader.format.ydl import YDLFormatDownloader
 
-                return await YDLFormatDownloader(
+                downloader = YDLFormatDownloader(
                     self.filepath,
                     self.format,
-                    self.progress,
                     self.retries,
-                ).download()
-
-            raise
+                )
+                async for state in downloader.download():
+                    yield state
+            else:
+                raise

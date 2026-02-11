@@ -1,9 +1,15 @@
+import pathlib
+from typing import AsyncIterable
 import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.models.format.types import Format
-from remora.models.progress.format import FormatDownloadCallback, FormatState
+from remora.models.progress.format import (
+    CompletedFormatState,
+    DownloadingFormatState,
+    FormatState,
+)
 from remora.types import StrPath
 from remora.ydl.types import SupportedProtocols
 from typing_extensions import override
@@ -16,46 +22,39 @@ class YDLFormatDownloader(BaseFormatDownloader):
         self,
         filepath: StrPath,
         format: Format,
-        on_progress: FormatDownloadCallback | None = None,
         retries: int = DEFAULT_RETRIES,
     ):
-        super().__init__(filepath, format, on_progress, retries)
-
-        self.send_stream, self.receive_stream = anyio.create_memory_object_stream(
-            max_buffer_size=100
-        )
+        super().__init__(filepath, format, retries=retries)
 
     @override
-    async def download(self) -> Path:
-        from remora.ydl.downloader import download_format
+    async def download(self) -> AsyncIterable[FormatState]:  # type: ignore
+        self._log_format()
+        self._send_stream, receive_stream = anyio.create_memory_object_stream[
+            FormatState
+        ](10)
 
         async with anyio.create_task_group() as tg:
-            tg.start_soon(self._progress_consumer)
+            tg.start_soon(self._execute_download)
 
-            try:
-                path = await run_sync(
-                    download_format,
-                    self.filepath,
-                    self.format.to_ydl_dict(),
-                    lambda data: self.format_state._ydl_progress(
-                        data,
-                        self._sync_progress,
-                    )
-                    if self.progress
-                    else None,
-                )
-                path = Path(path)
-            finally:
-                await self.send_stream.aclose()
+            async with receive_stream:
+                async for state in receive_stream:
+                    yield state
 
-        return path  # type: ignore
+                yield CompletedFormatState(filepath=pathlib.Path(self.filepath))
 
-    def _sync_progress(self, state: FormatState):
-        self.format_state = state
-        self.send_stream.send_nowait(True)
+    async def _execute_download(self):
+        from remora.ydl.downloader import download_format
 
-    async def _progress_consumer(self):
-        async with self.receive_stream:
-            async for _ in self.receive_stream:
-                if self.progress:
-                    await self.progress(self.format_state)
+        async with self._send_stream:
+            state = DownloadingFormatState()
+
+            path = await run_sync(
+                download_format,
+                self.filepath,
+                self.format.to_ydl_dict(),
+                lambda data: state._ydl_progress(
+                    data,
+                    lambda state: self._send_stream.send_nowait(state),
+                ),
+            )
+            self.filepath = Path(path)

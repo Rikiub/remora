@@ -1,3 +1,5 @@
+import pathlib
+from typing import AsyncIterable
 from urllib.parse import urljoin
 
 import anyio
@@ -6,7 +8,11 @@ from anyio import Path
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
-from remora.models.progress.format import FormatDownloadCallback
+from remora.models.progress.format import (
+    CompletedFormatState,
+    DownloadingFormatState,
+    FormatState,
+)
 from remora.types import StrPath
 from typing_extensions import override
 
@@ -28,12 +34,11 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         self,
         filepath: StrPath,
         format: Format,
-        on_progress: FormatDownloadCallback | None = None,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
         duration: float | None = None,
     ):
-        super().__init__(filepath, format, on_progress, retries)
+        super().__init__(filepath, format, retries)
         self.duration = duration
 
         # Calculate filesize
@@ -42,44 +47,67 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         if not total and self.format.bitrate and self.duration:
             total = int((self.format.bitrate * 1000 * self.duration) / 8)
 
-        self.format_state.total_bytes = total
+        self.format_state = DownloadingFormatState(total_bytes=total)
 
         # Workers
         self.max_workers = max_workers
-        self.limiter = anyio.CapacityLimiter(self.max_workers)
+        self.limiter = anyio.CapacityLimiter(max_workers)
+
+    async def __aenter__(self):
+        self.client = httpx.AsyncClient(
+            headers=self._get_headers(),
+            cookies=self._get_cookies(),
+            follow_redirects=True,
+            timeout=None,
+        )
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.client.aclose()
 
     @override
-    async def download(self) -> Path:
-        try:
-            async with httpx.AsyncClient(
-                headers=self._get_headers(),
-                cookies=self._get_cookies(),
-                follow_redirects=True,
-                timeout=None,
-            ) as client:
-                if self.format.protocol in _HTTP_PROTOCOLS:
-                    parts = await self._download_multi_part(client)
-                elif self.format.protocol in _LIST_PROTOCOLS:
-                    parts = await self._download_fragments(client)
-                else:
-                    raise TypeError(
-                        f"Unable to handle protocol: {self.format.protocol}"
-                    )
-        except Exception as e:
-            status_code = 0
+    async def download(self) -> AsyncIterable[FormatState]:  # type: ignore
+        self._log_format()
+        self._send_stream, receive_stream = anyio.create_memory_object_stream[
+            FormatState
+        ](max_buffer_size=self.max_workers)
 
-            if isinstance(e, httpx.HTTPStatusError):
-                status_code = e.response.status_code
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self._execute_download)
 
-            raise DownloadError(str(e), status_code=status_code) from e
+            async with receive_stream:
+                async for state in receive_stream:
+                    yield state
 
-        filepath = await self._build_parts(parts)
-        filepath = await self._rename_extension(filepath)
-        return filepath
+                yield CompletedFormatState(filepath=pathlib.Path(self.filepath))
 
-    async def _download_multi_part(self, client: httpx.AsyncClient) -> list[Path]:
+    async def _execute_download(self):
+        async with self._send_stream:
+            try:
+                async with self.client:
+                    if self.format.protocol in _HTTP_PROTOCOLS:
+                        parts = await self._download_multi_part()
+                    elif self.format.protocol in _LIST_PROTOCOLS:
+                        parts = await self._download_fragments()
+                    else:
+                        raise TypeError(
+                            f"Unable to handle protocol: {self.format.protocol}"
+                        )
+            except Exception as error:
+                status_code = 0
+
+                if isinstance(error, httpx.HTTPStatusError):
+                    status_code = error.response.status_code
+
+                raise DownloadError(str(error), status_code=status_code) from error
+
+            filepath = await self._build_parts(parts)
+            filepath = await self._rename_extension(filepath)
+            self.filepath = filepath
+
+    async def _download_multi_part(self) -> list[Path]:
         # Check if the server explicitly supports ranges
-        async with client.stream("GET", str(self.format.url)) as res:
+        async with self.client.stream("GET", str(self.format.url)) as res:
             res.raise_for_status()
             supports_range: bool = res.headers.get("Accept-Ranges") == "bytes"
             total_size = int(res.headers.get("Content-Length", 0))
@@ -105,7 +133,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
                 tg.start_soon(
                     self._save_range,
-                    client,
                     part,
                     str(self.format.url),
                     start,
@@ -114,8 +141,8 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
         return part_files
 
-    async def _download_fragments(self, client: httpx.AsyncClient) -> list[Path]:
-        response = await client.get(str(self.format.url))
+    async def _download_fragments(self) -> list[Path]:
+        response = await self.client.get(str(self.format.url))
         urls = [
             urljoin(str(self.format.url), line.strip())
             for line in response.text.splitlines()
@@ -131,7 +158,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
                 tg.start_soon(
                     self._save_range,
-                    client,
                     part,
                     url,
                 )
@@ -140,7 +166,6 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
     async def _save_range(
         self,
-        client: httpx.AsyncClient,
         path: Path,
         url: str,
         start: int = 0,
@@ -165,7 +190,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                     headers |= {"Range": f"bytes={current_start}-{end}"}
 
                 try:
-                    async with client.stream(
+                    async with self.client.stream(
                         "GET",
                         url,
                         headers=headers,
@@ -201,14 +226,14 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         if state.downloaded_bytes > state.total_bytes:
             state.total_bytes = state.downloaded_bytes
 
-        if self.progress:
-            await self.progress(self.format_state)
+        # Send stream to top function
+        self._send_stream.send_nowait(state)
 
     def _get_headers(self) -> dict[str, str]:
         headers = self.format.http_headers
         return headers
 
-    def _get_cookies(self):
+    def _get_cookies(self) -> dict[str, str]:
         cookie_dict = {}
         if not self.format.cookies:
             return cookie_dict

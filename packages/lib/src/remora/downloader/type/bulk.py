@@ -1,8 +1,8 @@
 import secrets
 from copy import copy
+from typing import AsyncIterable
 
 import anyio
-from anyio import Path
 from remora.downloader.config import FormatConfig
 from remora.downloader.type.pipeline import DownloadPipeline
 from remora.exceptions import MediaError
@@ -10,8 +10,7 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import PlaylistDownloadCallback, PlaylistState
-from remora.models.progress.media import MediaDownloadCallback
+from remora.models.progress.list import PlaylistDownloadState, PlaylistState
 from remora.template.parser import generate_output_template
 
 MediaResult = ExtractResult | MediaListEntries | MediaList | list[LazyMedia]
@@ -24,16 +23,14 @@ class DownloadBulk:
         format_config: FormatConfig | None = None,
         extractor: MediaExtractor | None = None,
         max_workers: int = 5,
-        on_progress: MediaDownloadCallback | None = None,
-        on_playlist: PlaylistDownloadCallback | None = None,
     ):
         # Internals
         self.config = copy(format_config) or FormatConfig()
         self.extractor = extractor or MediaExtractor()
-        self.limiter = anyio.CapacityLimiter(max_workers)
 
-        self.on_progress = on_progress
-        self._on_playlist = on_playlist
+        # Parallel
+        self.max_workers = max_workers
+        self.limiter = anyio.CapacityLimiter(max_workers)
 
         # Data
         self.id = ""
@@ -58,40 +55,47 @@ class DownloadBulk:
             total=len(self.medias),
         )
 
-    async def run(self) -> list[Path]:
-        # Setup
-        await self._setup()
-        await self.on_playlist(self.state)
+    async def run(self) -> AsyncIterable[PlaylistDownloadState]:
+        send_stream, receive_stream = anyio.create_memory_object_stream[
+            PlaylistDownloadState
+        ](self.max_workers)
+        self._stream = send_stream
 
-        # Tasks
-        paths: list[Path] = []
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self._execute_download)
 
-        try:
-            async with anyio.create_task_group() as tg:
-                for media in self.medias:
-                    tg.start_soon(self._run_pipeline, media, paths)
-        finally:
-            self.state.stage = "completed"
-            await self.on_playlist(self.state)
+            async with receive_stream:
+                async for state in receive_stream:
+                    yield state
 
-        return paths
+    async def _execute_download(self):
+        async with self._stream:
+            # Setup
+            await self._setup()
 
-    async def _run_pipeline(self, media: LazyMedia, results: list[Path]):
+            # Tasks
+            try:
+                async with anyio.create_task_group() as tg:
+                    for media in self.medias:
+                        tg.start_soon(self._run_pipeline, media)
+            finally:
+                self.state.stage = "completed"
+                self._stream.send_nowait(self.state)
+
+    async def _run_pipeline(self, media: LazyMedia):
         async with self.limiter:
             try:
-                path = await DownloadPipeline(
+                async for state in DownloadPipeline(
                     media,
                     self.config,
                     self.extractor,
-                    self.on_progress,
-                ).run()
-
-                results.append(path)
+                ).run():
+                    self._stream.send_nowait(state)
             except MediaError:
                 pass
 
             self.state.completed += 1
-            await self.on_playlist(
+            self._stream.send_nowait(
                 PlaylistState(
                     id=self.id,
                     stage="update",
@@ -139,7 +143,4 @@ class DownloadBulk:
         self.state.stage = "started"
         self.state.completed = 0
         self.state.total = len(self.medias)
-
-    async def on_playlist(self, state: PlaylistState):
-        if self._on_playlist:
-            await self._on_playlist(state)
+        self._stream.send_nowait(self.state)

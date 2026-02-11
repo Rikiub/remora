@@ -1,40 +1,38 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Annotated, Awaitable, Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
+from remora.models.progress.base import HasFile, MediaState
 from remora.models.content.media import LazyMedia, Media
-from remora.models.progress.base import HasFile, State
-from remora.models.progress.format import FormatState
+from remora.models.progress.format import DownloadingFormatState
 from remora.models.progress.processor import ProcessingState
 
 
-class ResolvingState(State):
+class ResolvingState(MediaState):
     status: Literal["resolving"] = "resolving"
     media: LazyMedia
 
 
-class ResolvedState(State):
+class ResolvedState(MediaState):
     status: Literal["resolved"] = "resolved"
     media: Media
 
 
-class RetryingState(State):
+class RetryingState(MediaState):
     status: Literal["retrying"] = "retrying"
     reason: Literal["stale_cache"]
 
 
-class DownloadingState(FormatState, State):
-    status: Literal["downloading"] = "downloading"
+class DownloadingState(DownloadingFormatState, MediaState): ...
 
 
-class WarningState(State):
+class WarningState(MediaState):
     status: Literal["warning"] = "warning"
     message: str
 
 
-class CompletedState(HasFile):
+class CompletedState(MediaState, HasFile):
     status: Literal["completed"] = "completed"
     reason: Literal["success", "incomplete", "skipped", "failed"]
 
@@ -49,6 +47,3 @@ MediaDownloadState = Annotated[
     | CompletedState,
     Field(discriminator="status"),
 ]
-
-
-MediaDownloadCallback = Callable[[MediaDownloadState], Awaitable[None]]

@@ -18,9 +18,10 @@ async def test_single(tmp_path: Path):
 
     if result.type == "media":
         downloader = MediaDownloader("audio", quality=1, output=tmp_path)
-        path = await downloader.download(result)
 
-        assert await path.is_file()
+        async for state in downloader.download(result):
+            if state.status == "completed":
+                assert state.filepath.is_file()
 
 
 async def test_list(tmp_path: Path):
@@ -30,9 +31,10 @@ async def test_list(tmp_path: Path):
 
     if result.type == "playlist":
         downloader = MediaDownloader("audio", quality=1, output=tmp_path)
-        paths = await downloader.download_all(result)
 
-        assert all([item for item in paths if await item.is_file()])
+        async for state in downloader.download_all(result):
+            if state.type == "media" and state.status == "completed":
+                assert state.filepath.is_file()
 
 
 @pytest.fixture(scope="session")

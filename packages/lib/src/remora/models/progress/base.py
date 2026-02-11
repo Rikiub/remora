@@ -1,14 +1,19 @@
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
 
+StageType = Literal["started", "completed"]
 
-class State(BaseModel):
+
+class MediaState(BaseModel):
+    type: Literal["media"] = "media"
     id: str
 
 
-class HasFile(State):
-    extension: str
+class HasFile(BaseModel):
+    filepath: Path
 
-
-StageType = Literal["started", "completed"]
+    @property
+    def extension(self) -> str:
+        return self.filepath.suffix.lstrip(".")

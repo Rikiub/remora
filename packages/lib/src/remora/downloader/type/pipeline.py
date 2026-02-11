@@ -1,6 +1,8 @@
+import pathlib
 import shutil
 from contextlib import asynccontextmanager
 from copy import copy
+from typing import AsyncIterator
 
 import anyio
 from anyio import Path
@@ -20,11 +22,10 @@ from remora.exceptions import (
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.format.types import AudioFormat, Format, VideoFormat
-from remora.models.progress.format import FormatState
+from remora.models.progress.format import DownloadingFormatState, FormatState
 from remora.models.progress.media import (
     CompletedState,
     DownloadingState,
-    MediaDownloadCallback,
     MediaDownloadState,
     ResolvedState,
     ResolvingState,
@@ -50,7 +51,6 @@ class DownloadPipeline:
         media: LazyMedia | Media,
         format_config: FormatConfig | None = None,
         extractor: MediaExtractor | None = None,
-        on_progress: MediaDownloadCallback | None = None,
     ):
         self.id = media.id
 
@@ -58,87 +58,97 @@ class DownloadPipeline:
         self.config = format_config or FormatConfig("video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
-        self._on_progress = on_progress
 
         logger.debug(self.config)
 
-    async def progress(self, state: MediaDownloadState):
+    async def run(self) -> AsyncIterator[MediaDownloadState]:
+        self._stream, receive_stream = anyio.create_memory_object_stream[
+            MediaDownloadState
+        ](100)
+
         async with anyio.create_task_group() as tg:
-            if self._on_progress:
-                tg.start_soon(self._on_progress, state)
-            tg.start_soon(debug_callback, state)
+            tg.start_soon(self._execute_download)
 
-    async def run(self) -> Path:
-        # Check ffmpeg existence
-        try:
-            await self.config.validate_ffmpeg()
-        except FileNotFoundError as e:
-            raise ProcessingError(str(e)) from e
+            async with receive_stream:
+                async for state in receive_stream:
+                    await debug_callback(state)
+                    yield state
 
-        # Resolve Data
-        media = await self.resolve_media()
-
-        # Select Formats
-        video_fmt, audio_fmt = FormatSelector(self.config).resolve(media)
-        format = video_fmt or audio_fmt
-
-        if not format:
-            raise DownloadError("Formats not founded")
-
-        #  Calculate Path & Check Existence
-        output = generate_output_template(
-            self.config.output,
-            media,
-            format=format,
-            default_missing="NA",
-        )
-        output = Path(output)
-        await output.parent.mkdir(parents=True, exist_ok=True)
-
-        if duplicate := await self.check_output_duplicate(output):
-            return duplicate
-
-        try:
-            # Download File
+    async def _execute_download(self):
+        async with self._stream:
+            # Check ffmpeg existence
             try:
-                downloaded_file = await self.download_formats(
-                    video_fmt, audio_fmt, media.duration
-                )
-            except DownloadError as e:
-                if media.is_cache:
-                    extractor = copy(self.extractor)
-                    extractor.use_cache = False
-                    self.media = await extractor.resolve(media)
+                await self.config.validate_ffmpeg()
+            except FileNotFoundError as e:
+                raise ProcessingError(str(e)) from e
 
-                    await self.progress(WarningState(id=self.id, message=str(e)))
-                    await self.progress(RetryingState(id=self.id, reason="stale_cache"))
-                    return await self.run()
+            # Resolve Data
+            media = await self.resolve_media()
+
+            # Select Formats
+            video_fmt, audio_fmt = FormatSelector(self.config).resolve(media)
+            format = video_fmt or audio_fmt
+
+            if not format:
+                raise DownloadError("Formats not founded")
+
+            #  Calculate Path & Check Existence
+            output = generate_output_template(
+                self.config.output,
+                media,
+                format=format,
+                default_missing="NA",
+            )
+            output = Path(output)
+            await output.parent.mkdir(parents=True, exist_ok=True)
+
+            if await self.check_output_duplicate(output):
+                return
+
+            try:
+                # Download File
+                try:
+                    downloaded_file = await self.download_formats(
+                        video_fmt, audio_fmt, media.duration
+                    )
+                except DownloadError as e:
+                    if media.is_cache:
+                        extractor = copy(self.extractor)
+                        extractor.use_cache = False
+                        self.media = await extractor.resolve(media)
+
+                        self._stream.send_nowait(
+                            WarningState(id=self.id, message=str(e))
+                        )
+                        self._stream.send_nowait(
+                            RetryingState(id=self.id, reason="stale_cache")
+                        )
+                    raise
+
+                if self.config.ffmpeg_path:
+                    # Process File
+                    downloaded_file = await self.process(downloaded_file, media, format)
+            except MediaError as e:
+                self._stream.send_nowait(WarningState(id=self.id, message=str(e)))
+                self._stream.send_nowait(
+                    CompletedState(
+                        id=self.id,
+                        filepath=pathlib.Path(),
+                        reason="failed",
+                    )
+                )
                 raise
 
-            if self.config.ffmpeg_path:
-                # Process File
-                downloaded_file = await self.process(downloaded_file, media, format)
-        except MediaError as e:
-            await self.progress(WarningState(id=self.id, message=str(e)))
-            await self.progress(
-                CompletedState(
-                    id=self.id,
-                    extension="",
-                    reason="failed",
-                )
-            )
-            raise
-
-        # Complete (Move to target)
-        return await self.move_to_final(downloaded_file, output)
+            # Complete (Move to target)
+            await self.move_to_final(downloaded_file, output)
 
     async def resolve_media(self) -> Media:
-        await self.progress(ResolvingState(id=self.id, media=self.media))
+        self._stream.send_nowait(ResolvingState(id=self.id, media=self.media))
 
         if not isinstance(self.media, Media):
             self.media = await self.extractor.resolve(self.media)
 
-        await self.progress(ResolvedState(id=self.id, media=self.media))
+        self._stream.send_nowait(ResolvedState(id=self.id, media=self.media))
         return self.media
 
     async def check_output_duplicate(self, output: Path) -> Path | None:
@@ -150,10 +160,10 @@ class DownloadPipeline:
                     path_extension in SupportedExtensions.video
                     or path_extension in SupportedExtensions.audio
                 ):
-                    await self.progress(
+                    self._stream.send_nowait(
                         CompletedState(
                             id=self.id,
-                            extension=path.suffix.lstrip("."),
+                            filepath=pathlib.Path(path),
                             reason="skipped",
                         )
                     )
@@ -168,70 +178,63 @@ class DownloadPipeline:
         """Orchestrates the physical download of bytes."""
 
         formats_states = {
-            "video": FormatState(
+            "video": DownloadingFormatState(
                 downloaded_bytes=0,
                 total_bytes=video_fmt.filesize or 0 if video_fmt else 0,
             ),
-            "audio": FormatState(
+            "audio": DownloadingFormatState(
                 downloaded_bytes=0,
                 total_bytes=audio_fmt.filesize or 0 if audio_fmt else 0,
             ),
         }
 
-        async def _sync_progress(state: FormatState, is_video: bool):
-            formats_states["video" if is_video else "audio"] = state
-
-            v = formats_states["video"]
-            a = formats_states["audio"]
-
-            await self.progress(
-                DownloadingState(
-                    id=self.id,
-                    downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
-                    total_bytes=v.total_bytes + a.total_bytes,
-                    speed=v.speed + a.speed,
-                    elapsed=max(v.elapsed, a.elapsed),
-                )
-            )
-
-        def _log(format: Format):
-            type = "video" if isinstance(format, VideoFormat) else "audio"
-            logger.debug(
-                'Downloading {type} format "{format_id}" (extension:{extension} | quality:{quality})',
-                type=type,
-                format_id=format.id,
-                extension=format.extension,
-                quality=format.quality,
-            )
-
         video_file = None
         audio_file = None
 
-        async def download_video():
-            nonlocal video_file
+        async def _sync_progress(state: FormatState, is_video: bool):
+            nonlocal video_file, audio_file
 
+            match state.status:
+                case "downloading":
+                    formats_states["video" if is_video else "audio"] = state
+
+                    v = formats_states["video"]
+                    a = formats_states["audio"]
+
+                    self._stream.send_nowait(
+                        DownloadingState(
+                            id=self.id,
+                            downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
+                            total_bytes=v.total_bytes + a.total_bytes,
+                            speed=v.speed + a.speed,
+                            elapsed=max(v.elapsed, a.elapsed),
+                        )
+                    )
+                case "completed":
+                    if is_video:
+                        video_file = state.filepath
+                    else:
+                        audio_file = state.filepath
+
+        async def download_video():
             if video_fmt:
-                _log(video_fmt)
                 downloader = FormatDownloader(
                     filepath=await get_tempfile(),
                     format=video_fmt,
                     duration=duration,
-                    on_progress=lambda s: _sync_progress(s, is_video=True),
                 )
-                video_file = await downloader.download()
+                async for state in downloader.download():
+                    await _sync_progress(state, True)
 
         async def download_audio():
-            nonlocal audio_file
-
             if audio_fmt:
-                _log(audio_fmt)
                 downloader = FormatDownloader(
                     filepath=await get_tempfile(),
                     format=audio_fmt,
                     duration=duration,
-                    on_progress=lambda s: _sync_progress(s, is_video=False),
                 )
-                audio_file = await downloader.download()
+                async for state in downloader.download():
+                    await _sync_progress(state, False)
 
         async with anyio.create_task_group() as tg:
             # Download Audio
@@ -249,11 +252,11 @@ class DownloadPipeline:
             and (audio_file and audio_fmt)
         ):
             extension = self.config.convert or "mp4"
-            filepath = Path(f"{await get_tempfile()}.{extension}")
+            filepath = pathlib.Path(f"{await get_tempfile()}.{extension}")
 
             merging = MergingProcessorState(
                 id=self.id,
-                extension=filepath.suffix.lstrip("."),
+                filepath=filepath,
                 stage="started",
                 video_format=video_fmt,
                 audio_format=audio_fmt,
@@ -266,9 +269,9 @@ class DownloadPipeline:
             )
 
             merging.stage = "completed"
-            await self.progress(merging)
+            self._stream.send_nowait(merging)
 
-            return prc.filepath
+            return Path(prc.filepath)
         elif video_file:
             return video_file
         elif audio_file:
@@ -288,23 +291,23 @@ class DownloadPipeline:
         async def track_prc(name: ProcessorStateType, raise_exceptions: bool = False):
             state = ProcessorState(
                 id=self.id,
-                extension=prc.filepath.suffix.lstrip("."),
+                filepath=prc.filepath,
                 stage="started",
                 processor=name,
             )
-            await self.progress(state)
+            self._stream.send_nowait(state)
 
             try:
                 yield
-                state.extension = prc.filepath.suffix.lstrip(".")
+                state.filepath = prc.filepath
                 state.stage = "completed"
-                await self.progress(state)
+                self._stream.send_nowait(state)
             except (ProcessingError, MetadataDownloadError) as error:
                 if raise_exceptions:
                     raise
 
                 self.incomplete = True
-                await self.progress(WarningState(id=self.id, message=str(error)))
+                self._stream.send_nowait(WarningState(id=self.id, message=str(error)))
 
         # Remuxing
         if isinstance(format, VideoFormat):
@@ -342,7 +345,7 @@ class DownloadPipeline:
                     )
                     await prc.embed_thumbnail(thumbnail, square=media.is_music)
 
-        return prc.filepath
+        return Path(prc.filepath)
 
     async def move_to_final(self, src: Path, dest: Path) -> Path:
         final_path = dest.parent / f"{dest.name}{src.suffix}"
@@ -351,10 +354,10 @@ class DownloadPipeline:
         # Use shutil.move for compability between cross filesystems
         await run_sync(shutil.move, src, final_path)
 
-        await self.progress(
+        self._stream.send_nowait(
             CompletedState(
                 id=self.id,
-                extension=final_path.suffix.lstrip("."),
+                filepath=pathlib.Path(final_path),
                 reason="incomplete" if self.incomplete else "success",
             )
         )

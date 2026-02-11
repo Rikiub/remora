@@ -1,12 +1,12 @@
-from anyio import Path
+from typing import AsyncIterable
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE, FormatConfig
 from remora.downloader.type.bulk import DownloadBulk
 from remora.extractor import MediaExtractor
 from remora.models.content.list import MediaList
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import PlaylistDownloadCallback
-from remora.models.progress.media import MediaDownloadCallback
+from remora.models.progress.list import PlaylistDownloadState
+from remora.models.progress.media import MediaDownloadState
 from remora.types import FILE_FORMAT, StrPath
 
 _MediaResult = ExtractResult | MediaListEntries
@@ -50,11 +50,7 @@ class MediaDownloader:
         self.extractor = extractor
         self.max_workers = max_workers
 
-    async def download(
-        self,
-        media: LazyMedia,
-        on_progress: MediaDownloadCallback | None = None,
-    ) -> Path:
+    async def download(self, media: LazyMedia) -> AsyncIterable[MediaDownloadState]:
         """Single download a `Media` result.
 
         Args:
@@ -65,31 +61,27 @@ class MediaDownloader:
             Path to downloaded file.
         """
 
-        paths = await DownloadBulk(
+        async for state in DownloadBulk(
             media,
             format_config=self.config,
             extractor=self.extractor,
-            on_progress=on_progress,
-        ).run()
-        return paths[0]
+        ).run():
+            if state.type == "media":
+                yield state
 
     async def download_all(
-        self,
-        data: MediaResult,
-        on_progress: MediaDownloadCallback | None = None,
-        on_playlist: PlaylistDownloadCallback | None = None,
-    ) -> list[Path]:
+        self, data: MediaResult
+    ) -> AsyncIterable[PlaylistDownloadState]:
         """Batch download any result.
 
         Returns:
             List of paths to downloaded files.
         """
 
-        return await DownloadBulk(
+        async for state in DownloadBulk(
             data,
             self.config,
             self.extractor,
             self.max_workers,
-            on_progress,
-            on_playlist,
-        ).run()
+        ).run():
+            yield state

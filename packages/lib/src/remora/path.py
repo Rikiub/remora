@@ -2,10 +2,10 @@ import atexit
 import os
 import shutil
 import tempfile
-from functools import cache
 
 from anyio import Path
 
+from anyio.to_thread import run_sync
 from remora.types import APP_NAME, StrPath
 
 TMP_DIR = Path(tempfile.mkdtemp(prefix=f"{APP_NAME}-"))
@@ -25,7 +25,10 @@ async def get_tempfile() -> Path:
 
 
 async def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path | None:
-    ffmpeg_path = Path(ffmpeg_path) if ffmpeg_path else get_global_ffmpeg()
+    if ffmpeg_path:
+        ffmpeg_path = Path(ffmpeg_path)
+    else:
+        ffmpeg_path = await get_global_ffmpeg()
 
     if ffmpeg_path and not await check_executable_exists(ffmpeg_path):
         raise FileNotFoundError(f"'{ffmpeg_path.name}' is not a FFmpeg executable.")
@@ -33,9 +36,10 @@ async def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path | None:
     return ffmpeg_path
 
 
-@cache
-def get_global_ffmpeg() -> Path | None:
-    if path := shutil.which("ffmpeg"):
+async def get_global_ffmpeg() -> Path | None:
+    path = await run_sync(shutil.which, "ffmpeg")
+
+    if path:
         return Path(path)
     else:
         return None
@@ -43,8 +47,9 @@ def get_global_ffmpeg() -> Path | None:
 
 async def check_executable_exists(file: StrPath) -> bool:
     file = Path(file)
+    has_access = await run_sync(os.access, file, os.X_OK)
 
-    if await file.is_file() and os.access(file, os.X_OK):
+    if await file.is_file() and has_access:
         return True
     else:
         return False

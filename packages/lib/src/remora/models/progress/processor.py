@@ -2,7 +2,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 from remora.models.format.types import AudioFormat, VideoFormat
-from remora.models.progress.base import HasFile, StageType
+from remora.models.progress.base import MediaState, StageType
+from remora.models.progress.media import HasFile
 
 ProcessorStateType = Literal[
     "change_container",
@@ -13,7 +14,7 @@ ProcessorStateType = Literal[
 ]
 
 
-class ProcessorState(HasFile):
+class ProcessorState(MediaState, HasFile):
     status: Literal["processing"] = "processing"
     stage: StageType
     processor: ProcessorStateType

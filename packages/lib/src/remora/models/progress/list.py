@@ -1,14 +1,20 @@
-from typing import Awaitable, Callable, Literal
+from typing import Annotated, Literal
 
-from remora.models.progress.base import StageType, State
+from pydantic import BaseModel, Field
+from remora.models.progress.base import StageType
+from remora.models.progress.media import MediaDownloadState
 
 
-class PlaylistState(State):
+class PlaylistState(BaseModel):
+    type: Literal["playlist"] = "playlist"
     stage: Literal[StageType, "update"]
+    id: str
 
     completed: int
     total: int
 
 
-PlaylistDownloadState = PlaylistState
-PlaylistDownloadCallback = Callable[[PlaylistState], Awaitable[None]]
+PlaylistDownloadState = Annotated[
+    PlaylistState | MediaDownloadState,
+    Field(discriminator="type"),
+]

@@ -120,14 +120,6 @@ What format you want request?
         from remora_cli.ui.callback import ProgressCallback
 
     # Initialize
-    progress = ProgressCallback()
-    on_progress = None
-    on_playlist = None
-
-    if not CONFIG.quiet:
-        on_progress = progress.callback_media
-        on_playlist = progress.callback_playlist
-
     try:
         extractor = MediaExtractor(use_cache=cache)
         downloader = MediaDownloader(
@@ -176,7 +168,10 @@ What format you want request?
 
                     result = result.medias[0]
 
-            await downloader.download_all(result, on_progress, on_playlist)
+            async with ProgressCallback(CONFIG.quiet) as progress:
+                async for state in downloader.download_all(result):
+                    await progress.playlist_callback(state)
+
             logger.info("✅ Download Finished.")
         except anyio.get_cancelled_exc_class():
             logger.warning("❗ Download cancelled.")

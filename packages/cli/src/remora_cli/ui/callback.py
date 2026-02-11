@@ -1,6 +1,6 @@
-import time
 from dataclasses import dataclass
 
+import anyio
 from loguru import logger
 from remora.models.content.media import LazyMedia
 from remora.models.progress.list import PlaylistDownloadState
@@ -17,114 +17,124 @@ class Task:
     name: str
 
 
-class ProgressCallback(DownloadProgress):
-    def __init__(self, disable: bool = False) -> None:
-        super().__init__(disable)
+class ProgressCallback:
+    def __init__(self, disable: bool = False):
+        self.disable = disable
+        self.progress = DownloadProgress(disable)
         self.ids: dict[str, Task] = {}
 
-    async def callback_media(self, progress: MediaDownloadState):
-        match progress.status:
-            case "resolving":
-                item = self.ids[progress.id] = Task(
-                    task_id=self.add_task(
-                        description="",
-                        status="",
-                        step="",
-                    ),
-                    id=progress.id,
-                    name=self._media_display_name(progress.media),
-                )
+    async def playlist_callback(self, state: PlaylistDownloadState):
+        if self.disable:
+            return
 
-                self.update(
-                    item.task_id,
-                    description=item.name or "Extracting[blink]...[/]",
-                    status="Extracting[blink]...[/]",
-                )
-            case "resolved":
-                new_name = self._media_display_name(progress.media)
-                self.ids[progress.id].name = new_name
+        if state.type == "playlist":
+            match state.stage:
+                case "started":
+                    self.progress.counter.reset(total=state.total)
+                    self.progress.start()
+                case "update":
+                    self.progress.counter.update(completed=state.completed)
+                case "completed":
+                    self.progress.stop()
 
-                self.update(
-                    self.get(progress).task_id,
-                    description=new_name,
-                    status="Ready",
-                )
-            case "downloading":
-                self.update(
-                    self.get(progress).task_id,
-                    completed=progress.downloaded_bytes,
-                    total=progress.total_bytes,
-                    status="Downloading",
-                )
-            case "processing":
-                await self.processor_callback(progress)
-            case "warning":
-                logger.warning(
-                    self.fmt_log(progress, f"Warning: {progress.message}", "⚠️")
-                )
-            case "completed":
-                task = self.get(progress)
-
-                if progress.reason == "success":
-                    logger.info(self.fmt_log(progress, "Completed", "☑️"))
-                    self.update(task.task_id, status="Completed")
-                elif progress.reason == "incomplete":
-                    logger.warning(self.fmt_log(progress, "Completed with errors", "⚠️"))
-                    self.update(task.task_id, status="Completed")
-                elif progress.reason == "skipped":
-                    logger.info(
-                        self.fmt_log(
-                            progress,
-                            f'Skipped (Exists as "{progress.extension}")',
-                            "🔄",
-                        )
+        elif state.type == "media":
+            match state.status:
+                case "resolving":
+                    item = self.ids[state.id] = Task(
+                        task_id=self.progress.add_task(
+                            description="",
+                            status="",
+                            step="",
+                        ),
+                        id=state.id,
+                        name=self._media_display_name(state.media),
                     )
-                    self.update(task.task_id, status="Skipped")
-                elif progress.reason == "failed":
-                    logger.error(self.fmt_log(progress, "Download failed", "❌"))
-                    self.update(task.task_id, status="Error")
 
-                self.counter.advance()
-                time.sleep(1.0)
-                self.remove_task(self.get(progress).task_id)
+                    self.progress.update(
+                        item.task_id,
+                        description=item.name or "Extracting[blink]...[/]",
+                        status="Extracting[blink]...[/]",
+                    )
+                case "resolved":
+                    new_name = self._media_display_name(state.media)
+                    self.ids[state.id].name = new_name
 
-    async def callback_playlist(self, progress: PlaylistDownloadState):
-        match progress.stage:
-            case "started":
-                self.counter.reset(total=progress.total)
-                self.start()
-            case "update":
-                self.counter.update(completed=progress.completed)
-            case "completed":
-                self.stop()
+                    self.progress.update(
+                        self.get(state).task_id,
+                        description=new_name,
+                        status="Ready",
+                    )
+                case "downloading":
+                    self.progress.update(
+                        self.get(state).task_id,
+                        completed=state.downloaded_bytes,
+                        total=state.total_bytes,
+                        status="Downloading",
+                    )
+                case "processing":
+                    self.processor_callback(state)
+                case "warning":
+                    logger.warning(
+                        self.fmt_log(state, f"Warning: {state.message}", "⚠️")
+                    )
+                case "completed":
+                    task = self.get(state)
 
-    async def processor_callback(self, progress: ProcessingState):
-        match progress.processor:
+                    if state.reason == "success":
+                        logger.info(self.fmt_log(state, "Completed", "☑️"))
+                        self.progress.update(task.task_id, status="Completed")
+                    elif state.reason == "incomplete":
+                        logger.warning(
+                            self.fmt_log(state, "Completed with errors", "⚠️")
+                        )
+                        self.progress.update(task.task_id, status="Completed")
+                    elif state.reason == "skipped":
+                        logger.info(
+                            self.fmt_log(
+                                state,
+                                f'Skipped (Exists as "{state.extension}")',
+                                "🔄",
+                            )
+                        )
+                        self.progress.update(task.task_id, status="Skipped")
+                    elif state.reason == "failed":
+                        logger.error(self.fmt_log(state, "Download failed", "❌"))
+                        self.progress.update(task.task_id, status="Error")
+
+                    self.progress.counter.advance()
+                    # await anyio.sleep(1.0)
+                    self.progress.remove_task(task.task_id)
+
+    def processor_callback(self, state: ProcessingState):
+        match state.processor:
             case "convert_audio":
-                if progress.stage == "started":
-                    self.update(
-                        self.get(progress).task_id,
+                if state.stage == "started":
+                    self.progress.update(
+                        self.get(state).task_id,
                         status="Converting[blink]...[/]",
                     )
             case "merge_formats":
-                if progress.stage == "started":
-                    self.update(
-                        self.get(progress).task_id,
+                if state.stage == "started":
+                    self.progress.update(
+                        self.get(state).task_id,
                         status="Merging[blink]...[/]",
                     )
             case _:
-                self.update(
-                    self.get(progress).task_id,
+                self.progress.update(
+                    self.get(state).task_id,
                     status="Processing[blink]...[/]",
                 )
 
-    def get(self, progress: MediaDownloadState):
-        return self.ids[progress.id]
+    def get(self, state: MediaDownloadState):
+        return self.ids[state.id]
 
     def fmt_log(
-        self, progress: MediaDownloadState, text: str, prefix: str = "  "
+        self,
+        state: MediaDownloadState,
+        text: str,
+        prefix: str = "  ",
     ) -> str:
-        task = self.get(progress)
+        task = self.get(state)
         return f'   {prefix} "{task.name}": {text}'
 
     def _media_display_name(self, media: LazyMedia) -> str:
@@ -136,3 +146,10 @@ class ProgressCallback(DownloadProgress):
             return media.title
         else:
             return ""
+
+    async def __aenter__(self):
+        self.progress.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.progress.stop()

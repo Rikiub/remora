@@ -11,17 +11,14 @@ async def download(tmp_path: Path):
         extractor = MediaExtractor(use_cache=False)
         result = await extractor.extract_url(url)
 
-        paths = await MediaDownloader(
+        async for state in MediaDownloader(
             quality=1,
             output=tmp_path,
             extractor=extractor,
-        ).download_all(result)
-
-        assert len(paths) >= 1
-
-        for path in paths:
-            if not await path.is_file():
-                raise FileNotFoundError(path)
+        ).download_all(result):
+            if state.type == "media" and state.status == "completed":
+                if not state.filepath.is_file():
+                    raise FileNotFoundError(state.filepath)
 
     return wrap
 
