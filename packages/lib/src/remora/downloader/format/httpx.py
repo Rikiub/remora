@@ -63,7 +63,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                 elif self.format.protocol in _LIST_PROTOCOLS:
                     parts = await self._download_fragments(client)
                 else:
-                    raise DownloadError(
+                    raise TypeError(
                         f"Unable to handle protocol: {self.format.protocol}"
                     )
         except Exception as e:

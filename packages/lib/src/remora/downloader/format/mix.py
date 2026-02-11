@@ -3,7 +3,6 @@ from typing_extensions import override
 
 from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
 from remora.downloader.format.httpx import HttpxFormatDownloader
-from remora.downloader.format.ydl import YDLFormatDownloader
 from remora.exceptions import DownloadError
 from remora.models.format.types import Format
 from remora.models.progress.format import FormatDownloadCallback
@@ -32,8 +31,14 @@ class FormatDownloader(BaseFormatDownloader):
                 self.retries,
                 duration=self.duration,
             ).download()
-        except DownloadError as e:
-            if e.status_code == 403:
+        except (TypeError, DownloadError) as e:
+            if (
+                isinstance(e, TypeError)
+                or isinstance(e, DownloadError)
+                and e.status_code == 403
+            ):
+                from remora.downloader.format.ydl import YDLFormatDownloader
+
                 return await YDLFormatDownloader(
                     self.filepath,
                     self.format,

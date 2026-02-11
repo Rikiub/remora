@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any
 
 from yt_dlp.utils import MEDIA_EXTENSIONS
+from yt_dlp.downloader import PROTOCOL_MAP
 
 
 class SupportedExtensions(frozenset[str], Enum):
@@ -11,6 +12,7 @@ class SupportedExtensions(frozenset[str], Enum):
     audio = frozenset(MEDIA_EXTENSIONS.audio)
 
 
+SupportedProtocols: set[str] = frozenset(PROTOCOL_MAP.keys())
 ThumbnailSupport = frozenset(
     {
         "mp3",
