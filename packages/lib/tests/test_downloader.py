@@ -20,7 +20,7 @@ async def download(tmp_path: Path):
         assert len(paths) >= 1
 
         for path in paths:
-            if not path.is_file():
+            if not await path.is_file():
                 raise FileNotFoundError(path)
 
     return wrap
@@ -37,7 +37,6 @@ async def test_playlist(download):
     )
 
 
-
 class TestSite:
     async def test_youtube(self, download):
         # Include subtitles
@@ -47,10 +46,14 @@ class TestSite:
         await download("https://music.youtube.com/watch?v=Kx7B-XvmFtE")
 
     async def test_tiktok(self, download):
-        await download("https://www.tiktok.com/@livewallpaper77/video/7410777368064806149")
+        await download(
+            "https://www.tiktok.com/@livewallpaper77/video/7410777368064806149"
+        )
 
     async def test_bandcamp(self, download):
         await download("https://gourmetdeluxxx.bandcamp.com/track/nocturnal-hooli")
 
     async def test_soundcloud_playlist(self, download):
-        await download("https://soundcloud.com/playlist/sets/sound-of-berlin-01-qs1-x-synth")
+        await download(
+            "https://soundcloud.com/playlist/sets/sound-of-berlin-01-qs1-x-synth"
+        )
