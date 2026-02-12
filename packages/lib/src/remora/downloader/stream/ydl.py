@@ -33,10 +33,10 @@ class YDLFormatDownloader(BaseStreamDownloader):
             StreamState
         ](10)
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(self._execute_download)
+        async with receive_stream:
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(self._execute_download)
 
-            async with receive_stream:
                 async for state in receive_stream:
                     yield state
 

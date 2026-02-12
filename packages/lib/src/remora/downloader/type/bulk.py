@@ -10,7 +10,11 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import PlaylistDownloadState, PlaylistState
+from remora.models.progress.list import (
+    CompletedPlaylistState,
+    PlaylistState,
+    ReceivedState,
+)
 from remora.template.parser import generate_output_template
 
 MediaResult = ExtractResult | MediaListEntries | MediaList | list[LazyMedia]
@@ -48,39 +52,56 @@ class DownloadBulk:
             self.id = secrets.token_urlsafe(6)
 
         # State
-        self.state = PlaylistState(
-            id=self.id,
-            stage="started",
-            completed=0,
-            total=len(self.medias),
+        self.completed = 0
+        self.total = len(self.medias)
+
+    async def run(self) -> AsyncIterable[ReceivedState]:
+        self._stream, receive_stream = anyio.create_memory_object_stream[ReceivedState](
+            self.max_workers
         )
 
-    async def run(self) -> AsyncIterable[PlaylistDownloadState]:
-        send_stream, receive_stream = anyio.create_memory_object_stream[
-            PlaylistDownloadState
-        ](self.max_workers)
-        self._stream = send_stream
+        async with receive_stream:
+            try:
+                async with anyio.create_task_group() as tg:
+                    tg.start_soon(self._execute_download)
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(self._execute_download)
-
-            async with receive_stream:
-                async for state in receive_stream:
-                    yield state
+                    async for state in receive_stream:
+                        yield state
+            except anyio.get_cancelled_exc_class():
+                yield receive_stream.receive_nowait()
 
     async def _execute_download(self):
         async with self._stream:
             # Setup
             await self._setup()
 
+            self._stream.send_nowait(
+                PlaylistState(
+                    id=self.id,
+                    status="started",
+                    completed=self.completed,
+                    total=self.total,
+                )
+            )
+            reason = "success"
+
             # Tasks
             try:
                 async with anyio.create_task_group() as tg:
                     for media in self.medias:
                         tg.start_soon(self._run_pipeline, media)
+            except anyio.get_cancelled_exc_class():
+                reason = "cancelled"
+                raise
             finally:
-                self.state.stage = "completed"
-                self._stream.send_nowait(self.state)
+                self._stream.send_nowait(
+                    CompletedPlaylistState(
+                        id=self.id,
+                        completed=self.completed,
+                        total=self.total,
+                        reason=reason,
+                    )
+                )
 
     async def _run_pipeline(self, media: LazyMedia):
         async with self.limiter:
@@ -94,13 +115,13 @@ class DownloadBulk:
             except MediaError:
                 pass
 
-            self.state.completed += 1
+            self.completed += 1
             self._stream.send_nowait(
                 PlaylistState(
                     id=self.id,
-                    stage="update",
-                    completed=self.state.completed,
-                    total=self.state.total,
+                    status="update",
+                    completed=self.completed,
+                    total=self.total,
                 )
             )
 
@@ -128,6 +149,7 @@ class DownloadBulk:
 
         self.medias = medias
         self.playlist = playlist
+        self.total = len(self.medias)
 
         # Set config
         if playlist:
@@ -138,9 +160,3 @@ class DownloadBulk:
             )
         else:
             self.id = secrets.token_urlsafe(6)
-
-        self.state.id = self.id
-        self.state.stage = "started"
-        self.state.completed = 0
-        self.state.total = len(self.medias)
-        self._stream.send_nowait(self.state)

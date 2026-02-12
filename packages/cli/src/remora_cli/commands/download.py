@@ -2,7 +2,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
-import anyio
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
@@ -172,9 +171,6 @@ What format you want request?
                 async for state in downloader.download_all(result):
                     await progress.playlist_callback(state)
 
-            logger.info("✅ Download Finished.")
-        except anyio.get_cancelled_exc_class():
-            logger.warning("❗ Download cancelled.")
         except MediaError as err:
             logger.error("❌ {error}", error=str(err))
         finally:

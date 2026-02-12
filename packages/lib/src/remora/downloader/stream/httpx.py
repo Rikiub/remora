@@ -72,10 +72,10 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             StreamState
         ](max_buffer_size=self.max_workers)
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(self._execute_download)
+        async with receive_stream:
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(self._execute_download)
 
-            async with receive_stream:
                 async for state in receive_stream:
                     yield state
 
@@ -226,7 +226,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         if state.downloaded_bytes > state.total_bytes:
             state.total_bytes = state.downloaded_bytes
 
-        # Send stream to top function
+        # Send state to top function
         self._send_stream.send_nowait(state)
 
     def _get_headers(self) -> dict[str, str]:

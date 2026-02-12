@@ -4,7 +4,7 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 from remora.models.content.media import LazyMedia
-from remora.models.progress.list import PlaylistDownloadState
+from remora.models.progress.list import ReceivedState
 from remora.models.progress.processor import ProcessingState
 from remora_cli.ui.bar import DownloadProgress
 from rich.progress import TaskID
@@ -26,16 +26,21 @@ class ProgressCallback:
         self._tg: TaskGroup | None = None
         self._exit_stack = anyio.create_task_group()
 
-    async def playlist_callback(self, state: PlaylistDownloadState):
+    async def playlist_callback(self, state: ReceivedState):
         if self.disable:
             return
 
         if state.type == "playlist":
-            match state.stage:
+            match state.status:
                 case "started":
                     self.progress.counter.reset(total=state.total)
                 case "update":
                     self.progress.counter.update(completed=state.completed)
+                case "completed":
+                    if state.reason == "success":
+                        logger.info("✅ Download Finished.")
+                    elif state.reason == "cancelled":
+                        logger.warning("❗ Download cancelled.")
 
         elif state.type == "media":
             if state.status == "resolving":
