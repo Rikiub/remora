@@ -10,8 +10,8 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import FinishedPlaylist, PlaylistUpdate
-from remora.models.progress.main import DownloadEvent
+from remora.models.event.list import FinishedPlaylist, PlaylistUpdate
+from remora.models.event.main import DownloadEvent
 from remora.template.parser import generate_output_template
 
 MediaResult = ExtractResult | MediaListEntries | MediaList | list[LazyMedia]

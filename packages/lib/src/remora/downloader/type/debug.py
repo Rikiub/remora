@@ -1,59 +1,59 @@
 from loguru import logger
-from remora.models.progress.media import MediaEvent
-from remora.models.progress.processor import Processing
+from remora.models.event.media import MediaEvent
+from remora.models.event.processor import Processing
 
 
-async def debug_callback(progress: MediaEvent):
-    match progress.status:
+async def debug_callback(event: MediaEvent):
+    match event.status:
         case "resolving":
-            _log_debug(progress.id, "Resolving Media")
+            _log_debug(event.id, "Resolving Media")
         case "resolved":
-            _log_debug(progress.id, "Media resolved")
+            _log_debug(event.id, "Media resolved")
         case "processing":
-            await _processor_callback(progress)
+            await _processor_callback(event)
         case "finished":
             _log_debug(
-                progress.id,
+                event.id,
                 'Final file saved as "{extension}".',
-                extension=progress.extension,
+                extension=event.extension,
             )
 
 
-async def _processor_callback(progress: Processing):
-    if progress.step == "completed":
-        match progress.task:
+async def _processor_callback(event: Processing):
+    if event.step == "completed":
+        match event.task:
             case "change_container":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     'File container changed to "{extension}".',
-                    extension=progress.extension,
+                    extension=event.extension,
                 )
             case "convert_audio":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     'File converted to "{extension}".',
-                    extension=progress.extension,
+                    extension=event.extension,
                 )
             case "merge_formats":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     'Merged video "{video}" and audio "{audio}" formats.',
-                    video=progress.video_stream.extension,
-                    audio=progress.audio_stream.extension,
+                    video=event.video_stream.extension,
+                    audio=event.audio_stream.extension,
                 )
             case "embed_subtitles":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     "Subtitles embedded.",
                 )
             case "embed_thumbnail":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     "Thumbnail embedded.",
                 )
             case "embed_metadata":
                 _log_debug(
-                    progress.id,
+                    event.id,
                     "Metadata embedded.",
                 )
 

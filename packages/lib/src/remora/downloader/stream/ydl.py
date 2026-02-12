@@ -5,7 +5,7 @@ from anyio import Path
 from anyio.to_thread import run_sync
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.models.stream.types import Stream
-from remora.models.progress.stream import (
+from remora.models.event.stream import (
     FinishedStream,
     DownloadingStream,
     StreamEvent,

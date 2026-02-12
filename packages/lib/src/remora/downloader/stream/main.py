@@ -1,7 +1,7 @@
 from typing import AsyncIterable
 
 from loguru import logger
-from remora.models.progress.stream import StreamEvent
+from remora.models.event.stream import StreamEvent
 
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.downloader.stream.httpx import HttpxStreamDownloader

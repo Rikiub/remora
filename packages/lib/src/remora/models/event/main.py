@@ -1,8 +1,8 @@
 from typing import Annotated
 
 from pydantic import Field
-from remora.models.progress.list import PlaylistEvent
-from remora.models.progress.media import MediaEvent
+from remora.models.event.list import PlaylistEvent
+from remora.models.event.media import MediaEvent
 
 
 DownloadEvent = Annotated[

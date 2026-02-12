@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.progress.base import BaseEvent, FileEvent
+from remora.models.event.base import BaseEvent, FileEvent
 from typing_extensions import Self
 
 

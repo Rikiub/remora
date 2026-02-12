@@ -2,8 +2,8 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 from remora.models.content.media import LazyMedia
-from remora.models.progress.main import DownloadEvent
-from remora.models.progress.processor import Processing
+from remora.models.event.main import DownloadEvent
+from remora.models.event.processor import Processing
 from remora_cli.ui.rich_progress import DownloadProgress
 
 

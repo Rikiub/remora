@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.progress.base import BasePlaylistEvent
+from remora.models.event.base import BasePlaylistEvent
 
 
 class PlaylistUpdate(BasePlaylistEvent):

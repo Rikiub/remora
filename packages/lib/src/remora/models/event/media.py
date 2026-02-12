@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.progress.base import BaseMediaEvent, FileEvent
+from remora.models.event.base import BaseMediaEvent, FileEvent
 from remora.models.content.media import LazyMedia
-from remora.models.progress.stream import DownloadingStream
-from remora.models.progress.processor import Processing
+from remora.models.event.stream import DownloadingStream
+from remora.models.event.processor import Processing
 
 
 class Resolving(BaseMediaEvent):

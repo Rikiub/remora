@@ -22,8 +22,8 @@ from remora.exceptions import (
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.models.progress.stream import DownloadingStream, StreamEvent
-from remora.models.progress.media import (
+from remora.models.event.stream import DownloadingStream, StreamEvent
+from remora.models.event.media import (
     Finished,
     Downloading,
     MediaEvent,
@@ -32,7 +32,7 @@ from remora.models.progress.media import (
     Retrying,
     Warning,
 )
-from remora.models.progress.processor import (
+from remora.models.event.processor import (
     MergingProcessor,
     Processor,
     ProcessorTask,

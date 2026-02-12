@@ -5,8 +5,8 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import MediaList
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.main import DownloadEvent
-from remora.models.progress.media import MediaEvent
+from remora.models.event.main import DownloadEvent
+from remora.models.event.media import MediaEvent
 from remora.types import FILE_FORMAT, StrPath
 
 _MediaResult = ExtractResult | MediaListEntries
