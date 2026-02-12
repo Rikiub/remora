@@ -1,7 +1,7 @@
 try:
     from typer import Typer
 except ImportError:
-    print("Error: The CLI dependencies are not installed.")
+    print("Error: The CLI dependencies are not installed")
     raise SystemExit(1)
 
 

@@ -65,7 +65,7 @@ class MediaExtractor:
         from remora.ydl.extractor import extract_query
 
         logger.debug(
-            'Search from "{service}": "{query}".',
+            'Search from "{service}": "{query}"',
             service=service,
             query=query,
         )

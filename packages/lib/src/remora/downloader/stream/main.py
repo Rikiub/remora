@@ -51,12 +51,12 @@ class StreamDownloader(BaseStreamDownloader):
                 # Logs
                 if is_type_error:
                     logger.debug(
-                        f'Protocol "{self.stream.protocol}" incompatible with httpx downloader.'
+                        f'Protocol "{self.stream.protocol}" incompatible with httpx downloader'
                     )
                 elif is_forbidden:
-                    logger.debug("Webpage blocking access to resource (403 Forbidden).")
+                    logger.debug("Webpage blocking access to resource (403 Forbidden)")
 
-                logger.debug("Trying again.")
+                logger.debug("Trying again")
 
                 # Downloader
                 from remora.downloader.stream.ydl import YDLFormatDownloader

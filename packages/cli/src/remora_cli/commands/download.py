@@ -33,7 +33,7 @@ async def download(
         Argument(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
-            - Insert a [green]URL[/] to download [grey62](Default)[/].\n
+            - Insert a [green]URL[/] to download. [grey62](Default)[/]\n
             - Select a [green]SERVICE[/] to search and download.
             """,
             show_default=False,
@@ -47,15 +47,15 @@ async def download(
             "--format",
             "-f",
             help="""File type to request.\n
-            - To get BEST, select [green]video[/] or [green]audio[/] [grey62](Fast)[/].\n
-            - To convert, select a file [green]EXTENSION[/] [grey62](Slow)[/].
+            - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
+            - To convert, select a file [green]EXTENSION[/]. [grey62](Slow)[/]
             """,
             metavar="TYPE | EXTENSION",
             prompt="""
 What format you want request?
 
-- To get BEST, select 'video' or 'audio' (Fast).
-- To convert, select a file EXTENSION (Slow).
+- To get BEST, select 'video' or 'audio' (Fast)
+- To convert, select a file EXTENSION (Slow)
 
 """,
             prompt_required=False,
@@ -141,11 +141,11 @@ What format you want request?
         try:
             with Status("Searching[blink]...[/]"):
                 if target == "url":
-                    logger.info('🔎 Extract URL: "{url}".', url=entry)
+                    logger.info('🔎 Extract URL: "{url}"', url=entry)
                     result = await extractor.extract_url(entry)
 
                     if result.type == "playlist":
-                        logger.info('🔎 Playlist title: "{title}".', title=result.title)
+                        logger.info('🔎 Playlist title: "{title}"', title=result.title)
 
                         if not result.medias and result.playlists:
                             logger.warning(
@@ -154,7 +154,7 @@ What format you want request?
                             raise Exit()
                 else:
                     logger.info(
-                        '🔎 Search from {extractor}: "{query}".',
+                        '🔎 Search from {extractor}: "{query}"',
                         extractor=target,
                         query=entry,
                     )
@@ -162,7 +162,7 @@ What format you want request?
                     result = await extractor.extract_search(entry, target)
 
                     if not result.medias:
-                        logger.warning("❗ No results found.")
+                        logger.warning("❗ No results found")
                         raise Exit()
 
                     result = result.medias[0]
