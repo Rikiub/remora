@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 import pathlib
 import shutil
 from contextlib import asynccontextmanager
-from copy import copy
 from typing import AsyncIterator
 
 import anyio
@@ -13,12 +13,7 @@ from remora.downloader.stream.main import StreamDownloader
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector
 from remora.downloader.type.debug import debug_callback
-from remora.exceptions import (
-    DownloadError,
-    MediaError,
-    MetadataDownloadError,
-    ProcessingError,
-)
+from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.stream.types import AudioStream, Stream, VideoStream
@@ -29,7 +24,6 @@ from remora.models.event.media import (
     MediaEvent,
     Resolved,
     Resolving,
-    Retrying,
     Warning,
 )
 from remora.models.event.processor import (
@@ -41,6 +35,13 @@ from remora.path import get_tempfile
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template
 from remora.ydl.types import SupportedExtensions, ThumbnailSupport
+
+
+@dataclass(slots=True)
+class DownloadContext:
+    file: Path | None = None
+    thumbnail: Path | None = None
+    subtitles: list[Path] | None = None
 
 
 class DownloadPipeline:
@@ -103,45 +104,66 @@ class DownloadPipeline:
             if await self.check_output_duplicate(output):
                 return
 
-            try:
-                # Download File
+            # Download resources
+            results = DownloadContext()
+
+            async def dl_file():
                 try:
-                    downloaded_file = await self.download_streams(
+                    results.file = await self.download_streams(
                         video_stream, audio_stream, media.duration
                     )
                 except DownloadError as e:
-                    if media.is_cache:
-                        extractor = copy(self.extractor)
-                        extractor.use_cache = False
-                        self.media = await extractor.resolve(media)
+                    self._stream.send_nowait(
+                        Warning(id=self.id, media=self.media, message=str(e))
+                    )
+                    self._stream.send_nowait(
+                        Finished(
+                            id=self.id,
+                            media=self.media,
+                            filepath=pathlib.Path(),
+                            result="failed",
+                        )
+                    )
+                    raise
 
+            async def dl_thumbnail():
+                if media.thumbnails:
+                    try:
+                        results.thumbnail = await download_thumbnail(
+                            await get_tempfile(), media.thumbnails[-1]
+                        )
+                    except MetadataDownloadError as e:
                         self._stream.send_nowait(
                             Warning(id=self.id, media=self.media, message=str(e))
                         )
-                        self._stream.send_nowait(
-                            Retrying(id=self.id, media=self.media, result="stale_cache")
+
+            async def dl_subtitles():
+                if media.subtitles:
+                    try:
+                        results.subtitles = await download_subtitles(
+                            await get_tempfile(), media.subtitles
                         )
-                    raise
+                    except MetadataDownloadError as e:
+                        self._stream.send_nowait(
+                            Warning(id=self.id, media=self.media, message=str(e))
+                        )
 
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(dl_file)
+                tg.start_soon(dl_thumbnail)
+                tg.start_soon(dl_subtitles)
+
+            if results.file:
                 if self.config.ffmpeg_path:
-                    # Process File
-                    downloaded_file = await self.process(downloaded_file, media, stream)
-            except MediaError as e:
-                self._stream.send_nowait(
-                    Warning(id=self.id, media=self.media, message=str(e))
-                )
-                self._stream.send_nowait(
-                    Finished(
-                        id=self.id,
-                        media=self.media,
-                        filepath=pathlib.Path(),
-                        result="failed",
+                    results.file = await self.process(
+                        results.file,
+                        stream,
+                        results.thumbnail,
+                        results.subtitles,
                     )
-                )
-                raise
 
-            # Complete (Move to target)
-            await self.move_to_final(downloaded_file, output)
+                # Complete (Move to target)
+                await self.move_to_final(results.file, output)
 
     async def resolve_media(self) -> Media:
         self._stream.send_nowait(Resolving(id=self.id, media=self.media))
@@ -283,8 +305,9 @@ class DownloadPipeline:
     async def process(
         self,
         filepath: Path,
-        media: Media,
         stream: Stream | None = None,
+        thumbnail: Path | None = None,
+        subtitles: list[Path] | None = None,
     ) -> Path:
         prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
@@ -306,7 +329,7 @@ class DownloadPipeline:
                 event.step = "completed"
 
                 self._stream.send_nowait(event)
-            except (ProcessingError, MetadataDownloadError) as error:
+            except ProcessingError as error:
                 if raise_exceptions:
                     raise
 
@@ -320,11 +343,8 @@ class DownloadPipeline:
             async with track_prc("change_container"):
                 await prc.change_container(self.config.convert or "mp4")
 
-            if media.subtitles:
+            if subtitles:
                 async with track_prc("embed_subtitles"):
-                    subtitles = await download_subtitles(
-                        await get_tempfile(), media.subtitles
-                    )
                     await prc.embed_subtitles(subtitles)
 
         elif isinstance(stream, AudioStream):
@@ -340,16 +360,12 @@ class DownloadPipeline:
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
             async with track_prc("embed_metadata"):
-                await prc.embed_metadata(media, media.is_music)
+                await prc.embed_metadata(self.media, self.media.is_music)
 
-        if media.thumbnails:
+        if thumbnail:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
                 async with track_prc("embed_thumbnail"):
-                    thumbnail = await download_thumbnail(
-                        await get_tempfile(),
-                        media.thumbnails[-1],
-                    )
-                    await prc.embed_thumbnail(thumbnail, square=media.is_music)
+                    await prc.embed_thumbnail(thumbnail, square=self.media.is_music)
 
         return Path(prc.filepath)
 
