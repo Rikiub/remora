@@ -28,6 +28,8 @@ class ProgressCallback:
                 case "finished":
                     if event.result == "success":
                         logger.info("✅ Download completed")
+                    elif event.result == "incomplete":
+                        logger.warning("⚠️ Completed with errors")
                     elif event.result == "cancelled":
                         logger.warning("❗ Download cancelled")
 

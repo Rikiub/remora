@@ -52,6 +52,11 @@ class DownloadBulk:
         self.completed = 0
         self.total = len(self.medias)
 
+        self.success = 0
+        self.failed = 0
+
+        self.result = "success"
+
     async def run(self) -> AsyncIterable[DownloadEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
             self.max_workers
@@ -80,7 +85,6 @@ class DownloadBulk:
                     total=self.total,
                 )
             )
-            result = "success"
 
             # Tasks
             try:
@@ -88,7 +92,7 @@ class DownloadBulk:
                     for media in self.medias:
                         tg.start_soon(self._run_pipeline, media)
             except anyio.get_cancelled_exc_class():
-                result = "cancelled"
+                self.result = "cancelled"
                 raise
             finally:
                 self._stream.send_nowait(
@@ -96,7 +100,7 @@ class DownloadBulk:
                         id=self.id,
                         completed=self.completed,
                         total=self.total,
-                        result=result,
+                        result=self.result,  # type: ignore
                     )
                 )
 
@@ -109,8 +113,11 @@ class DownloadBulk:
                     self.extractor,
                 ).run():
                     self._stream.send_nowait(event)
-            except MediaError:
-                pass
+
+                self.success += 1
+            except* MediaError:
+                self.result = "incomplete"
+                self.failed += 1
 
             self.completed += 1
             self._stream.send_nowait(
@@ -144,9 +151,17 @@ class DownloadBulk:
             case _:
                 raise TypeError("Unable to unpack media.")
 
+        # Reset
         self.medias = medias
         self.playlist = playlist
+
+        self.completed = 0
         self.total = len(self.medias)
+
+        self.success = 0
+        self.total = 0
+
+        self.result = "success"
 
         # Set config
         if playlist:

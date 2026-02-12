@@ -13,7 +13,7 @@ class PlaylistUpdate(BasePlaylistEvent):
 
 class FinishedPlaylist(PlaylistUpdate):
     status: Literal["finished"] = "finished"  # type: ignore
-    result: Literal["success", "cancelled"]
+    result: Literal["success", "incomplete", "cancelled"]
 
 
 PlaylistEvent = Annotated[

@@ -30,6 +30,9 @@ class StreamDownloader(BaseStreamDownloader):
 
     @override
     async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
+        use_fallback = False
+
+        # Main Downloader
         try:
             async with HttpxStreamDownloader(
                 self.filepath,
@@ -40,33 +43,30 @@ class StreamDownloader(BaseStreamDownloader):
             ) as client:
                 async for event in client.download():
                     yield event
+                return
         except* (TypeError, DownloadError) as eg:
             error = eg.exceptions[0]
 
-            is_type_error = isinstance(error, TypeError)
-            # TikTok throws 403.
-            is_forbidden = isinstance(error, DownloadError) and error.status_code == 403
-
-            if is_type_error or is_forbidden:
-                # Logs
-                if is_type_error:
-                    logger.debug(
-                        f'Protocol "{self.stream.protocol}" incompatible with httpx downloader'
-                    )
-                elif is_forbidden:
-                    logger.debug("Webpage blocking access to resource (403 Forbidden)")
-
-                logger.debug("Trying again")
-
-                # Downloader
-                from remora.downloader.stream.ydl import YDLFormatDownloader
-
-                downloader = YDLFormatDownloader(
-                    self.filepath,
-                    self.stream,
-                    self.retries,
+            if isinstance(error, TypeError):
+                logger.debug(
+                    'Protocol "{protocol}" incompatible with httpx downloader',
+                    protocol=self.stream.protocol,
                 )
-                async for event in downloader.download():
-                    yield event
-            else:
-                raise
+                use_fallback = True
+            elif isinstance(error, DownloadError) and error.status_code == 403:
+                logger.debug("Webpage blocking access to resource (403 Forbidden)")
+                use_fallback = True
+
+            if not use_fallback:
+                raise error
+
+        # Fallback downloader
+        from remora.downloader.stream.ydl import YDLFormatDownloader
+
+        downloader = YDLFormatDownloader(
+            self.filepath,
+            self.stream,
+            self.retries,
+        )
+        async for event in downloader.download():
+            yield event

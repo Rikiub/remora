@@ -110,11 +110,19 @@ class DownloadPipeline:
             async def dl_file():
                 try:
                     results.file = await self.download_streams(
-                        video_stream, audio_stream, media.duration
+                        video_stream,
+                        audio_stream,
+                        media.duration,
                     )
-                except DownloadError as e:
+                except* DownloadError as eg:
+                    error = eg.exceptions[0]
+
                     self._stream.send_nowait(
-                        Warning(id=self.id, media=self.media, message=str(e))
+                        Warning(
+                            id=self.id,
+                            media=self.media,
+                            message=str(error),
+                        )
                     )
                     self._stream.send_nowait(
                         Finished(
@@ -130,22 +138,32 @@ class DownloadPipeline:
                 if media.thumbnails:
                     try:
                         results.thumbnail = await download_thumbnail(
-                            await get_tempfile(), media.thumbnails[-1]
+                            await get_tempfile(),
+                            media.thumbnails[-1],
                         )
                     except MetadataDownloadError as e:
                         self._stream.send_nowait(
-                            Warning(id=self.id, media=self.media, message=str(e))
+                            Warning(
+                                id=self.id,
+                                media=self.media,
+                                message=str(e),
+                            )
                         )
 
             async def dl_subtitles():
                 if media.subtitles:
                     try:
                         results.subtitles = await download_subtitles(
-                            await get_tempfile(), media.subtitles
+                            await get_tempfile(),
+                            media.subtitles,
                         )
                     except MetadataDownloadError as e:
                         self._stream.send_nowait(
-                            Warning(id=self.id, media=self.media, message=str(e))
+                            Warning(
+                                id=self.id,
+                                media=self.media,
+                                message=str(e),
+                            )
                         )
 
             async with anyio.create_task_group() as tg:
@@ -261,11 +279,14 @@ class DownloadPipeline:
                 async for event in downloader.download():
                     await _sync_progress(event, False)
 
-        async with anyio.create_task_group() as tg:
-            if audio_stream:
-                tg.start_soon(download_audio)
-            if video_stream:
-                tg.start_soon(download_video)
+        try:
+            async with anyio.create_task_group() as tg:
+                if audio_stream:
+                    tg.start_soon(download_audio)
+                if video_stream:
+                    tg.start_soon(download_video)
+        except* DownloadError as eg:
+            raise eg.exceptions[0]
 
         # Merge if necessary
         if (
