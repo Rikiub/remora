@@ -43,7 +43,7 @@ class YDLProcessor:
         self.ffmpeg_path = ffmpeg_path
 
         if not self.extension:
-            raise ValueError(f'"{self.filepath}" must have a file extension.')
+            raise ValueError(f'"{self.filepath}" must have a file extension')
 
     @property
     def extension(self) -> str:

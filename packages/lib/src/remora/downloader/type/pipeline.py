@@ -179,7 +179,7 @@ class DownloadPipeline:
     ) -> Path:
         """Orchestrates the physical download of bytes."""
 
-        streams_states = {
+        streams_events = {
             "video": DownloadingStream(
                 downloaded_bytes=0,
                 total_bytes=video_stream.filesize or 0 if video_stream else 0,
@@ -198,10 +198,10 @@ class DownloadPipeline:
 
             match event.status:
                 case "downloading":
-                    streams_states["video" if is_video else "audio"] = event
+                    streams_events["video" if is_video else "audio"] = event
 
-                    v = streams_states["video"]
-                    a = streams_states["audio"]
+                    v = streams_events["video"]
+                    a = streams_events["audio"]
 
                     self._stream.send_nowait(
                         Downloading(
@@ -240,11 +240,8 @@ class DownloadPipeline:
                     await _sync_progress(event, False)
 
         async with anyio.create_task_group() as tg:
-            # Download Audio
             if audio_stream:
                 tg.start_soon(download_audio)
-
-            # Download Video
             if video_stream:
                 tg.start_soon(download_video)
 

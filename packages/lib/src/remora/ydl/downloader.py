@@ -82,7 +82,7 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
     if final:
         return Path(final[0][0])
     else:
-        raise MetadataDownloadError("Unable to download thumbnail.")
+        raise MetadataDownloadError("Unable to download thumbnail")
 
 
 def download_subtitles(
@@ -108,4 +108,4 @@ def download_subtitles(
         result = [Path(entry[0]) for entry in final]
         return result
     else:
-        raise MetadataDownloadError("Unable to download subtitles.")
+        raise MetadataDownloadError("Unable to download subtitles")
