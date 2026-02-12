@@ -1,26 +1,16 @@
-from dataclasses import dataclass
-
 import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 from remora.models.content.media import LazyMedia
 from remora.models.progress.main import DownloadEvent
 from remora.models.progress.processor import Processing
-from remora_cli.ui.bar import DownloadProgress
-from rich.progress import TaskID
-
-
-@dataclass(slots=True)
-class Task:
-    task_id: TaskID
-    id: str
+from remora_cli.ui.rich_progress import DownloadProgress
 
 
 class ProgressCallback:
     def __init__(self, disable: bool = False):
         self.disable = disable
         self.progress = DownloadProgress(disable)
-        self.tasks: dict[str, Task] = {}
 
         self._tg: TaskGroup | None = None
         self._exit_stack = anyio.create_task_group()
@@ -42,53 +32,39 @@ class ProgressCallback:
                         logger.warning("❗ Download cancelled")
 
         elif event.type == "media":
-            if event.status == "resolving":
-                task = self.tasks[event.id] = Task(
-                    task_id=self.progress.add_task(
-                        description="",
-                        status="",
-                        step="",
-                    ),
-                    id=event.id,
-                )
-
-                name = self._media_display_name(event.media)
-
-                self.progress.update(
-                    task.task_id,
-                    description=name or "Extracting[blink]...[/]",
-                    status="Extracting[blink]...[/]",
-                )
-                return
-
-            task = self.tasks[event.id]
             name = self._media_display_name(event.media)
 
             match event.status:
+                case "resolving":
+                    self.progress.add_task(
+                        event.id,
+                        description=name or "Extracting[blink]...[/]",
+                        status="Extracting[blink]...[/]",
+                    )
                 case "resolved":
                     self.progress.update(
-                        task.task_id,
+                        event.id,
                         description=name,
                         status="Ready",
                     )
                 case "downloading":
                     self.progress.update(
-                        task.task_id,
+                        event.id,
+                        status="Downloading",
                         completed=event.downloaded_bytes,
                         total=event.total_bytes,
-                        status="Downloading",
                     )
                 case "processing":
-                    self.processor_callback(event, task)
+                    self.processor_callback(event)
                 case "warning":
                     logger.warning(self.fmt_log(name, f"Warning: {event.message}", "⚠️"))
                 case "finished":
                     if event.result == "success":
                         logger.info(self.fmt_log(name, "Completed", "☑️"))
-                        self.progress.update(task.task_id, status="Completed")
+                        self.progress.update(event.id, status="Completed")
                     elif event.result == "incomplete":
                         logger.warning(self.fmt_log(name, "Completed with errors", "⚠️"))
-                        self.progress.update(task.task_id, status="Completed")
+                        self.progress.update(event.id, status="Completed")
                     elif event.result == "skipped":
                         logger.info(
                             self.fmt_log(
@@ -97,37 +73,35 @@ class ProgressCallback:
                                 "🔄",
                             )
                         )
-                        self.progress.update(task.task_id, status="Skipped")
+                        self.progress.update(event.id, status="Skipped")
                     elif event.result == "failed":
                         logger.error(self.fmt_log(name, "Download failed", "❌"))
-                        self.progress.update(task.task_id, status="Error")
+                        self.progress.update(event.id, status="Error")
 
                     if self._tg:
-                        self._tg.start_soon(self._finish_item, event.id)
+                        self._tg.start_soon(self._finish_item, event)
 
-    async def _finish_item(self, id: str):
+    async def _finish_item(self, event: DownloadEvent):
         await anyio.sleep(1.0)
+        self.progress.remove_task(event.id)
 
-        item = self.tasks.pop(id)
-        self.progress.remove_task(item.task_id)
-
-    def processor_callback(self, event: Processing, task: Task):
+    def processor_callback(self, event: Processing):
         match event.task:
             case "convert_audio":
                 if event.step == "started":
                     self.progress.update(
-                        task.task_id,
+                        event.id,
                         status="Converting[blink]...[/]",
                     )
             case "merge_formats":
                 if event.step == "started":
                     self.progress.update(
-                        task.task_id,
+                        event.id,
                         status="Merging[blink]...[/]",
                     )
             case _:
                 self.progress.update(
-                    task.task_id,
+                    event.id,
                     status="Processing[blink]...[/]",
                 )
 

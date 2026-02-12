@@ -1,12 +1,10 @@
-from functools import wraps
-
-import anyio
+from functools import wraps, partial
 
 
 def make_async(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        from functools import partial
+        import anyio
 
         return anyio.run(partial(func, *args, **kwargs))
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from remora_cli.ui.rich import CONSOLE
 from rich.console import Group, RenderableType
 from rich.progress import (
@@ -7,6 +5,7 @@ from rich.progress import (
     FileSizeColumn,
     MofNCompleteColumn,
     Progress,
+    TaskID,
     TextColumn,
     TotalFileSizeColumn,
 )
@@ -61,25 +60,22 @@ class CounterProgress:
             visible=visible,
         )
 
-    def advance(self, advance: int = 1):
-        self._progress.advance(self._task_id, advance)
-
     def __rich__(self) -> RenderableType:
         return self._progress.get_renderable()
 
 
-class DownloadProgress(Progress):
+class DownloadProgress:
     """Start and render progress bar."""
 
     def __init__(self, disable: bool = False) -> None:
         self.counter = CounterProgress(disable=disable)
-        super().__init__(
+        self._progress = Progress(
             TextColumn(
                 "{task.description}",
                 table_column=Column(ratio=5, no_wrap=True, overflow="ellipsis"),
             ),
             TextColumn(
-                "[turquoise2]{task.fields[status]} {task.fields[step]}",
+                "[turquoise2]{task.fields[status]}",
                 table_column=Column(ratio=2, no_wrap=True),
             ),
             BarColumn(table_column=Column(justify="full", ratio=4)),
@@ -91,10 +87,43 @@ class DownloadProgress(Progress):
             disable=disable,
             console=CONSOLE,
         )
+        self.tasks: dict[str, TaskID] = {}
 
-    def __enter__(self) -> DownloadProgress:
-        super().__enter__()
-        return self
+    def add_task(self, id: str, description: str, status: str):
+        task_id = self._progress.add_task(description, status=status)
+        self.tasks[id] = task_id
+
+    def remove_task(self, id: str):
+        self._progress.remove_task(self.tasks[id])
+
+    def update(
+        self,
+        id: str,
+        description: str | None = None,
+        status: str | None = None,
+        completed: float | None = None,
+        total: float | None = None,
+    ):
+        self._progress.update(
+            self.tasks[id],
+            description=description,
+            status=status,
+            completed=completed,
+            total=total,
+        )
 
     def get_renderable(self) -> RenderableType:
-        return Group(self.counter, *self.get_renderables())
+        return Group(self.counter, self._progress)
+
+    def start(self):
+        self._progress.start()
+
+    def stop(self):
+        self._progress.stop()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.stop()

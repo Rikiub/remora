@@ -116,7 +116,7 @@ What format you want request?
         from remora.downloader.main import MediaDownloader
         from remora.exceptions import MediaError
         from remora.extractor import MediaExtractor
-        from remora_cli.ui.callback import ProgressCallback
+        from remora_cli.ui.progress import ProgressCallback
 
     # Initialize
     try:
