@@ -12,6 +12,7 @@ async def extract_url(url: str) -> Media | Playlist:
     result = await EXTRACTOR.extract_url(url)
     return result
 
+
 async def extract_search(
     query: str = "Sub Urban - Rabbit Hole",
     service: SEARCH_SERVICE = "youtube",
@@ -78,7 +79,7 @@ class TestSearch:
 
 class TestSite:
     async def test_youtube(self):
-        await extract_url("https://www.youtube.com/watch?v=lBVhLcfoahw ")
+        await extract_url("https://www.youtube.com/watch?v=lBVhLcfoahw")
 
     async def test_ytmusic(self):
         await extract_url("https://music.youtube.com/watch?v=Kx7B-XvmFtE")
@@ -96,7 +97,9 @@ class TestSite:
     """
 
     async def test_tiktok(self):
-        await extract_url("https://www.tiktok.com/@livewallpaper77/video/7410777368064806149")
+        await extract_url(
+            "https://www.tiktok.com/@livewallpaper77/video/7410777368064806149"
+        )
 
     async def test_reddit(self):
         await extract_url(

@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.format.types import AudioFormat, VideoFormat
+from remora.models.stream.types import AudioStream, VideoStream
 from remora.models.progress.base import MediaState, StageType
 from remora.models.progress.media import HasFile
 
@@ -23,8 +23,8 @@ class ProcessorState(MediaState, HasFile):
 class MergingProcessorState(ProcessorState):
     processor: Literal["merge_formats"] = "merge_formats"  # type: ignore
 
-    video_format: VideoFormat
-    audio_format: AudioFormat
+    video_stream: VideoStream
+    audio_stream: AudioStream
 
 
 ProcessingState = Annotated[

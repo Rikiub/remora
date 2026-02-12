@@ -26,7 +26,7 @@ def _generate_keys() -> set[str]:
     from pydantic import BaseModel
     from remora.models.content.list import Playlist
     from remora.models.content.media import Media
-    from remora.models.format.types import AudioFormat, Format, VideoFormat, YDLArgs
+    from remora.models.stream.types import AudioStream, Stream, VideoStream, YDLArgs
 
     def extract(model: type[BaseModel], by_alias: bool = False) -> list[str]:
         keys: list[str] = []
@@ -56,9 +56,9 @@ def _generate_keys() -> set[str]:
     templates = {
         *extract(Playlist, True),
         *extract(Media),
-        *extract(Format),
-        *extract(VideoFormat),
-        *extract(AudioFormat),
+        *extract(Stream),
+        *extract(VideoStream),
+        *extract(AudioStream),
     }
 
     for key in EXCLUDED_KEYS:

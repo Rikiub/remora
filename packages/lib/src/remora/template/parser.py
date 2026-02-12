@@ -6,7 +6,7 @@ from pathvalidate import sanitize_filepath
 from remora.exceptions import OutputTemplateError
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media
-from remora.models.format.types import Format
+from remora.models.stream.types import Stream
 from remora.template.keys import get_keys
 from remora.types import StrPath
 
@@ -27,16 +27,16 @@ def generate_output_template(
     output: StrPath,
     media: Media | None = None,
     playlist: Playlist | None = None,
-    format: Format | None = None,
+    stream: Stream | None = None,
     default_missing: str | None = None,
 ) -> Path:
     validate_output(output)
 
     data = {}
 
-    if format:
-        data |= format.model_dump(exclude_none=True)
-        data |= format.model_dump(by_alias=True, exclude_none=True)
+    if stream:
+        data |= stream.model_dump(exclude_none=True)
+        data |= stream.model_dump(by_alias=True, exclude_none=True)
     if playlist:
         data |= playlist.model_dump(by_alias=True, exclude_none=True)
     if media:

@@ -25,8 +25,8 @@ class YDLArgs(BaseModel):
     cookies: str | None = None
 
 
-class Format(ABC, YDLArgs, YDLSerializable):
-    """Base Format"""
+class Stream(ABC, YDLArgs, YDLSerializable):
+    """Base Stream"""
 
     id: Annotated[str, Field(alias="format_id")]
     url: HttpUrl
@@ -56,7 +56,7 @@ class Format(ABC, YDLArgs, YDLSerializable):
         return value if value else "none"
 
 
-class AudioFormat(Format):
+class AudioStream(Stream):
     type: Literal["audio"] = "audio"
     audio_codec: Annotated[  # type: ignore
         Codec, AudioCodecField
@@ -86,7 +86,7 @@ class AudioFormat(Format):
         return value
 
 
-class VideoFormat(Format):
+class VideoStream(Stream):
     video_codec: Annotated[Codec, Field(alias="vcodec")]
     type: Literal["video"] = "video"
     width: int

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing_extensions import override
 
 from remora.models.content.media import Media
-from remora.models.format.types import Format
+from remora.models.stream.types import Stream
 from remora.types import AUDIO_EXTENSION, EXTENSION, StrPath
 from remora.ydl.processor import (
     RequestedFormat,
@@ -12,21 +12,21 @@ from remora.ydl.processor import (
 )
 from remora.ydl.types import YDLExtractInfo
 
-FormatPaths = list[tuple[Format, Path]]
+StreamPaths = list[tuple[Stream, Path]]
 
 
 class MediaProcessor(YDLProcessor):
     @override
-    async def change_container(self, format: str | EXTENSION):
-        return await super().change_container(format)
+    async def change_container(self, stream: str | EXTENSION):
+        return await super().change_container(stream)
 
     @override
     async def convert_audio(
         self,
-        format: str | AUDIO_EXTENSION = "",
+        stream: str | AUDIO_EXTENSION = "",
         quality: int | None = None,
     ):
-        return await super().convert_audio(format, quality)
+        return await super().convert_audio(stream, quality)
 
     @override
     async def embed_metadata(
@@ -46,26 +46,26 @@ class MediaProcessor(YDLProcessor):
 
     @override
     @classmethod
-    async def from_formats_merge(
+    async def from_streams_merge(
         cls,
         filepath: StrPath,
-        formats: RequestedFormats | FormatPaths,
+        streams: RequestedFormats | StreamPaths,
         ffmpeg_path: StrPath | None = None,
     ):
-        real_formats: list[RequestedFormat] = []
+        real_streams: list[RequestedFormat] = []
 
-        for fmt in formats:
+        for fmt in streams:
             if isinstance(fmt, tuple):
-                format, path = fmt
-                format: Format
+                stream, path = fmt
+                stream: Stream
                 path: Path
 
-                fmt = {"filepath": str(path)} | format.to_ydl_dict()
-            real_formats.append(fmt)  # type: ignore
+                fmt = {"filepath": str(path)} | stream.to_ydl_dict()
+            real_streams.append(fmt)  # type: ignore
 
-        cls = await super().from_formats_merge(
+        cls = await super().from_streams_merge(
             filepath,
-            formats=real_formats,
+            streams=real_streams,
             ffmpeg_path=ffmpeg_path,
         )
         return cls

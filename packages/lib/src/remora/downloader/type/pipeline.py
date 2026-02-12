@@ -9,9 +9,9 @@ from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
 from remora.downloader.config import FormatConfig
-from remora.downloader.format.mix import FormatDownloader
+from remora.downloader.stream.main import StreamDownloader
 from remora.downloader.metadata import download_subtitles, download_thumbnail
-from remora.downloader.selector import FormatSelector
+from remora.downloader.selector import StreamSelector
 from remora.downloader.type.debug import debug_callback
 from remora.exceptions import (
     DownloadError,
@@ -21,8 +21,8 @@ from remora.exceptions import (
 )
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
-from remora.models.format.types import AudioFormat, Format, VideoFormat
-from remora.models.progress.format import DownloadingFormatState, FormatState
+from remora.models.stream.types import AudioStream, Stream, VideoStream
+from remora.models.progress.stream import DownloadingStreamState, StreamState
 from remora.models.progress.media import (
     CompletedState,
     DownloadingState,
@@ -64,7 +64,7 @@ class DownloadPipeline:
     async def run(self) -> AsyncIterator[MediaDownloadState]:
         self._stream, receive_stream = anyio.create_memory_object_stream[
             MediaDownloadState
-        ](100)
+        ](30)
 
         async with anyio.create_task_group() as tg:
             tg.start_soon(self._execute_download)
@@ -85,18 +85,18 @@ class DownloadPipeline:
             # Resolve Data
             media = await self.resolve_media()
 
-            # Select Formats
-            video_fmt, audio_fmt = FormatSelector(self.config).resolve(media)
-            format = video_fmt or audio_fmt
+            # Select Streams
+            video_stream, audio_stream = StreamSelector(self.config).resolve(media)
+            stream = video_stream or audio_stream
 
-            if not format:
-                raise DownloadError("Formats not founded")
+            if not stream:
+                raise DownloadError("Streams not founded")
 
             #  Calculate Path & Check Existence
             output = generate_output_template(
                 self.config.output,
                 media,
-                format=format,
+                stream=stream,
                 default_missing="NA",
             )
             output = Path(output)
@@ -108,8 +108,8 @@ class DownloadPipeline:
             try:
                 # Download File
                 try:
-                    downloaded_file = await self.download_formats(
-                        video_fmt, audio_fmt, media.duration
+                    downloaded_file = await self.download_streams(
+                        video_stream, audio_stream, media.duration
                     )
                 except DownloadError as e:
                     if media.is_cache:
@@ -127,7 +127,7 @@ class DownloadPipeline:
 
                 if self.config.ffmpeg_path:
                     # Process File
-                    downloaded_file = await self.process(downloaded_file, media, format)
+                    downloaded_file = await self.process(downloaded_file, media, stream)
             except MediaError as e:
                 self._stream.send_nowait(WarningState(id=self.id, message=str(e)))
                 self._stream.send_nowait(
@@ -169,37 +169,37 @@ class DownloadPipeline:
                     )
                     return path
 
-    async def download_formats(
+    async def download_streams(
         self,
-        video_fmt: VideoFormat | None = None,
-        audio_fmt: AudioFormat | None = None,
+        video_stream: VideoStream | None = None,
+        audio_stream: AudioStream | None = None,
         duration: float | None = None,
     ) -> Path:
         """Orchestrates the physical download of bytes."""
 
-        formats_states = {
-            "video": DownloadingFormatState(
+        streams_states = {
+            "video": DownloadingStreamState(
                 downloaded_bytes=0,
-                total_bytes=video_fmt.filesize or 0 if video_fmt else 0,
+                total_bytes=video_stream.filesize or 0 if video_stream else 0,
             ),
-            "audio": DownloadingFormatState(
+            "audio": DownloadingStreamState(
                 downloaded_bytes=0,
-                total_bytes=audio_fmt.filesize or 0 if audio_fmt else 0,
+                total_bytes=audio_stream.filesize or 0 if audio_stream else 0,
             ),
         }
 
         video_file = None
         audio_file = None
 
-        async def _sync_progress(state: FormatState, is_video: bool):
+        async def _sync_progress(state: StreamState, is_video: bool):
             nonlocal video_file, audio_file
 
             match state.status:
                 case "downloading":
-                    formats_states["video" if is_video else "audio"] = state
+                    streams_states["video" if is_video else "audio"] = state
 
-                    v = formats_states["video"]
-                    a = formats_states["audio"]
+                    v = streams_states["video"]
+                    a = streams_states["audio"]
 
                     self._stream.send_nowait(
                         DownloadingState(
@@ -217,20 +217,20 @@ class DownloadPipeline:
                         audio_file = state.filepath
 
         async def download_video():
-            if video_fmt:
-                downloader = FormatDownloader(
+            if video_stream:
+                downloader = StreamDownloader(
                     filepath=await get_tempfile(),
-                    format=video_fmt,
+                    stream=video_stream,
                     duration=duration,
                 )
                 async for state in downloader.download():
                     await _sync_progress(state, True)
 
         async def download_audio():
-            if audio_fmt:
-                downloader = FormatDownloader(
+            if audio_stream:
+                downloader = StreamDownloader(
                     filepath=await get_tempfile(),
-                    format=audio_fmt,
+                    stream=audio_stream,
                     duration=duration,
                 )
                 async for state in downloader.download():
@@ -238,18 +238,18 @@ class DownloadPipeline:
 
         async with anyio.create_task_group() as tg:
             # Download Audio
-            if audio_fmt:
+            if audio_stream:
                 tg.start_soon(download_audio)
 
             # Download Video
-            if video_fmt:
+            if video_stream:
                 tg.start_soon(download_video)
 
         # Merge if necessary
         if (
             self.config.ffmpeg_path
-            and (video_file and video_fmt)
-            and (audio_file and audio_fmt)
+            and (video_file and video_stream)
+            and (audio_file and audio_stream)
         ):
             extension = self.config.convert or "mp4"
             filepath = pathlib.Path(f"{await get_tempfile()}.{extension}")
@@ -258,13 +258,13 @@ class DownloadPipeline:
                 id=self.id,
                 filepath=filepath,
                 stage="started",
-                video_format=video_fmt,
-                audio_format=audio_fmt,
+                video_stream=video_stream,
+                audio_stream=audio_stream,
             )
 
-            prc = await MediaProcessor.from_formats_merge(
+            prc = await MediaProcessor.from_streams_merge(
                 filepath,
-                formats=[(video_fmt, video_file), (audio_fmt, audio_file)],
+                streams=[(video_stream, video_file), (audio_stream, audio_file)],
                 ffmpeg_path=self.config.ffmpeg_path,
             )
 
@@ -277,13 +277,13 @@ class DownloadPipeline:
         elif audio_file:
             return audio_file
         else:
-            raise DownloadError("Formats not founded.")
+            raise DownloadError("Streams not founded")
 
     async def process(
         self,
         filepath: Path,
         media: Media,
-        format: Format | None = None,
+        stream: Stream | None = None,
     ) -> Path:
         prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
@@ -310,7 +310,7 @@ class DownloadPipeline:
                 self._stream.send_nowait(WarningState(id=self.id, message=str(error)))
 
         # Remuxing
-        if isinstance(format, VideoFormat):
+        if isinstance(stream, VideoStream):
             async with track_prc("change_container"):
                 await prc.change_container(self.config.convert or "mp4")
 
@@ -321,8 +321,8 @@ class DownloadPipeline:
                     )
                     await prc.embed_subtitles(subtitles)
 
-        elif isinstance(format, AudioFormat):
-            if self.config.convert and self.config.convert != format.extension:
+        elif isinstance(stream, AudioStream):
+            if self.config.convert and self.config.convert != stream.extension:
                 try:
                     async with track_prc("change_container", True):
                         await prc.change_container(self.config.convert)

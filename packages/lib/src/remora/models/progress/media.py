@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 from remora.models.progress.base import HasFile, MediaState
 from remora.models.content.media import LazyMedia, Media
-from remora.models.progress.format import DownloadingFormatState
+from remora.models.progress.stream import DownloadingStreamState
 from remora.models.progress.processor import ProcessingState
 
 
@@ -24,7 +24,7 @@ class RetryingState(MediaState):
     reason: Literal["stale_cache"]
 
 
-class DownloadingState(DownloadingFormatState, MediaState): ...
+class DownloadingState(DownloadingStreamState, MediaState): ...
 
 
 class WarningState(MediaState):

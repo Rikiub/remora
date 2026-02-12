@@ -1,39 +1,39 @@
 from typing import AsyncIterable
 
 from loguru import logger
-from remora.models.progress.format import FormatState
+from remora.models.progress.stream import StreamState
 
-from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
-from remora.downloader.format.httpx import HttpxFormatDownloader
+from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
+from remora.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloadError
-from remora.models.format.types import Format
+from remora.models.stream.types import Stream
 from remora.types import StrPath
 from typing_extensions import override
 
 
-class FormatDownloader(BaseFormatDownloader):
+class StreamDownloader(BaseStreamDownloader):
     def __init__(
         self,
         filepath: StrPath,
-        format: Format,
+        stream: Stream,
         duration: float | None = None,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
     ):
         super().__init__(
             filepath,
-            format,
+            stream,
             retries=retries,
         )
         self.duration = duration
         self.max_workers = max_workers
 
     @override
-    async def download(self) -> AsyncIterable[FormatState]:  # type: ignore
+    async def download(self) -> AsyncIterable[StreamState]:  # type: ignore
         try:
-            async with HttpxFormatDownloader(
+            async with HttpxStreamDownloader(
                 self.filepath,
-                self.format,
+                self.stream,
                 retries=self.retries,
                 max_workers=self.max_workers,
                 duration=self.duration,
@@ -51,7 +51,7 @@ class FormatDownloader(BaseFormatDownloader):
                 # Logs
                 if is_type_error:
                     logger.debug(
-                        f'Protocol "{self.format.protocol}" incompatible with httpx downloader.'
+                        f'Protocol "{self.stream.protocol}" incompatible with httpx downloader.'
                     )
                 elif is_forbidden:
                     logger.debug("Webpage blocking access to resource (403 Forbidden).")
@@ -59,11 +59,11 @@ class FormatDownloader(BaseFormatDownloader):
                 logger.debug("Trying again.")
 
                 # Downloader
-                from remora.downloader.format.ydl import YDLFormatDownloader
+                from remora.downloader.stream.ydl import YDLFormatDownloader
 
                 downloader = YDLFormatDownloader(
                     self.filepath,
-                    self.format,
+                    self.stream,
                     self.retries,
                 )
                 async for state in downloader.download():

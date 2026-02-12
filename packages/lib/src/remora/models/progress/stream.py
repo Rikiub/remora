@@ -6,7 +6,7 @@ from remora.models.progress.base import HasFile
 from typing_extensions import Self
 
 
-class DownloadingFormatState(BaseModel):
+class DownloadingStreamState(BaseModel):
     status: Literal["downloading"] = "downloading"
 
     downloaded_bytes: float = 0
@@ -39,11 +39,11 @@ class DownloadingFormatState(BaseModel):
         callback(self)
 
 
-class CompletedFormatState(HasFile):
+class CompletedStreamState(HasFile):
     status: Literal["completed"] = "completed"
 
 
-FormatState = Annotated[
-    DownloadingFormatState | CompletedFormatState,
+StreamState = Annotated[
+    DownloadingStreamState | CompletedStreamState,
     Field(discriminator="status"),
 ]

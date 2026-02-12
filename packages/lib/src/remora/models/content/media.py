@@ -17,7 +17,7 @@ from remora.models.content.metadata import (
     Subtitles,
     Thumbnail,
 )
-from remora.models.format.list import FormatList
+from remora.models.stream.list import StreamList
 from remora.types import MUSIC_SITES
 
 DatetimeTimestamp = Annotated[
@@ -73,9 +73,9 @@ class Media(LazyMedia):
 
     chapters: list[Chapter] | None = None
     subtitles: Subtitles | None = None
-    formats: Annotated[
-        FormatList,
+    streams: Annotated[
+        StreamList,
         AfterValidator(lambda list: list.sort_by("best")),
-        Field(min_length=1),
+        Field(alias="formats", min_length=1),
     ]
     is_cache: Annotated[bool, PrivateAttr()] = False

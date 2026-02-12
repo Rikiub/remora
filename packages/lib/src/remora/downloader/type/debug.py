@@ -1,5 +1,6 @@
 from loguru import logger
-from remora.models.progress.media import MediaDownloadState, ProcessingState
+from remora.models.progress.media import MediaDownloadState
+from remora.models.progress.processor import ProcessingState
 
 
 async def debug_callback(progress: MediaDownloadState):
@@ -37,8 +38,8 @@ async def _processor_callback(progress: ProcessingState):
                 _log_debug(
                     progress.id,
                     'Merged video "{video}" and audio "{audio}" formats.',
-                    video=progress.video_format.extension,
-                    audio=progress.audio_format.extension,
+                    video=progress.video_stream.extension,
+                    audio=progress.audio_stream.extension,
                 )
             case "embed_subtitles":
                 _log_debug(

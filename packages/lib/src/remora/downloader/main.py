@@ -55,7 +55,6 @@ class MediaDownloader:
 
         Args:
             media: Target `Media` to download.
-            on_progress: Callback function to get progress information.
 
         Returns:
             Path to downloaded file.
@@ -65,6 +64,7 @@ class MediaDownloader:
             media,
             format_config=self.config,
             extractor=self.extractor,
+            max_workers=1,
         ).run():
             if state.type == "media":
                 yield state

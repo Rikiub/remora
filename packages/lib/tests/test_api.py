@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import pytest
-from remora import AudioFormat, MediaDownloader, VideoFormat
+from remora import AudioStream, MediaDownloader, VideoStream
 from remora.extractor import MediaExtractor
-from remora.models.format.list import FormatList
+from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
 PLAYLIST = (
@@ -38,31 +38,31 @@ async def test_list(tmp_path: Path):
 
 
 @pytest.fixture(scope="session")
-async def formats():
+async def streams():
     result = await MediaExtractor().extract_url(URL)
     assert result.type == "media"
-    assert len(result.formats) >= 1
-    return result.formats
+    assert len(result.streams) >= 1
+    return result.streams
 
 
-class TestFormatsFilter:
-    async def test_video_type(self, formats: FormatList):
-        fmt = formats.only_video()
-        assert all(isinstance(f, VideoFormat) for f in fmt)
+class TestStreamList:
+    async def test_video_type(self, streams: StreamList):
+        fmt = streams.only_video()
+        assert all(isinstance(f, VideoStream) for f in fmt)
 
-    async def test_audio_type(self, formats: FormatList):
-        fmt = formats.only_audio()
-        assert all(isinstance(f, AudioFormat) for f in fmt)
+    async def test_audio_type(self, streams: StreamList):
+        fmt = streams.only_audio()
+        assert all(isinstance(f, AudioStream) for f in fmt)
 
-    async def test_closest_quality(self, formats: FormatList):
-        fmt = formats.get_closest_quality(600)
+    async def test_closest_quality(self, streams: StreamList):
+        fmt = streams.get_closest_quality(600)
         assert fmt.quality == 720
 
-    async def test_filter(self, formats: FormatList):
-        fmt = formats.filter(quality=720)
+    async def test_filter(self, streams: StreamList):
+        fmt = streams.filter(quality=720)
         assert all(f.quality == 720 for f in fmt)
 
-    async def test_get_by_id(self, formats: FormatList):
+    async def test_get_by_id(self, streams: StreamList):
         ID = "137"
-        fmt = formats.get_by_id(ID)
+        fmt = streams.get_by_id(ID)
         assert fmt.id == ID

@@ -5,13 +5,13 @@ from urllib.parse import urljoin
 import anyio
 import httpx
 from anyio import Path
-from remora.downloader.format.base import DEFAULT_RETRIES, BaseFormatDownloader
+from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.exceptions import DownloadError
-from remora.models.format.types import Format
-from remora.models.progress.format import (
-    CompletedFormatState,
-    DownloadingFormatState,
-    FormatState,
+from remora.models.stream.types import Stream
+from remora.models.progress.stream import (
+    CompletedStreamState,
+    DownloadingStreamState,
+    StreamState,
 )
 from remora.types import StrPath
 from typing_extensions import override
@@ -27,27 +27,27 @@ _LIST_PROTOCOLS = [
 ]
 
 
-class HttpxFormatDownloader(BaseFormatDownloader):
+class HttpxStreamDownloader(BaseStreamDownloader):
     SUPPORTED_PROTOCOLS = [*_HTTP_PROTOCOLS, *_LIST_PROTOCOLS]
 
     def __init__(
         self,
         filepath: StrPath,
-        format: Format,
+        stream: Stream,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
         duration: float | None = None,
     ):
-        super().__init__(filepath, format, retries)
+        super().__init__(filepath, stream, retries)
         self.duration = duration
 
         # Calculate filesize
-        total = self.format.filesize or 0
+        total = self.stream.filesize or 0
 
-        if not total and self.format.bitrate and self.duration:
-            total = int((self.format.bitrate * 1000 * self.duration) / 8)
+        if not total and self.stream.bitrate and self.duration:
+            total = int((self.stream.bitrate * 1000 * self.duration) / 8)
 
-        self.format_state = DownloadingFormatState(total_bytes=total)
+        self.stream_state = DownloadingStreamState(total_bytes=total)
 
         # Workers
         self.max_workers = max_workers
@@ -66,10 +66,10 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         await self.client.aclose()
 
     @override
-    async def download(self) -> AsyncIterable[FormatState]:  # type: ignore
-        self._log_format()
+    async def download(self) -> AsyncIterable[StreamState]:  # type: ignore
+        self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
-            FormatState
+            StreamState
         ](max_buffer_size=self.max_workers)
 
         async with anyio.create_task_group() as tg:
@@ -79,19 +79,19 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                 async for state in receive_stream:
                     yield state
 
-                yield CompletedFormatState(filepath=pathlib.Path(self.filepath))
+                yield CompletedStreamState(filepath=pathlib.Path(self.filepath))
 
     async def _execute_download(self):
         async with self._send_stream:
             try:
                 async with self.client:
-                    if self.format.protocol in _HTTP_PROTOCOLS:
+                    if self.stream.protocol in _HTTP_PROTOCOLS:
                         parts = await self._download_multi_part()
-                    elif self.format.protocol in _LIST_PROTOCOLS:
+                    elif self.stream.protocol in _LIST_PROTOCOLS:
                         parts = await self._download_fragments()
                     else:
                         raise TypeError(
-                            f"Unable to handle protocol: {self.format.protocol}"
+                            f"Unable to handle protocol: {self.stream.protocol}"
                         )
             except Exception as error:
                 status_code = 0
@@ -107,7 +107,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
     async def _download_multi_part(self) -> list[Path]:
         # Check if the server explicitly supports ranges
-        async with self.client.stream("GET", str(self.format.url)) as res:
+        async with self.client.stream("GET", str(self.stream.url)) as res:
             res.raise_for_status()
             supports_range: bool = res.headers.get("Accept-Ranges") == "bytes"
             total_size = int(res.headers.get("Content-Length", 0))
@@ -118,7 +118,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
 
         # Calculate filesize
         if total_size:
-            self.format_state.total_bytes = total_size
+            self.stream_state.total_bytes = total_size
 
         chunk_size = total_size // workers
         part_files: list[Path] = []
@@ -134,7 +134,7 @@ class HttpxFormatDownloader(BaseFormatDownloader):
                 tg.start_soon(
                     self._save_range,
                     part,
-                    str(self.format.url),
+                    str(self.stream.url),
                     start,
                     end,
                 )
@@ -142,9 +142,9 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         return part_files
 
     async def _download_fragments(self) -> list[Path]:
-        response = await self.client.get(str(self.format.url))
+        response = await self.client.get(str(self.stream.url))
         urls = [
-            urljoin(str(self.format.url), line.strip())
+            urljoin(str(self.stream.url), line.strip())
             for line in response.text.splitlines()
             if line.strip() and not line.startswith("#")
         ]
@@ -216,11 +216,11 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         return self.filepath
 
     async def _rename_extension(self, filepath: Path) -> Path:
-        new_file = filepath.with_suffix(f".{self.format.extension}")
+        new_file = filepath.with_suffix(f".{self.stream.extension}")
         return await filepath.rename(new_file)
 
     async def _update_progress(self, size: int):
-        state = self.format_state
+        state = self.stream_state
         state.downloaded_bytes += size
 
         if state.downloaded_bytes > state.total_bytes:
@@ -230,17 +230,17 @@ class HttpxFormatDownloader(BaseFormatDownloader):
         self._send_stream.send_nowait(state)
 
     def _get_headers(self) -> dict[str, str]:
-        headers = self.format.http_headers
+        headers = self.stream.http_headers
         return headers
 
     def _get_cookies(self) -> dict[str, str]:
         cookie_dict = {}
-        if not self.format.cookies:
+        if not self.stream.cookies:
             return cookie_dict
 
         # 1. Clean the string and split
         # yt-dlp cookie strings often have multiple cookies separated by '; '
-        parts = self.format.cookies.split(";")
+        parts = self.stream.cookies.split(";")
 
         for part in parts:
             if "=" not in part:

@@ -18,7 +18,7 @@ DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader} - {title}"
 
 @dataclass(slots=True)
 class FormatConfig:
-    """Configuration to shape the formats to download.
+    """Configuration to shape the streams to download.
 
     If FFmpeg is not installed, options marked with (FFmpeg) will not be available.
 

@@ -50,10 +50,10 @@ class YDLProcessor:
         return self.filepath.suffix[1:]
 
     @catch
-    async def change_container(self, format: str) -> Self:
+    async def change_container(self, stream: str) -> Self:
         pp = FFmpegVideoRemuxerPP(
             None,
-            preferedformat=format,
+            preferedformat=stream,
         )
         _, data = await run_sync(pp.run, self.params)
         self._update_filepath(data)
@@ -62,13 +62,13 @@ class YDLProcessor:
     @catch
     async def convert_audio(
         self,
-        format: str = "",
+        stream: str = "",
         quality: int | None = None,
     ) -> Self:
         pp = FFmpegExtractAudioPP(
             None,
             nopostoverwrites=False,
-            preferredcodec=format,
+            preferredcodec=stream,
             preferredquality=quality,
         )
 
@@ -134,10 +134,10 @@ class YDLProcessor:
 
     @classmethod
     @catch
-    async def from_formats_merge(
+    async def from_streams_merge(
         cls,
         filepath: StrPath,
-        formats: RequestedFormats,
+        streams: RequestedFormats,
         ffmpeg_path: StrPath | None = None,
     ) -> Self:
         cls = cls(filepath, ffmpeg_path=ffmpeg_path)
@@ -147,8 +147,8 @@ class YDLProcessor:
             pp.run,
             cls.params
             | {
-                "requested_formats": formats,
-                "__files_to_merge": [item["filepath"] for item in formats],
+                "requested_formats": streams,
+                "__files_to_merge": [item["filepath"] for item in streams],
             },
         )
         cls._update_filepath(data)

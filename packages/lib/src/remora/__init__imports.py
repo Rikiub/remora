@@ -11,6 +11,6 @@ from remora.exceptions import (
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
-from remora.models.format.types import AudioFormat, VideoFormat
+from remora.models.stream.types import AudioStream, VideoStream
 from remora.models.progress.list import PlaylistDownloadState
 from remora.models.progress.media import MediaDownloadState
