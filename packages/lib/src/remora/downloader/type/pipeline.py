@@ -22,20 +22,20 @@ from remora.exceptions import (
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.models.progress.stream import DownloadingStreamState, StreamState
+from remora.models.progress.stream import DownloadingStream, StreamEvent
 from remora.models.progress.media import (
-    CompletedState,
-    DownloadingState,
-    MediaDownloadState,
-    ResolvedState,
-    ResolvingState,
-    RetryingState,
-    WarningState,
+    Finished,
+    Downloading,
+    MediaEvent,
+    Resolved,
+    Resolving,
+    Retrying,
+    Warning,
 )
 from remora.models.progress.processor import (
-    MergingProcessorState,
-    ProcessorState,
-    ProcessorStateType,
+    MergingProcessor,
+    Processor,
+    ProcessorTask,
 )
 from remora.path import get_tempfile
 from remora.processor import MediaProcessor
@@ -54,25 +54,23 @@ class DownloadPipeline:
     ):
         self.id = media.id
 
-        self.media = media
+        self.media: Media = media  # type: ignore
         self.config = format_config or FormatConfig("video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
         logger.debug(self.config)
 
-    async def run(self) -> AsyncIterator[MediaDownloadState]:
-        self._stream, receive_stream = anyio.create_memory_object_stream[
-            MediaDownloadState
-        ](30)
+    async def run(self) -> AsyncIterator[MediaEvent]:
+        self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
                 tg.start_soon(self._execute_download)
 
-                async for state in receive_stream:
-                    await debug_callback(state)
-                    yield state
+                async for event in receive_stream:
+                    await debug_callback(event)
+                    yield event
 
     async def _execute_download(self):
         async with self._stream:
@@ -118,10 +116,10 @@ class DownloadPipeline:
                         self.media = await extractor.resolve(media)
 
                         self._stream.send_nowait(
-                            WarningState(id=self.id, message=str(e))
+                            Warning(id=self.id, media=self.media, message=str(e))
                         )
                         self._stream.send_nowait(
-                            RetryingState(id=self.id, reason="stale_cache")
+                            Retrying(id=self.id, media=self.media, result="stale_cache")
                         )
                     raise
 
@@ -129,12 +127,15 @@ class DownloadPipeline:
                     # Process File
                     downloaded_file = await self.process(downloaded_file, media, stream)
             except MediaError as e:
-                self._stream.send_nowait(WarningState(id=self.id, message=str(e)))
                 self._stream.send_nowait(
-                    CompletedState(
+                    Warning(id=self.id, media=self.media, message=str(e))
+                )
+                self._stream.send_nowait(
+                    Finished(
                         id=self.id,
+                        media=self.media,
                         filepath=pathlib.Path(),
-                        reason="failed",
+                        result="failed",
                     )
                 )
                 raise
@@ -143,12 +144,12 @@ class DownloadPipeline:
             await self.move_to_final(downloaded_file, output)
 
     async def resolve_media(self) -> Media:
-        self._stream.send_nowait(ResolvingState(id=self.id, media=self.media))
+        self._stream.send_nowait(Resolving(id=self.id, media=self.media))
 
         if not isinstance(self.media, Media):
             self.media = await self.extractor.resolve(self.media)
 
-        self._stream.send_nowait(ResolvedState(id=self.id, media=self.media))
+        self._stream.send_nowait(Resolved(id=self.id, media=self.media))
         return self.media
 
     async def check_output_duplicate(self, output: Path) -> Path | None:
@@ -161,10 +162,11 @@ class DownloadPipeline:
                     or path_extension in SupportedExtensions.audio
                 ):
                     self._stream.send_nowait(
-                        CompletedState(
+                        Finished(
                             id=self.id,
+                            media=self.media,
                             filepath=pathlib.Path(path),
-                            reason="skipped",
+                            result="skipped",
                         )
                     )
                     return path
@@ -178,11 +180,11 @@ class DownloadPipeline:
         """Orchestrates the physical download of bytes."""
 
         streams_states = {
-            "video": DownloadingStreamState(
+            "video": DownloadingStream(
                 downloaded_bytes=0,
                 total_bytes=video_stream.filesize or 0 if video_stream else 0,
             ),
-            "audio": DownloadingStreamState(
+            "audio": DownloadingStream(
                 downloaded_bytes=0,
                 total_bytes=audio_stream.filesize or 0 if audio_stream else 0,
             ),
@@ -191,30 +193,31 @@ class DownloadPipeline:
         video_file = None
         audio_file = None
 
-        async def _sync_progress(state: StreamState, is_video: bool):
+        async def _sync_progress(event: StreamEvent, is_video: bool):
             nonlocal video_file, audio_file
 
-            match state.status:
+            match event.status:
                 case "downloading":
-                    streams_states["video" if is_video else "audio"] = state
+                    streams_states["video" if is_video else "audio"] = event
 
                     v = streams_states["video"]
                     a = streams_states["audio"]
 
                     self._stream.send_nowait(
-                        DownloadingState(
+                        Downloading(
                             id=self.id,
+                            media=self.media,
                             downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
                             total_bytes=v.total_bytes + a.total_bytes,
                             speed=v.speed + a.speed,
                             elapsed=max(v.elapsed, a.elapsed),
                         )
                     )
-                case "completed":
+                case "finished":
                     if is_video:
-                        video_file = state.filepath
+                        video_file = event.filepath
                     else:
-                        audio_file = state.filepath
+                        audio_file = event.filepath
 
         async def download_video():
             if video_stream:
@@ -223,8 +226,8 @@ class DownloadPipeline:
                     stream=video_stream,
                     duration=duration,
                 )
-                async for state in downloader.download():
-                    await _sync_progress(state, True)
+                async for event in downloader.download():
+                    await _sync_progress(event, True)
 
         async def download_audio():
             if audio_stream:
@@ -233,8 +236,8 @@ class DownloadPipeline:
                     stream=audio_stream,
                     duration=duration,
                 )
-                async for state in downloader.download():
-                    await _sync_progress(state, False)
+                async for event in downloader.download():
+                    await _sync_progress(event, False)
 
         async with anyio.create_task_group() as tg:
             # Download Audio
@@ -254,10 +257,11 @@ class DownloadPipeline:
             extension = self.config.convert or "mp4"
             filepath = pathlib.Path(f"{await get_tempfile()}.{extension}")
 
-            merging = MergingProcessorState(
+            merging = MergingProcessor(
                 id=self.id,
+                media=self.media,
                 filepath=filepath,
-                stage="started",
+                step="started",
                 video_stream=video_stream,
                 audio_stream=audio_stream,
             )
@@ -268,7 +272,7 @@ class DownloadPipeline:
                 ffmpeg_path=self.config.ffmpeg_path,
             )
 
-            merging.stage = "completed"
+            merging.step = "completed"
             self._stream.send_nowait(merging)
 
             return Path(prc.filepath)
@@ -288,26 +292,31 @@ class DownloadPipeline:
         prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
         @asynccontextmanager
-        async def track_prc(name: ProcessorStateType, raise_exceptions: bool = False):
-            state = ProcessorState(
+        async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
+            event = Processor(
                 id=self.id,
+                media=self.media,
                 filepath=prc.filepath,
-                stage="started",
-                processor=name,
+                step="started",
+                task=task,
             )
-            self._stream.send_nowait(state)
+            self._stream.send_nowait(event)
 
             try:
                 yield
-                state.filepath = prc.filepath
-                state.stage = "completed"
-                self._stream.send_nowait(state)
+
+                event.filepath = prc.filepath
+                event.step = "completed"
+
+                self._stream.send_nowait(event)
             except (ProcessingError, MetadataDownloadError) as error:
                 if raise_exceptions:
                     raise
 
                 self.incomplete = True
-                self._stream.send_nowait(WarningState(id=self.id, message=str(error)))
+                self._stream.send_nowait(
+                    Warning(id=self.id, media=self.media, message=str(error))
+                )
 
         # Remuxing
         if isinstance(stream, VideoStream):
@@ -355,10 +364,11 @@ class DownloadPipeline:
         await run_sync(shutil.move, src, final_path)
 
         self._stream.send_nowait(
-            CompletedState(
+            Finished(
                 id=self.id,
+                media=self.media,
                 filepath=pathlib.Path(final_path),
-                reason="incomplete" if self.incomplete else "success",
+                result="incomplete" if self.incomplete else "success",
             )
         )
 

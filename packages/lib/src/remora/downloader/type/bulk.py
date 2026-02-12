@@ -10,11 +10,8 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import (
-    CompletedPlaylistState,
-    PlaylistState,
-    ReceivedState,
-)
+from remora.models.progress.list import FinishedPlaylist, PlaylistUpdate
+from remora.models.progress.main import DownloadEvent
 from remora.template.parser import generate_output_template
 
 MediaResult = ExtractResult | MediaListEntries | MediaList | list[LazyMedia]
@@ -55,8 +52,8 @@ class DownloadBulk:
         self.completed = 0
         self.total = len(self.medias)
 
-    async def run(self) -> AsyncIterable[ReceivedState]:
-        self._stream, receive_stream = anyio.create_memory_object_stream[ReceivedState](
+    async def run(self) -> AsyncIterable[DownloadEvent]:
+        self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
             self.max_workers
         )
 
@@ -65,8 +62,8 @@ class DownloadBulk:
                 async with anyio.create_task_group() as tg:
                     tg.start_soon(self._execute_download)
 
-                    async for state in receive_stream:
-                        yield state
+                    async for event in receive_stream:
+                        yield event
             except anyio.get_cancelled_exc_class():
                 yield receive_stream.receive_nowait()
 
@@ -76,14 +73,14 @@ class DownloadBulk:
             await self._setup()
 
             self._stream.send_nowait(
-                PlaylistState(
+                PlaylistUpdate(
                     id=self.id,
                     status="started",
                     completed=self.completed,
                     total=self.total,
                 )
             )
-            reason = "success"
+            result = "success"
 
             # Tasks
             try:
@@ -91,33 +88,33 @@ class DownloadBulk:
                     for media in self.medias:
                         tg.start_soon(self._run_pipeline, media)
             except anyio.get_cancelled_exc_class():
-                reason = "cancelled"
+                result = "cancelled"
                 raise
             finally:
                 self._stream.send_nowait(
-                    CompletedPlaylistState(
+                    FinishedPlaylist(
                         id=self.id,
                         completed=self.completed,
                         total=self.total,
-                        reason=reason,
+                        result=result,
                     )
                 )
 
     async def _run_pipeline(self, media: LazyMedia):
         async with self.limiter:
             try:
-                async for state in DownloadPipeline(
+                async for event in DownloadPipeline(
                     media,
                     self.config,
                     self.extractor,
                 ).run():
-                    self._stream.send_nowait(state)
+                    self._stream.send_nowait(event)
             except MediaError:
                 pass
 
             self.completed += 1
             self._stream.send_nowait(
-                PlaylistState(
+                PlaylistUpdate(
                     id=self.id,
                     status="update",
                     completed=self.completed,

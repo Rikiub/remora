@@ -5,8 +5,8 @@ from remora.extractor import MediaExtractor
 from remora.models.content.list import MediaList
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import ExtractResult, MediaListEntries
-from remora.models.progress.list import PlaylistDownloadState
-from remora.models.progress.media import MediaDownloadState
+from remora.models.progress.main import DownloadEvent
+from remora.models.progress.media import MediaEvent
 from remora.types import FILE_FORMAT, StrPath
 
 _MediaResult = ExtractResult | MediaListEntries
@@ -50,7 +50,7 @@ class MediaDownloader:
         self.extractor = extractor
         self.max_workers = max_workers
 
-    async def download(self, media: LazyMedia) -> AsyncIterable[MediaDownloadState]:
+    async def download(self, media: LazyMedia) -> AsyncIterable[MediaEvent]:
         """Single download a `Media` result.
 
         Args:
@@ -60,28 +60,26 @@ class MediaDownloader:
             Path to downloaded file.
         """
 
-        async for state in DownloadBulk(
+        async for event in DownloadBulk(
             media,
             format_config=self.config,
             extractor=self.extractor,
             max_workers=1,
         ).run():
-            if state.type == "media":
-                yield state
+            if event.type == "media":
+                yield event
 
-    async def download_all(
-        self, data: MediaResult
-    ) -> AsyncIterable[PlaylistDownloadState]:
+    async def download_all(self, data: MediaResult) -> AsyncIterable[DownloadEvent]:
         """Batch download any result.
 
         Returns:
             List of paths to downloaded files.
         """
 
-        async for state in DownloadBulk(
+        async for event in DownloadBulk(
             data,
             self.config,
             self.extractor,
             self.max_workers,
         ).run():
-            yield state
+            yield event

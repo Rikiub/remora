@@ -1,12 +1,12 @@
 from collections.abc import Callable
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
-from remora.models.progress.base import HasFile
+from pydantic import Field
+from remora.models.progress.base import BaseEvent, FileEvent
 from typing_extensions import Self
 
 
-class DownloadingStreamState(BaseModel):
+class DownloadingStream(BaseEvent):
     status: Literal["downloading"] = "downloading"
 
     downloaded_bytes: float = 0
@@ -39,11 +39,11 @@ class DownloadingStreamState(BaseModel):
         callback(self)
 
 
-class CompletedStreamState(HasFile):
-    status: Literal["completed"] = "completed"
+class FinishedStream(FileEvent):
+    status: Literal["finished"] = "finished"
 
 
-StreamState = Annotated[
-    DownloadingStreamState | CompletedStreamState,
+StreamEvent = Annotated[
+    DownloadingStream | FinishedStream,
     Field(discriminator="status"),
 ]

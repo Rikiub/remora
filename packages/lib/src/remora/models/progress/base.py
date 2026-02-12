@@ -2,16 +2,26 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
+from remora.models.content.media import Media
 
-StageType = Literal["started", "completed"]
+
+class BaseEvent(BaseModel): ...
 
 
-class MediaState(BaseModel):
-    type: Literal["media"] = "media"
+class EventId(BaseModel):
     id: str
 
 
-class HasFile(BaseModel):
+class BaseMediaEvent(EventId):
+    type: Literal["media"] = "media"
+    media: Media
+
+
+class BasePlaylistEvent(EventId):
+    type: Literal["playlist"] = "playlist"
+
+
+class FileEvent(BaseEvent):
     filepath: Path
 
     @property

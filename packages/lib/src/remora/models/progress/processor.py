@@ -1,11 +1,11 @@
 from typing import Annotated, Literal
 
 from pydantic import Field
+from remora.models.progress.base import BaseMediaEvent
 from remora.models.stream.types import AudioStream, VideoStream
-from remora.models.progress.base import MediaState, StageType
-from remora.models.progress.media import HasFile
+from remora.models.progress.media import FileEvent
 
-ProcessorStateType = Literal[
+ProcessorTask = Literal[
     "change_container",
     "convert_audio",
     "embed_metadata",
@@ -14,20 +14,20 @@ ProcessorStateType = Literal[
 ]
 
 
-class ProcessorState(MediaState, HasFile):
+class Processor(BaseMediaEvent, FileEvent):
     status: Literal["processing"] = "processing"
-    stage: StageType
-    processor: ProcessorStateType
+    step: Literal["started", "completed"]
+    task: ProcessorTask
 
 
-class MergingProcessorState(ProcessorState):
-    processor: Literal["merge_formats"] = "merge_formats"  # type: ignore
+class MergingProcessor(Processor):
+    task: Literal["merge_formats"] = "merge_formats"  # type: ignore
 
     video_stream: VideoStream
     audio_stream: AudioStream
 
 
-ProcessingState = Annotated[
-    MergingProcessorState | ProcessorState,
-    Field(discriminator="processor"),
+Processing = Annotated[
+    Processor | MergingProcessor,
+    Field(discriminator="task"),
 ]

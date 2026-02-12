@@ -168,8 +168,8 @@ What format you want request?
                     result = result.medias[0]
 
             async with ProgressCallback(CONFIG.quiet) as progress:
-                async for state in downloader.download_all(result):
-                    await progress.playlist_callback(state)
+                async for event in downloader.download_all(result):
+                    await progress.playlist_callback(event)
 
         except MediaError as err:
             logger.error("❌ {error}", error=str(err))

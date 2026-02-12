@@ -1,29 +1,22 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
-from remora.models.progress.media import MediaDownloadState
+from pydantic import Field
+from remora.models.progress.base import BasePlaylistEvent
 
 
-class PlaylistState(BaseModel):
-    type: Literal["playlist"] = "playlist"
+class PlaylistUpdate(BasePlaylistEvent):
     status: Literal["started", "update"]
-    id: str
 
     completed: int
     total: int
 
 
-class CompletedPlaylistState(PlaylistState):
-    status: Literal["completed"] = "completed"  # type: ignore
-    reason: Literal["success", "cancelled"]
+class FinishedPlaylist(PlaylistUpdate):
+    status: Literal["finished"] = "finished"  # type: ignore
+    result: Literal["success", "cancelled"]
 
 
-PlaylistDownloadState = Annotated[
-    PlaylistState | CompletedPlaylistState,
+PlaylistEvent = Annotated[
+    PlaylistUpdate | FinishedPlaylist,
     Field(discriminator="status"),
-]
-
-ReceivedState = Annotated[
-    PlaylistDownloadState | MediaDownloadState,
-    Field(discriminator="type"),
 ]

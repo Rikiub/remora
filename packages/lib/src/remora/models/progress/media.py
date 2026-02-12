@@ -3,47 +3,40 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.progress.base import HasFile, MediaState
-from remora.models.content.media import LazyMedia, Media
-from remora.models.progress.stream import DownloadingStreamState
-from remora.models.progress.processor import ProcessingState
+from remora.models.progress.base import BaseMediaEvent, FileEvent
+from remora.models.content.media import LazyMedia
+from remora.models.progress.stream import DownloadingStream
+from remora.models.progress.processor import Processing
 
 
-class ResolvingState(MediaState):
+class Resolving(BaseMediaEvent):
     status: Literal["resolving"] = "resolving"
-    media: LazyMedia
+    media: LazyMedia  # type: ignore
 
 
-class ResolvedState(MediaState):
+class Resolved(BaseMediaEvent):
     status: Literal["resolved"] = "resolved"
-    media: Media
 
 
-class RetryingState(MediaState):
+class Retrying(BaseMediaEvent):
     status: Literal["retrying"] = "retrying"
-    reason: Literal["stale_cache"]
+    result: Literal["stale_cache"]
 
 
-class DownloadingState(DownloadingStreamState, MediaState): ...
+class Downloading(DownloadingStream, BaseMediaEvent): ...
 
 
-class WarningState(MediaState):
+class Warning(BaseMediaEvent):
     status: Literal["warning"] = "warning"
     message: str
 
 
-class CompletedState(MediaState, HasFile):
-    status: Literal["completed"] = "completed"
-    reason: Literal["success", "incomplete", "skipped", "failed"]
+class Finished(BaseMediaEvent, FileEvent):
+    status: Literal["finished"] = "finished"
+    result: Literal["success", "incomplete", "skipped", "failed"]
 
 
-MediaDownloadState = Annotated[
-    ResolvingState
-    | ResolvedState
-    | DownloadingState
-    | RetryingState
-    | ProcessingState
-    | WarningState
-    | CompletedState,
+MediaEvent = Annotated[
+    Resolving | Resolved | Downloading | Retrying | Processing | Warning | Finished,
     Field(discriminator="status"),
 ]

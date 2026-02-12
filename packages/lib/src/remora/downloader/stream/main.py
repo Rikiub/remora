@@ -1,7 +1,7 @@
 from typing import AsyncIterable
 
 from loguru import logger
-from remora.models.progress.stream import StreamState
+from remora.models.progress.stream import StreamEvent
 
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.downloader.stream.httpx import HttpxStreamDownloader
@@ -29,7 +29,7 @@ class StreamDownloader(BaseStreamDownloader):
         self.max_workers = max_workers
 
     @override
-    async def download(self) -> AsyncIterable[StreamState]:  # type: ignore
+    async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
         try:
             async with HttpxStreamDownloader(
                 self.filepath,
@@ -38,8 +38,8 @@ class StreamDownloader(BaseStreamDownloader):
                 max_workers=self.max_workers,
                 duration=self.duration,
             ) as client:
-                async for state in client.download():
-                    yield state
+                async for event in client.download():
+                    yield event
         except* (TypeError, DownloadError) as eg:
             error = eg.exceptions[0]
 
@@ -66,7 +66,7 @@ class StreamDownloader(BaseStreamDownloader):
                     self.stream,
                     self.retries,
                 )
-                async for state in downloader.download():
-                    yield state
+                async for event in downloader.download():
+                    yield event
             else:
                 raise

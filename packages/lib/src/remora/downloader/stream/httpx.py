@@ -9,9 +9,9 @@ from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.exceptions import DownloadError
 from remora.models.stream.types import Stream
 from remora.models.progress.stream import (
-    CompletedStreamState,
-    DownloadingStreamState,
-    StreamState,
+    FinishedStream,
+    DownloadingStream,
+    StreamEvent,
 )
 from remora.types import StrPath
 from typing_extensions import override
@@ -47,7 +47,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         if not total and self.stream.bitrate and self.duration:
             total = int((self.stream.bitrate * 1000 * self.duration) / 8)
 
-        self.stream_state = DownloadingStreamState(total_bytes=total)
+        self.event = DownloadingStream(total_bytes=total)
 
         # Workers
         self.max_workers = max_workers
@@ -66,20 +66,20 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         await self.client.aclose()
 
     @override
-    async def download(self) -> AsyncIterable[StreamState]:  # type: ignore
+    async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
         self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
-            StreamState
+            StreamEvent
         ](max_buffer_size=self.max_workers)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
                 tg.start_soon(self._execute_download)
 
-                async for state in receive_stream:
-                    yield state
+                async for event in receive_stream:
+                    yield event
 
-                yield CompletedStreamState(filepath=pathlib.Path(self.filepath))
+                yield FinishedStream(filepath=pathlib.Path(self.filepath))
 
     async def _execute_download(self):
         async with self._send_stream:
@@ -118,7 +118,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
         # Calculate filesize
         if total_size:
-            self.stream_state.total_bytes = total_size
+            self.event.total_bytes = total_size
 
         chunk_size = total_size // workers
         part_files: list[Path] = []
@@ -220,14 +220,14 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         return await filepath.rename(new_file)
 
     async def _update_progress(self, size: int):
-        state = self.stream_state
-        state.downloaded_bytes += size
+        event = self.event
+        event.downloaded_bytes += size
 
-        if state.downloaded_bytes > state.total_bytes:
-            state.total_bytes = state.downloaded_bytes
+        if event.downloaded_bytes > event.total_bytes:
+            event.total_bytes = event.downloaded_bytes
 
-        # Send state to top function
-        self._send_stream.send_nowait(state)
+        # Send event to top function
+        self._send_stream.send_nowait(event)
 
     def _get_headers(self) -> dict[str, str]:
         headers = self.stream.http_headers
