@@ -1,5 +1,6 @@
 from remora_cli.ui.rich import CONSOLE
 from rich.console import Group, RenderableType
+from rich.live import Live
 from rich.progress import (
     BarColumn,
     FileSizeColumn,
@@ -87,6 +88,10 @@ class DownloadProgress:
             disable=disable,
             console=CONSOLE,
         )
+        self._live = Live(
+            renderable=Group(self.counter, self._progress),
+            console=CONSOLE,
+        )
         self.tasks: dict[str, TaskID] = {}
 
     def add_task(self, id: str, description: str, status: str):
@@ -112,14 +117,11 @@ class DownloadProgress:
             total=total,
         )
 
-    def get_renderable(self) -> RenderableType:
-        return Group(self.counter, self._progress)
-
     def start(self):
-        self._progress.start()
+        self._live.start()
 
     def stop(self):
-        self._progress.stop()
+        self._live.stop()
 
     def __enter__(self):
         self.start()

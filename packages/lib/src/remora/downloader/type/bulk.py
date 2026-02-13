@@ -50,7 +50,7 @@ class DownloadBulk:
 
         # State
         self.completed = 0
-        self.total = len(self.medias)
+        self.total = 0
 
         self.success = 0
         self.failed = 0
@@ -59,7 +59,7 @@ class DownloadBulk:
 
     async def run(self) -> AsyncIterable[DownloadEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
-            self.max_workers
+            100
         )
 
         async with receive_stream:
@@ -159,7 +159,7 @@ class DownloadBulk:
         self.total = len(self.medias)
 
         self.success = 0
-        self.total = 0
+        self.failed = 0
 
         self.result = "success"
 
