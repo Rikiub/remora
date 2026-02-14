@@ -1,33 +1,40 @@
 import re
 from pathlib import Path
-from typing import Literal
+import string
 
 from pathvalidate import sanitize_filepath
 from remora.exceptions import OutputTemplateError
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media
 from remora.models.stream.types import Stream
-from remora.template.keys import get_keys
+from remora.template.keys import PlaylistNested
 from remora.types import StrPath
 
 
-class FormatterDict(dict):
-    def __init__(self, *args, replace: str | None = None, **kwargs):
-        super().__init__(*args, **kwargs)
+class TemplateFormatter(string.Formatter):
+    def __init__(self, replace: str | None = None):
         self.replace = replace
 
-    def __missing__(self, key):
-        if self.replace:
-            return self.replace
+    def get_field(self, field_name, args, kwargs):
+        value = kwargs.get(field_name)
+
+        if value is None:
+            # If replace is provided, use it
+            # Otherwise, return the original {key} string
+            final_value = (
+                self.replace if self.replace is not None else f"{{{field_name}}}"
+            )
         else:
-            return f"{{{key}}}"
+            final_value = value
+
+        return final_value, field_name
 
 
 def generate_output_template(
     output: StrPath,
+    stream: Stream | None = None,
     media: Media | None = None,
     playlist: Playlist | None = None,
-    stream: Stream | None = None,
     default_missing: str | None = None,
 ) -> Path:
     validate_output(output)
@@ -35,21 +42,23 @@ def generate_output_template(
     data = {}
 
     if stream:
-        data |= stream.model_dump(exclude_none=True)
-        data |= stream.model_dump(by_alias=True, exclude_none=True)
-    if playlist:
-        data |= playlist.model_dump(by_alias=True, exclude_none=True)
+        data |= flatten_dict(stream.model_dump())
     if media:
-        data |= media.model_dump(exclude_none=True)
+        data |= flatten_dict(media.model_dump())
+    if playlist:
+        wrap_playlist = PlaylistNested(playlist=playlist)
+        data |= flatten_dict(wrap_playlist.model_dump())
 
-    safe_data = FormatterDict(data, replace=default_missing)
-    template = str(output).format_map(safe_data)
+    formatter = TemplateFormatter(replace=default_missing)
+    template = formatter.format(str(output), **data)
 
     path = Path(sanitize_filepath(template, max_len=250))
     return path
 
 
-def validate_output(output: StrPath) -> Literal[True]:
+def validate_output(output: StrPath):
+    from remora.template.keys import get_keys
+
     pattern = r"{(.*?)}"
     keys: list[str] = re.findall(pattern, str(output))
 
@@ -57,4 +66,16 @@ def validate_output(output: StrPath) -> Literal[True]:
         if key not in get_keys():
             raise OutputTemplateError(f"Key '{{{key}}}' from '{output}' is invalid.")
 
-    return True
+
+def flatten_dict(d: dict, prefix: str = "") -> dict:
+    items = {}
+
+    for k, v in d.items():
+        new_key = f"{prefix}{k}"
+        if isinstance(v, dict):
+            # Recursively flatten, but also keep the parent if it has data
+            items.update(flatten_dict(v, prefix=f"{new_key}."))
+        else:
+            items[new_key] = v
+
+    return items

@@ -13,7 +13,7 @@ from remora.types import (
     StrPath,
 )
 
-DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader} - {title}"
+DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader.name} - {title}"
 
 
 @dataclass(slots=True)

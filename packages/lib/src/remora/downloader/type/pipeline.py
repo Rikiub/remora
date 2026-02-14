@@ -94,7 +94,7 @@ class DownloadPipeline:
             #  Calculate Path & Check Existence
             output = generate_output_template(
                 self.config.output,
-                media,
+                media=media,
                 stream=stream,
                 default_missing="NA",
             )
