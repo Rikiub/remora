@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from loguru import logger
 from remora_cli.completions import complete_query, complete_template_key
@@ -32,14 +32,13 @@ async def extract(
             metavar="URL | SERVICE",
         ),
     ],
-    json: Annotated[
-        bool,
+    format: Annotated[
+        Literal["table", "json"],
         Option(
-            "--json",
-            help="Dump data as JSON.",
+            help="Output format of data.",
             rich_help_panel=HelpPanel.FORMAT,
         ),
-    ] = False,
+    ] = "table",
     include: Annotated[
         list[str],
         Option(
@@ -89,7 +88,7 @@ async def extract(
         else:
             logger.info("Successful extraction.")
 
-        if json:
+        if format == "json":
             data = result.model_dump_json(
                 include={*include} or None,
                 exclude=default_exclude or None,
@@ -100,7 +99,7 @@ async def extract(
                 console.print(data)
             else:
                 print(data)
-        else:
+        elif format == "table":
             data = result.model_dump(
                 include={*include} or None,
                 exclude=default_exclude or None,
