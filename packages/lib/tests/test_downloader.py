@@ -49,6 +49,9 @@ class TestSite:
             "https://www.tiktok.com/@livewallpaper77/video/7410777368064806149"
         )
 
+    async def test_netease_music(self, download):
+        await download("http://music.163.com/#/song?id=421563082")
+
     async def test_bandcamp(self, download):
         await download("https://gourmetdeluxxx.bandcamp.com/track/nocturnal-hooli")
 

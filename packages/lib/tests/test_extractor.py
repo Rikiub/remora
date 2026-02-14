@@ -108,3 +108,6 @@ class TestSite:
 
     async def test_pinterest(self):
         await extract_url("https://www.pinterest.com/pin/762304674460692892/")
+
+    async def test_netease_music(self):
+        await extract_url("http://music.163.com/#/song?id=421563082")

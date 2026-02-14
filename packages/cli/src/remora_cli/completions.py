@@ -17,11 +17,16 @@ def complete_resolution() -> Generator[str, None, None]:
         yield str(name)
 
 
+def complete_template_key() -> Generator[str, None, None]:
+    from remora.template.keys import get_keys
+
+    for key in get_keys():
+        yield key
+
+
 def complete_output(incomplete: str) -> Generator[str, None, None]:
     if incomplete.endswith("{"):
-        from remora.template.keys import get_keys
-
-        for key in get_keys():
+        for key in complete_template_key():
             yield incomplete + key + "}"
 
 

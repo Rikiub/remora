@@ -18,7 +18,7 @@ class StreamSelector:
         """Resolves the final pair of formats to be downloaded."""
         audio = self.extract_best(media.streams, AudioStream)
 
-        if audio and (media.is_music or self._config.type == "audio"):
+        if audio and (media.music or self._config.type == "audio"):
             return None, audio
 
         video = self.extract_best(media.streams, VideoStream)

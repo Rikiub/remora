@@ -15,7 +15,6 @@ VIDEO_RESOLUTION = Literal[144, 240, 360, 480, 720, 1080]
 
 # SEARCH
 SEARCH_SERVICE = Literal["soundcloud", "youtube", "ytmusic"]
-MUSIC_SITES = frozenset({"music.youtube.com", "soundcloud.com", "bandcamp.com"})
 
 # Extra
 APP_NAME = "remora"

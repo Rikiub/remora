@@ -124,7 +124,7 @@ class StreamList(BaseList[StreamType], Generic[T]):
         return self.__class__(
             sorted(
                 self.root,
-                key=filter,  # type: ignore
+                key=filter,
                 reverse=reverse,
             )
         )
@@ -160,8 +160,8 @@ class StreamList(BaseList[StreamType], Generic[T]):
             return before
 
     @override
-    def __iter__(self) -> Iterator[T]:  # type: ignore
-        return super().__iter__()  # type: ignore
+    def __iter__(self) -> Iterator[T]:
+        return super().__iter__()
 
     @overload
     def __getitem__(self, index: int) -> T: ...
@@ -170,5 +170,5 @@ class StreamList(BaseList[StreamType], Generic[T]):
     def __getitem__(self, index: slice) -> Self: ...
 
     @override
-    def __getitem__(self, index) -> T | Self:  # type: ignore
+    def __getitem__(self, index) -> T | Self:
         return super().__getitem__(index)

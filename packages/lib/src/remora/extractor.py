@@ -35,7 +35,7 @@ class MediaExtractor:
 
         # Load from cache
         if self.use_cache and (cached_json := await load_info(url)):
-            model = ExtractAdapter.validate_json(cached_json, by_alias=True)
+            model = ExtractAdapter.validate_json(cached_json)
 
             if isinstance(model, Media):
                 model.is_cache = True
@@ -46,7 +46,7 @@ class MediaExtractor:
 
         # Extract info
         info = await run_sync(extract_info, url)
-        result = ExtractAdapter.validate_python(info, by_alias=True)
+        result = ExtractAdapter.validate_python(info)
 
         # Save to cache
         if self.use_cache:

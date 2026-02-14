@@ -118,8 +118,10 @@ class ProgressCallback:
     def _media_display_name(self, media: LazyMedia) -> str:
         """Get pretty representation of media name."""
 
-        if media.is_music and media.uploader and media.title:
-            return media.title + " - " + media.uploader
+        music = media.music
+
+        if music and (music.track and music.artists):
+            return f"{music.track} - {music.artists[0]}"
         elif media.title:
             return media.title
         else:

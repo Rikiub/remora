@@ -8,7 +8,7 @@ except ImportError:
 def run():
     from remora.types import APP_NAME
 
-    from remora_cli.commands import download, main
+    from remora_cli.commands import download, main, extract
 
     app = Typer(
         callback=main.main,
@@ -16,5 +16,6 @@ def run():
         rich_markup_mode="rich",
     )
     app.add_typer(download.app)
+    app.add_typer(extract.app)
 
     app(prog_name=APP_NAME)

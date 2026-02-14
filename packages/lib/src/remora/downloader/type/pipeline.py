@@ -381,12 +381,12 @@ class DownloadPipeline:
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
             async with track_prc("embed_metadata"):
-                await prc.embed_metadata(self.media, self.media.is_music)
+                await prc.embed_metadata(self.media, bool(self.media.music))
 
         if thumbnail:
             if prc.filepath.suffix[1:] in ThumbnailSupport:
                 async with track_prc("embed_thumbnail"):
-                    await prc.embed_thumbnail(thumbnail, square=self.media.is_music)
+                    await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
         return Path(prc.filepath)
 

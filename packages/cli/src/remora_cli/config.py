@@ -7,6 +7,7 @@ from remora.types import LOGGING_LEVELS
 class _Config:
     verbose: bool = False
     quiet: bool = False
+    cache: bool = False
 
     @property
     def log_level(self) -> LOGGING_LEVELS:

@@ -1,8 +1,35 @@
 from typing import Generic, TypeVar, overload
 
-from pydantic import BaseModel, RootModel
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    RootModel,
+    ValidationError,
+    WrapValidator,
+)
 from remora.ydl.types import YDLExtractInfo
 from typing_extensions import Self
+
+
+def _validate_or_none(v, handler):
+    """Models must implement __bool__ to ensure validation."""
+
+    try:
+        model = handler(v)
+
+        if model:
+            return model
+        else:
+            return None
+    except ValidationError:
+        return None
+
+
+EnsureNone = WrapValidator(_validate_or_none)
+"""Ensure data will be None if field not exists."""
+
+EnsureList = BeforeValidator(lambda v: v if v else [])
+"""Ensure data will be empty list if field not exists."""
 
 
 class YDLSerializable(BaseModel):
@@ -30,7 +57,7 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self):  # type: ignore
+    def __iter__(self):
         return iter(self.root)
 
     @overload
@@ -42,6 +69,6 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __getitem__(self, index) -> T | Self:
         match index:
             case int() | slice():
-                return self.root[index]  # type: ignore
+                return self.root[index]
             case _:
                 raise TypeError(index)

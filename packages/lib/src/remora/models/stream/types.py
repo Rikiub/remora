@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import (
     AfterValidator,
+    AliasChoices,
     BaseModel,
     Field,
     HttpUrl,
@@ -20,8 +21,8 @@ AudioCodecField = Field(alias="acodec")
 
 
 class YDLArgs(BaseModel):
-    downloader_options: Annotated[dict, Field(default_factory=dict, repr=False)]
-    http_headers: Annotated[dict, Field(default_factory=dict, repr=False)]
+    downloader_options: Annotated[dict, Field(default_factory=dict)]
+    http_headers: Annotated[dict, Field(default_factory=dict)]
     cookies: str | None = None
 
 
@@ -31,8 +32,15 @@ class Stream(ABC, YDLArgs, YDLSerializable):
     id: Annotated[str, Field(alias="format_id")]
     url: HttpUrl
     protocol: str
+    available_at: int | None = None
     extension: Annotated[str, Field(alias="ext")]
-    filesize: int | None = None
+    filesize: Annotated[
+        int | None,
+        Field(
+            alias="filesize",
+            validation_alias=AliasChoices("filesize", "filesize_approx"),
+        ),
+    ] = None
     bitrate: Annotated[float, Field(alias="tbr")] = 0
     audio_codec: Annotated[Codec | None, AudioCodecField] = None
 
@@ -61,6 +69,7 @@ class AudioStream(Stream):
     audio_codec: Annotated[  # type: ignore
         Codec, AudioCodecField
     ]
+    language: str | None = None
 
     @property
     @override

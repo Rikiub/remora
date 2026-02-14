@@ -5,16 +5,12 @@ from typing import Annotated
 from loguru import logger
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
-from remora_cli.completions import (
-    complete_output,
-    complete_query,
-    complete_resolution,
-    parse_queries,
-)
+from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
+
 from remora_cli.ui.rich import Status
-from typer import Argument, BadParameter, Exit, Option, Typer
+from typer import Argument, BadParameter, Option, Typer
 
 
 class HelpPanel(str, Enum):
@@ -104,23 +100,19 @@ What format you want request?
             dir_okay=False,
         ),
     ] = None,
-    cache: Annotated[
-        bool,
-        Option(help="Process using cache."),
-    ] = True,
 ):
     """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
         from remora.downloader.main import MediaDownloader
-        from remora.exceptions import MediaError
         from remora.extractor import MediaExtractor
         from remora_cli.ui.progress import ProgressCallback
+        from remora_cli.ui.extractor import extract_queries
 
     # Initialize
     try:
-        extractor = MediaExtractor(use_cache=cache)
+        extractor = MediaExtractor(use_cache=CONFIG.cache)
         downloader = MediaDownloader(
             format=format,
             quality=quality,
@@ -137,41 +129,7 @@ What format you want request?
             "❗ FFmpeg not installed. File conversion and metadata embeding will be disabled."
         )
 
-    for target, entry in parse_queries(query):
-        try:
-            with Status("Searching[blink]...[/]"):
-                if target == "url":
-                    logger.info('🔎 Extract URL: "{url}"', url=entry)
-                    result = await extractor.extract_url(entry)
-
-                    if result.type == "playlist":
-                        logger.info('🔎 Playlist title: "{title}"', title=result.title)
-
-                        if not result.medias and result.playlists:
-                            logger.warning(
-                                "❗ The URL only have multiple playlists but no medias, please try again with a single playlist."
-                            )
-                            raise Exit()
-                else:
-                    logger.info(
-                        '🔎 Search from {extractor}: "{query}"',
-                        extractor=target,
-                        query=entry,
-                    )
-
-                    result = await extractor.extract_search(entry, target)
-
-                    if not result.medias:
-                        logger.warning("❗ No results found")
-                        raise Exit()
-
-                    result = result.medias[0]
-
-            async with ProgressCallback(CONFIG.quiet) as progress:
-                async for event in downloader.download_all(result):
-                    await progress.playlist_callback(event)
-
-        except MediaError as err:
-            logger.error("❌ {error}", error=str(err))
-        finally:
-            logger.info("")
+    async for result in extract_queries(query, extractor):
+        async with ProgressCallback(CONFIG.quiet) as progress:
+            async for event in downloader.download_all(result):
+                await progress.playlist_callback(event)

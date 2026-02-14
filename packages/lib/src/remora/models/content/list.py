@@ -11,7 +11,7 @@ from remora.models.content.base import (
     TypeField,
 )
 from remora.models.content.media import LazyMedia
-from remora.models.content.metadata import Thumbnail
+from remora.models.metadata.thumbnails import Thumbnail
 
 
 class MediaList(YDLSerializable):
@@ -72,4 +72,4 @@ class Search(MediaList):
 
 
 Entries = list[LazyMedia | LazyPlaylist]
-EntriesField = Annotated[Entries, Field(alias="entries", min_length=1)]
+EntriesField = Annotated[Entries, Field(alias="entries", min_length=1, repr=False)]

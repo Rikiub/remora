@@ -1,3 +1,4 @@
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
@@ -15,7 +16,11 @@ def show_version(show: bool) -> None:
 
 
 app = Typer()
-PANEL = "Display"
+
+
+class HelpPanel(StrEnum):
+    DISPLAY = "Display"
+    EXTRACTION = "Extraction"
 
 
 @app.command()
@@ -25,7 +30,7 @@ def main(
         Option(
             "--quiet",
             help="Supress screen information.",
-            rich_help_panel=PANEL,
+            rich_help_panel=HelpPanel.DISPLAY,
         ),
     ] = CONFIG.quiet,
     verbose: Annotated[
@@ -33,7 +38,7 @@ def main(
         Option(
             "--verbose",
             help="Display more information on screen.",
-            rich_help_panel=PANEL,
+            rich_help_panel=HelpPanel.DISPLAY,
         ),
     ] = CONFIG.verbose,
     version: Annotated[
@@ -41,16 +46,24 @@ def main(
         Option(
             "--version",
             help="Show current version and exit.",
-            rich_help_panel=PANEL,
+            rich_help_panel=HelpPanel.DISPLAY,
             callback=show_version,
             is_eager=True,
         ),
     ] = False,
+    cache: Annotated[
+        bool,
+        Option(
+            help="Process using cache.",
+            rich_help_panel=HelpPanel.EXTRACTION,
+        ),
+    ] = True,
 ):
     """Download any video/audio you want from a simple URL ✨"""
 
     CONFIG.verbose = verbose
     CONFIG.quiet = quiet
+    CONFIG.cache = cache
 
     # Setup logger
     from remora_cli.logger import start_logger
