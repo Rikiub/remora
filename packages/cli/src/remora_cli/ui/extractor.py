@@ -6,6 +6,7 @@ from remora.models.content.list import Search
 from remora.models.content.types import ExtractResult
 from remora_cli.completions import parse_queries
 from remora_cli.ui.rich import Status
+from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
 from typer import Exit
@@ -49,35 +50,35 @@ async def extract_queries(
             logger.info("")
 
 
-def get_table(data: dict) -> Table:
-    data = flatten_data(data)
+hlt = ReprHighlighter()
 
-    high = ReprHighlighter()
-    table = Table(show_header=False, box=None)
+
+def dict_to_table(data: dict, title: str = "Model Details") -> Table:
+    table = Table(show_header=False, box=box.ROUNDED)
+    table.add_column("Field", style="cyan", no_wrap=True)
+    table.add_column("Value")
 
     for key, value in data.items():
-        table.add_row(f"[yellow]{key}[/]", high(str(value)))
+        # If the value is a nested dict/model, recurse
+        if isinstance(value, dict):
+            table.add_row(key, gen_table(value, title=key))
+        elif isinstance(value, list):
+            # For lists, we can create a bulleted-style table or join them
+            table.add_row(key, hlt(str(value)))
+        else:
+            table.add_row(key, hlt(str(value)))
 
     return table
 
 
-def flatten_data(data, parent_key="", sep="."):
-    items = []
+def gen_table(data: dict, title: str) -> Table:
+    table = Table(show_header=False, box=box.ROUNDED, padding=(0, 2))
+    table.add_column("K", style="bold yellow")
+    table.add_column("V")
 
-    if isinstance(data, dict):
-        for key, value in data.items():
-            new_key = f"{parent_key}{sep}{key}" if parent_key else key
-            items.extend(flatten_data(value, new_key, sep=sep).items())
-
-    elif isinstance(data, list):
-        if data and isinstance(data[0], dict):
-            for index, value in enumerate(data):
-                new_key = f"{parent_key}{sep}{index}" if parent_key else str(index)
-                items.extend(flatten_data(value, new_key, sep=sep).items())
+    for k, v in data.items():
+        if isinstance(v, dict):
+            table.add_row(k, gen_table(v, title=k))
         else:
-            items.append((parent_key, data))
-
-    else:
-        items.append((parent_key, data))
-
-    return dict(items)
+            table.add_row(k, hlt(str(v)))
+    return table

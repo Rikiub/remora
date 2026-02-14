@@ -61,7 +61,7 @@ async def extract(
     # Lazy Import
     with Status("Starting[blink]...[/]"):
         from remora.extractor import MediaExtractor
-        from remora_cli.ui.extractor import extract_queries, get_table
+        from remora_cli.ui.extractor import extract_queries, dict_to_table
         from rich.json import JSON
 
     console = Console()
@@ -88,7 +88,7 @@ async def extract(
         else:
             logger.info("Successful extraction.")
 
-        if format == "json":
+        if not console.is_terminal or format == "json":
             data = result.model_dump_json(
                 include={*include} or None,
                 exclude=default_exclude or None,
@@ -104,5 +104,5 @@ async def extract(
                 include={*include} or None,
                 exclude=default_exclude or None,
             )
-            table = get_table(data)
+            table = dict_to_table(data)
             console.print(table)
