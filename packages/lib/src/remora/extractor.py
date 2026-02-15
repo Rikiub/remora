@@ -91,7 +91,8 @@ class MediaExtractor:
         try:
             if self.use_cache and (cached_data := await load_info(query)):
                 return validator(cached_data)
-        except ValidationError:
+        except ValidationError as e:
+            logger.exception(e)
             logger.debug("Cache is corrupted, deleting.")
             await remove_info(query)
 

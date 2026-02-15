@@ -14,7 +14,7 @@ from remora.models.content.base import PLAYLIST_EXTRACTORS, LazyExtract, TypeFie
 
 from remora.models.metadata.general import Channel, Datetime, Metrics, Uploader
 from remora.models.metadata.music import Music
-from remora.models.metadata.subtitles import Subtitles
+from remora.models.metadata.subtitles import SubtitleList
 from remora.models.metadata.thumbnails import Thumbnail
 from remora.models.metadata.timelapse import Chapter, Heatmap
 from remora.models.stream.list import StreamList
@@ -116,7 +116,7 @@ class Media(LazyMedia):
     """Online media representation."""
 
     chapters: Annotated[list[Chapter], EnsureList] = []
-    subtitles: Subtitles | None = None
+    subtitles: SubtitleList = SubtitleList()
     streams: Annotated[
         StreamList,
         AfterValidator(lambda list: list.sort_by("best")),

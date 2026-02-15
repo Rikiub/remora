@@ -1,14 +1,14 @@
-from typing import Generic, TypeVar, overload
+from typing import Generic, Self, TypeVar, overload
 
 from pydantic import (
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     RootModel,
     ValidationError,
     WrapValidator,
 )
 from remora.ydl.types import YDLExtractInfo
-from typing_extensions import Self
 
 
 def _validate_or_none(v, handler):
@@ -32,22 +32,21 @@ EnsureList = BeforeValidator(lambda v: v if v else [])
 """Ensure data will be empty list if field not exists."""
 
 
-class YDLSerializable(BaseModel):
+class RemoraBaseModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class YDLSerializable(RemoraBaseModel):
     def to_ydl_dict(self) -> YDLExtractInfo:
         return self.model_dump(by_alias=True, mode="json")
-
-    def to_ydl_json(self) -> str:
-        return self.model_dump_json(by_alias=True)
-
-    @classmethod
-    def from_ydl_json(cls, data: str) -> Self:
-        return cls.model_validate_json(data, by_alias=True)
 
 
 T = TypeVar("T")
 
 
 class BaseList(RootModel[list[T]], Generic[T]):
+    root: list[T] = []
+
     def __contains__(self, other) -> bool:
         return other in self.root
 
@@ -57,7 +56,7 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self):
+    def __iter__(self):  # type: ignore
         return iter(self.root)
 
     @overload
@@ -69,6 +68,6 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __getitem__(self, index) -> T | Self:
         match index:
             case int() | slice():
-                return self.root[index]
+                return self.root[index]  # type: ignore
             case _:
                 raise TypeError(index)
