@@ -1,8 +1,7 @@
 from pathlib import Path
 
 import pytest
-from remora import AudioStream, MediaDownloader, VideoStream
-from remora.extractor import MediaExtractor
+from remora import AudioStream, RemoraAPI, VideoStream, DownloadConfig, MediaExtractor
 from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
@@ -12,29 +11,25 @@ PLAYLIST = (
 
 
 async def test_single(tmp_path: Path):
-    result = await MediaExtractor().extract(URL)
+    api = RemoraAPI(
+        download_config=DownloadConfig("audio", quality=1, output=tmp_path),
+        extractor=MediaExtractor(use_cache=False),
+    )
 
-    assert result.type == "media"
-
-    if result.type == "media":
-        downloader = MediaDownloader("audio", quality=1, output=tmp_path)
-
-        async for event in downloader.download(result):
-            if event.status == "finished":
-                assert event.filepath.is_file()
+    async for event in api.download(URL):
+        if event.status == "finished":
+            assert event.filepath.is_file()
 
 
 async def test_list(tmp_path: Path):
-    result = await MediaExtractor().extract(PLAYLIST)
+    api = RemoraAPI(
+        download_config=DownloadConfig("audio", quality=1, output=tmp_path),
+        extractor=MediaExtractor(use_cache=False),
+    )
 
-    assert result.type == "playlist"
-
-    if result.type == "playlist":
-        downloader = MediaDownloader("audio", quality=1, output=tmp_path)
-
-        async for event in downloader.download_batch(result):
-            if event.type == "media" and event.status == "finished":
-                assert event.filepath.is_file()
+    async for event in api.download_batch(PLAYLIST):
+        if event.type == "media" and event.status == "finished":
+            assert event.filepath.is_file()
 
 
 @pytest.fixture(scope="session")

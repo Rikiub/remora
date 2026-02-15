@@ -1,6 +1,7 @@
 # ruff: noqa: F401
 
-from remora.downloader.main import MediaDownloader
+from remora.api import RemoraAPI
+from remora.models.download_config import DownloadConfig
 from remora.exceptions import (
     DownloadError,
     ExtractError,

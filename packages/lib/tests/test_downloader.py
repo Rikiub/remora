@@ -1,21 +1,22 @@
 from pathlib import Path
 
 import pytest
-from remora.downloader.main import MediaDownloader
-from remora.extractor import MediaExtractor
+from remora import DownloadConfig, RemoraAPI, MediaExtractor
 
 
 @pytest.fixture
 async def download(tmp_path: Path):
     async def wrap(url: str):
-        extractor = MediaExtractor(use_cache=False)
-        result = await extractor.extract(url)
+        api = RemoraAPI(
+            download_config=DownloadConfig(
+                quality=1,
+                output=tmp_path,
+            ),
+            extractor=MediaExtractor(use_cache=False),
+        )
+        result = await api.extract(url)
 
-        async for event in MediaDownloader(
-            quality=1,
-            output=tmp_path,
-            extractor=extractor,
-        ).download_batch(result):
+        async for event in api.download_batch(result):
             if event.type == "media" and event.status == "finished":
                 if not event.filepath.is_file():
                     raise FileNotFoundError(event.filepath)

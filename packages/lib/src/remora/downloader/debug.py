@@ -3,7 +3,7 @@ from remora.models.event.media import MediaEvent
 from remora.models.event.processor import Processing
 
 
-async def debug_callback(event: MediaEvent):
+async def event_debug(event: MediaEvent):
     match event.status:
         case "resolving":
             _log_debug(event.id, "Resolving Media")

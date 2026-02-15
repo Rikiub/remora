@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 
 from loguru import logger
-from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE
+from remora.models.download_config import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
@@ -104,31 +104,34 @@ What format you want request?
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
-        from remora.downloader.main import MediaDownloader
-        from remora.extractor import MediaExtractor
+        from remora import RemoraAPI, DownloadConfig, MediaExtractor
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 
     # Initialize
     try:
-        extractor = MediaExtractor(use_cache=CONFIG.cache)
-        downloader = MediaDownloader(
+        config = DownloadConfig(
             format=format,
             quality=quality,
             output=output,
             max_workers=max_workers,
             ffmpeg_path=ffmpeg_path,
-            extractor=extractor,
         )
+        await config.validate_ffmpeg()
     except FileNotFoundError as err:
         raise BadParameter(str(err))
 
-    if downloader.config.convert and not downloader.config.ffmpeg_path:
+    api = RemoraAPI(
+        download_config=config,
+        extractor=MediaExtractor(use_cache=CONFIG.cache),
+    )
+
+    if config.convert and not config.ffmpeg_path:
         logger.warning(
             "❗ FFmpeg not installed. File conversion and metadata embeding will be disabled."
         )
 
-    async for result in extract_queries(query, extractor):
+    async for result in extract_queries(query, api.extractor):
         async with ProgressCallback(CONFIG.quiet) as progress:
-            async for event in downloader.download_batch(result):
+            async for event in api.download_batch(result):
                 await progress.playlist_callback(event)

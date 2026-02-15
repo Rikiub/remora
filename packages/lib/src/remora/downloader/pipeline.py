@@ -2,17 +2,17 @@ import pathlib
 import shutil
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator
+from typing import AsyncIterator, cast
 
 import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
-from remora.downloader.config import FormatConfig
+from remora.models.download_config import DownloadConfig
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector
 from remora.downloader.stream.main import StreamDownloader
-from remora.downloader.type.debug import debug_callback
+from remora.downloader.debug import event_debug
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
@@ -50,13 +50,13 @@ class DownloadPipeline:
     def __init__(
         self,
         media: LazyMedia | Media,
-        format_config: FormatConfig | None = None,
+        format_config: DownloadConfig | None = None,
         extractor: MediaExtractor | None = None,
     ):
         self.id = media.id
 
         self.media: Media = media  # type: ignore
-        self.config = format_config or FormatConfig("video")
+        self.config = format_config or DownloadConfig("video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
@@ -70,7 +70,7 @@ class DownloadPipeline:
                 tg.start_soon(self._execute_download)
 
                 async for event in receive_stream:
-                    await debug_callback(event)
+                    await event_debug(event)
                     yield event
 
     async def _execute_download(self):
@@ -85,7 +85,7 @@ class DownloadPipeline:
             media = await self.resolve_media()
 
             # Select Streams
-            video_stream, audio_stream = StreamSelector(self.config).extract(media)
+            video_stream, audio_stream = StreamSelector(self.config).resolve(media)
             stream = video_stream or audio_stream
 
             if not stream:
@@ -186,8 +186,9 @@ class DownloadPipeline:
     async def resolve_media(self) -> Media:
         self._stream.send_nowait(Resolving(id=self.id, media=self.media))
 
-        if not isinstance(self.media, Media):
-            self.media = await self.extractor.extract(self.media)
+        media = cast(LazyMedia | Media, self.media)
+        if not isinstance(media, Media):
+            self.media = await self.extractor.extract(media)
 
         self._stream.send_nowait(Resolved(id=self.id, media=self.media))
         return self.media
