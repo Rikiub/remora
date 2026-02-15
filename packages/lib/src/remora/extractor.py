@@ -1,15 +1,19 @@
 """Raw info extractor."""
 
-from typing import overload
+from typing import Callable, TypeVar, overload
 
 from anyio.to_thread import run_sync
 from loguru import logger
 
+from pydantic import ValidationError
 from remora.cache import load_info, remove_info, save_info
+from remora.models.base import YDLSerializable
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import ExtractAdapter
 from remora.types import SEARCH_SERVICE, StrUrl
+
+T = TypeVar("T", bound=YDLSerializable)
 
 
 class MediaExtractor:
@@ -34,15 +38,10 @@ class MediaExtractor:
         logger.debug("Extract URL: {url}", url=url)
 
         # Load from cache
-        if self.use_cache and (cached_json := await load_info(url)):
-            model = ExtractAdapter.validate_json(cached_json)
-
+        if model := await self._extract_from_cache(url, ExtractAdapter.validate_json):
             if isinstance(model, Media):
                 model.is_cache = True
-
             return model
-        else:
-            await remove_info(url)
 
         # Extract info
         info = await run_sync(extract_info, url)
@@ -50,7 +49,7 @@ class MediaExtractor:
 
         # Save to cache
         if self.use_cache:
-            await save_info(str(result.url), result.to_ydl_json())
+            await save_info(str(result.url), result.model_dump_json())
 
         return result
 
@@ -71,10 +70,8 @@ class MediaExtractor:
         )
 
         # Load from cache
-        if self.use_cache and (cached_json := await load_info(query)):
-            return Search.from_ydl_json(cached_json)
-        else:
-            await remove_info(query)
+        if model := await self._extract_from_cache(query, Search.model_validate):
+            return model
 
         # Extract info
         info = await run_sync(extract_query, query, service, limit)
@@ -82,6 +79,20 @@ class MediaExtractor:
 
         # Save to cache
         if self.use_cache:
-            await save_info(result.query, result.to_ydl_json())
+            await save_info(result.query, result.model_dump_json())
 
         return result
+
+    async def _extract_from_cache(
+        self,
+        query: str,
+        validator: Callable[[str], T],
+    ) -> T | None:
+        try:
+            if self.use_cache and (cached_data := await load_info(query)):
+                return validator(cached_data)
+        except ValidationError:
+            logger.debug("Cache is corrupted, deleting.")
+            await remove_info(query)
+
+        return None

@@ -81,4 +81,5 @@ def gen_table(data: dict, title: str) -> Table:
             table.add_row(k, gen_table(v, title=k))
         else:
             table.add_row(k, hlt(str(v)))
+
     return table
