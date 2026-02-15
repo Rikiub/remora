@@ -1,6 +1,7 @@
 import hashlib
 import time
 
+from anyio import Path
 from remora.path import get_cache_dir
 from remora.types import StrUrl
 
@@ -8,7 +9,7 @@ EXPIRATION = 24 * 60 * 60
 
 
 async def load_info(url: StrUrl) -> str | None:
-    dir = await get_cache_dir()
+    dir = Path(get_cache_dir())
     file = dir / _url_hash(url)
 
     if await file.exists():
@@ -22,13 +23,13 @@ async def load_info(url: StrUrl) -> str | None:
 
 
 async def save_info(url: str, content: str):
-    dir = await get_cache_dir()
+    dir = Path(get_cache_dir())
     file = dir / _url_hash(url)
     await file.write_text(content)
 
 
 async def remove_info(url: str) -> bool:
-    dir = await get_cache_dir()
+    dir = Path(get_cache_dir())
     file = dir / _url_hash(url)
 
     if await file.exists():

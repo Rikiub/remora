@@ -138,7 +138,7 @@ class DownloadPipeline:
                 if media.thumbnails:
                     try:
                         results.thumbnail = await download_thumbnail(
-                            await get_tempfile(),
+                            get_tempfile(),
                             media.thumbnails[-1],
                         )
                     except MetadataDownloadError as e:
@@ -154,7 +154,7 @@ class DownloadPipeline:
                 if media.subtitles:
                     try:
                         results.subtitles = await download_subtitles(
-                            await get_tempfile(),
+                            get_tempfile(),
                             media.subtitles,
                         )
                     except MetadataDownloadError as e:
@@ -263,7 +263,7 @@ class DownloadPipeline:
         async def download_video():
             if video_stream:
                 downloader = StreamDownloader(
-                    filepath=await get_tempfile(),
+                    filepath=get_tempfile(),
                     stream=video_stream,
                     duration=duration,
                 )
@@ -273,7 +273,7 @@ class DownloadPipeline:
         async def download_audio():
             if audio_stream:
                 downloader = StreamDownloader(
-                    filepath=await get_tempfile(),
+                    filepath=get_tempfile(),
                     stream=audio_stream,
                     duration=duration,
                 )
@@ -296,7 +296,7 @@ class DownloadPipeline:
             and (audio_file and audio_stream)
         ):
             extension = self.config.convert or "mp4"
-            filepath = pathlib.Path(f"{await get_tempfile()}.{extension}")
+            filepath = pathlib.Path(f"{get_tempfile()}.{extension}")
 
             merging = MergingProcessor(
                 id=self.id,
@@ -331,7 +331,7 @@ class DownloadPipeline:
         thumbnail: Path | None = None,
         subtitles: list[Path] | None = None,
     ) -> Path:
-        prc = await MediaProcessor.create(filepath, self.config.ffmpeg_path)
+        prc = MediaProcessor(filepath, self.config.ffmpeg_path)
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):

@@ -6,7 +6,7 @@ from remora.exceptions import ProcessingError
 from remora.models.content.media import Media
 from remora.models.metadata.music import Music
 from remora.models.stream.types import Stream
-from remora.path import get_global_ffmpeg, validate_ffmpeg
+from remora.path import find_global_ffmpeg, validate_ffmpeg
 from remora.types import AUDIO_EXTENSION, EXTENSION, StrPath
 from remora.ydl.processor import RequestedFormat, YDLProcessor
 from remora.ydl.types import YDLExtractInfo
@@ -17,22 +17,19 @@ class MediaProcessor:
     ffmpeg_path: Path | None
     _prc: YDLProcessor
 
-    @classmethod
-    async def create(cls, filepath: StrPath, ffmpeg_path: StrPath | None = None):
-        self = cls()
-
+    def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None):
         self._prc = YDLProcessor(filepath, ffmpeg_path)
         self.filepath = Path(filepath)
 
-        # Setup FFmpeg
-        self.ffmpeg_path = (
-            Path(ffmpeg_path) if ffmpeg_path else await get_global_ffmpeg()
-        )
-        if not self.ffmpeg_path:
-            raise ProcessingError("FFmpeg is needed for use processors.")
-        await validate_ffmpeg(self.ffmpeg_path)
+        # Validate FFmpeg
+        ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
 
-        return self
+        if not ffmpeg_path:
+            raise ProcessingError("FFmpeg is needed for use processors.")
+        validate_ffmpeg(ffmpeg_path)
+
+        # Set ffmpeg
+        self.ffmpeg_path = Path(ffmpeg_path)
 
     @property
     def extension(self) -> str:
@@ -89,7 +86,7 @@ class MediaProcessor:
                 fmt = {"filepath": str(path)} | stream.to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
-        self = await cls.create(filepath, ffmpeg_path)
+        self = cls(filepath, ffmpeg_path)
 
         result = await run_sync(
             self._prc.from_merger,

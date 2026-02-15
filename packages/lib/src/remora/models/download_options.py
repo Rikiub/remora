@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated, cast, get_args
 
-from pydantic import AfterValidator, field_validator
+from pydantic import AfterValidator
 from remora.models.base import RemoraBaseModel
 from remora.types import (
     AUDIO_EXTENSION,
@@ -15,10 +15,19 @@ from remora.types import (
 DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader.name} - {title}"
 
 
-def _validate_output(template: StrPath):
-    from remora.template.parser import validate_output
+def _validate_template(template: StrPath):
+    from remora.template.parser import validate_template
 
-    validate_output(template)
+    validate_template(template)
+
+
+def _validate_ffmpeg(value: StrPath | None):
+    from remora.path import validate_ffmpeg
+
+    if value:
+        validate_ffmpeg(value)
+
+    return value
 
 
 class DownloadOptions(RemoraBaseModel):
@@ -38,19 +47,14 @@ class DownloadOptions(RemoraBaseModel):
     quality: int | None = None
     template: Annotated[
         StrPath,
-        AfterValidator(_validate_output),
+        AfterValidator(_validate_template),
     ] = DEFAULT_OUTPUT_TEMPLATE
-    ffmpeg_path: StrPath | None = None
+    ffmpeg_path: Annotated[
+        StrPath | None,
+        AfterValidator(_validate_ffmpeg),
+    ] = None
     embed_metadata: bool = True
     max_workers: int = 4
-
-    @field_validator("ffmpeg_path")
-    @classmethod
-    async def _validate_ffmpeg(self):
-        from remora.path import validate_ffmpeg
-
-        if self.ffmpeg_path:
-            await validate_ffmpeg(self.ffmpeg_path)
 
     @property
     def type(self) -> FORMAT_TYPE:
