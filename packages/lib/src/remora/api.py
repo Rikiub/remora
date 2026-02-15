@@ -3,8 +3,6 @@ from typing import AsyncIterable, overload
 from anyio import Path
 from remora_cli.ui.extractor import Search
 
-from remora.downloader.batch import DownloadBatch
-from remora.downloader.pipeline import DownloadPipeline
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist
 from remora.models.content.media import LazyMedia, Media
@@ -68,6 +66,8 @@ class RemoraAPI:
                 if event.type == "media":
                     yield event
         else:
+            from remora.downloader.pipeline import DownloadPipeline
+
             async for event in DownloadPipeline(
                 extracted,
                 format_config=self.config,
@@ -83,6 +83,8 @@ class RemoraAPI:
             extracted = await self.extract(item)
         else:
             extracted = item
+
+        from remora.downloader.batch import DownloadBatch
 
         async for event in DownloadBatch(
             extracted,

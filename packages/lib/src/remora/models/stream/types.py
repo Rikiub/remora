@@ -90,7 +90,7 @@ class AudioStream(Stream):
     @field_validator("extension")
     @classmethod
     def _validate_extension(cls, value) -> str:
-        if value not in SupportedExtensions.audio:
+        if value not in SupportedExtensions.AUDIO:
             raise ValueError(f"{value} not is a valid extension.")
         return value
 
@@ -115,6 +115,6 @@ class VideoStream(Stream):
     @field_validator("extension")
     @classmethod
     def _validate_extension(cls, value) -> str:
-        if value not in SupportedExtensions.video:
+        if value not in SupportedExtensions.VIDEO:
             raise ValueError(f"{value} not is a valid extension.")
         return value

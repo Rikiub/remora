@@ -12,12 +12,12 @@ from remora.models.event.stream import (
 )
 from remora.models.stream.types import Stream
 from remora.types import StrPath
-from remora.ydl.types import SupportedProtocols
+from remora.ydl.types import SUPPORTED_PROTOCOLS
 from typing_extensions import override
 
 
 class YDLFormatDownloader(BaseStreamDownloader):
-    SUPPORTED_PROTOCOLS = list(SupportedProtocols)
+    SUPPORTED_PROTOCOLS = SUPPORTED_PROTOCOLS
 
     def __init__(
         self,

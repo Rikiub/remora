@@ -9,7 +9,7 @@ DEFAULT_RETRIES = 3
 
 
 class BaseStreamDownloader(ABC):
-    SUPPORTED_PROTOCOLS: list[str]
+    SUPPORTED_PROTOCOLS: set[str] | frozenset[str]
 
     def __init__(
         self,

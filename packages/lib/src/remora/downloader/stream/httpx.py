@@ -16,19 +16,19 @@ from remora.models.stream.types import Stream
 from remora.types import StrPath
 from typing_extensions import override
 
-_HTTP_PROTOCOLS = [
+_HTTP_PROTOCOLS = {
     "http",
     "https",
-]
-_LIST_PROTOCOLS = [
+}
+_LIST_PROTOCOLS = {
     "m3u8",
     "m3u8_native",
     "http_dash_segments",
-]
+}
 
 
 class HttpxStreamDownloader(BaseStreamDownloader):
-    SUPPORTED_PROTOCOLS = [*_HTTP_PROTOCOLS, *_LIST_PROTOCOLS]
+    SUPPORTED_PROTOCOLS = {*_HTTP_PROTOCOLS, *_LIST_PROTOCOLS}
 
     def __init__(
         self,

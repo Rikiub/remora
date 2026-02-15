@@ -34,7 +34,7 @@ from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.path import get_tempfile
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template
-from remora.ydl.types import SupportedExtensions, ThumbnailSupport
+from remora.ydl.types import SupportedExtensions, THUMBNAIL_SUPPORT
 
 
 @dataclass(slots=True)
@@ -199,8 +199,8 @@ class DownloadPipeline:
                 path_extension = path.suffix.lstrip(".")
 
                 if (
-                    path_extension in SupportedExtensions.video
-                    or path_extension in SupportedExtensions.audio
+                    path_extension in SupportedExtensions.VIDEO
+                    or path_extension in SupportedExtensions.AUDIO
                 ):
                     self._stream.send_nowait(
                         Finished(
@@ -385,7 +385,7 @@ class DownloadPipeline:
                 await prc.embed_metadata(self.media)
 
         if thumbnail:
-            if prc.filepath.suffix[1:] in ThumbnailSupport:
+            if prc.filepath.suffix[1:] in THUMBNAIL_SUPPORT:
                 async with track_prc("embed_thumbnail"):
                     await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
