@@ -1,6 +1,6 @@
 import re
-from pathlib import Path
 import string
+from pathlib import Path
 
 from pathvalidate import sanitize_filepath
 from remora.exceptions import OutputTemplateError

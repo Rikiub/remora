@@ -7,12 +7,12 @@ import httpx
 from anyio import Path
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.exceptions import DownloadError
-from remora.models.stream.types import Stream
 from remora.models.event.stream import (
-    FinishedStream,
     DownloadingStream,
+    FinishedStream,
     StreamEvent,
 )
+from remora.models.stream.types import Stream
 from remora.types import StrPath
 from typing_extensions import override
 

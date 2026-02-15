@@ -8,7 +8,6 @@ from remora.types import FILE_FORMAT
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
-
 from remora_cli.ui.rich import Status
 from typer import Argument, BadParameter, Option, Typer
 
@@ -107,8 +106,8 @@ What format you want request?
     with Status("Starting[blink]...[/]"):
         from remora.downloader.main import MediaDownloader
         from remora.extractor import MediaExtractor
-        from remora_cli.ui.progress import ProgressCallback
         from remora_cli.ui.extractor import extract_queries
+        from remora_cli.ui.progress import ProgressCallback
 
     # Initialize
     try:

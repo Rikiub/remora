@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 import pathlib
 import shutil
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import AsyncIterator
 
 import anyio
@@ -9,18 +9,16 @@ from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
 from remora.downloader.config import FormatConfig
-from remora.downloader.stream.main import StreamDownloader
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector
+from remora.downloader.stream.main import StreamDownloader
 from remora.downloader.type.debug import debug_callback
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
-from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.event.media import (
-    Finished,
     Downloading,
+    Finished,
     MediaEvent,
     Resolved,
     Resolving,
@@ -31,6 +29,8 @@ from remora.models.event.processor import (
     Processor,
     ProcessorTask,
 )
+from remora.models.event.stream import DownloadingStream, StreamEvent
+from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.path import get_tempfile
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template

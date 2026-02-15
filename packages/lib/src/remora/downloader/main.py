@@ -1,4 +1,5 @@
 from typing import AsyncIterable
+
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE, FormatConfig
 from remora.downloader.type.batch import DownloadBatch
 from remora.downloader.type.pipeline import DownloadPipeline

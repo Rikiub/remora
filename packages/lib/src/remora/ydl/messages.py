@@ -10,8 +10,10 @@ class ExceptMsg(NamedTuple):
 MESSAGES: list[ExceptMsg] = [
     ExceptMsg(
         matchs=["HTTP Error"],
-        text=lambda v: v
-        + " : You may have exceeded the page request limit, received an IP block, among others. Please try again later.",
+        text=lambda v: (
+            v
+            + " : You may have exceeded the page request limit, received an IP block, among others. Please try again later."
+        ),
     ),
     ExceptMsg(
         matchs=["Read timed out"],
@@ -19,9 +21,9 @@ MESSAGES: list[ExceptMsg] = [
     ),
     ExceptMsg(
         matchs=["Unable to download webpage"],
-        text=lambda v: "Invalid URL."
-        if any(s in v for s in ("[Errno -2]", "[Errno -5]"))
-        else v,
+        text=lambda v: (
+            "Invalid URL." if any(s in v for s in ("[Errno -2]", "[Errno -5]")) else v
+        ),
     ),
     ExceptMsg(
         matchs=["is not a valid URL"],

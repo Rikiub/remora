@@ -1,5 +1,5 @@
 [dependency-groups]
-dev = ["anyio>=4.12.1", "pytest>=9.0.0", "ruff>=0.8.0"]
+dev = ["anyio>=4.12.1", "pytest>=9.0.0", "ruff>=0.15.0"]
 
 [tool.pytest.ini_options]
 anyio_mode = "auto"

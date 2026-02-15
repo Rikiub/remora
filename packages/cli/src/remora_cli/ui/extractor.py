@@ -1,4 +1,5 @@
 from typing import AsyncIterable
+
 from loguru import logger
 from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor

@@ -1,15 +1,16 @@
 import pathlib
 from typing import AsyncIterable
+
 import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
-from remora.models.stream.types import Stream
 from remora.models.event.stream import (
-    FinishedStream,
     DownloadingStream,
+    FinishedStream,
     StreamEvent,
 )
+from remora.models.stream.types import Stream
 from remora.types import StrPath
 from remora.ydl.types import SupportedProtocols
 from typing_extensions import override

@@ -1,4 +1,5 @@
 from typing import Annotated
+
 from pydantic import BeforeValidator
 from remora.models.base import YDLSerializable
 from remora.models.metadata.base import Metadata

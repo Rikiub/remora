@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from typing import Annotated, Generic, Literal, Self, overload
-from typing_extensions import TypeVar
+
 from pydantic import BeforeValidator, Field
 from remora.models.base import BaseList, YDLSerializable
 from remora.models.metadata.base import Metadata
+from typing_extensions import TypeVar
 
 SubtitleType = Literal["remote", "content"]
 

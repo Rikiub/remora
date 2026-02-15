@@ -1,10 +1,11 @@
 """Read pre-serialized keys from JSON to improve startup time on shell autocomplete."""
 
-from pydantic import RootModel, BaseModel
-from remora.models.content.media import Media
-from remora.models.content.list import Playlist
 from types import UnionType
 from typing import Annotated, Union, get_args, get_origin
+
+from pydantic import BaseModel, RootModel
+from remora.models.content.list import Playlist
+from remora.models.content.media import Media
 
 
 class PlaylistNested(BaseModel):

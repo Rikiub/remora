@@ -61,7 +61,7 @@ async def extract(
     # Lazy Import
     with Status("Starting[blink]...[/]"):
         from remora.extractor import MediaExtractor
-        from remora_cli.ui.extractor import extract_queries, dict_to_table
+        from remora_cli.ui.extractor import dict_to_table, extract_queries
         from rich.json import JSON
 
     console = Console()
