@@ -22,7 +22,7 @@ async def extract_queries(
             with Status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('🔎 Extract URL: "{url}"', url=entry)
-                    result = await extractor.extract_url(entry)
+                    result = await extractor.extract(entry)
 
                     if result.type == "playlist":
                         logger.info('🔎 Playlist title: "{title}"', title=result.title)

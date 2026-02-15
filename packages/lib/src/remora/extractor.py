@@ -21,20 +21,25 @@ class MediaExtractor:
         self.use_cache = use_cache
 
     @overload
-    async def resolve(self, item: LazyMedia) -> Media: ...
+    async def extract(self, item: StrUrl) -> Media | Playlist: ...
 
     @overload
-    async def resolve(self, item: LazyPlaylist) -> Playlist: ...
+    async def extract(self, item: LazyMedia) -> Media: ...
 
-    async def resolve(self, item: LazyMedia | LazyPlaylist):
-        return await self.extract_url(str(item.url))
+    @overload
+    async def extract(self, item: LazyPlaylist) -> Playlist: ...
 
-    async def extract_url(self, url: StrUrl) -> Media | Playlist:
-        """Extract media from URL."""
+    async def extract(
+        self, item: StrUrl | LazyMedia | LazyPlaylist
+    ) -> Media | Playlist:
+        """Extract media from URL or update item."""
 
-        from remora.ydl.extractor import extract_info
+        url: str
+        if isinstance(item, StrUrl):
+            url = str(item)
+        else:
+            url = str(item.url)
 
-        url = str(url)
         logger.debug("Extract URL: {url}", url=url)
 
         # Load from cache
@@ -44,12 +49,14 @@ class MediaExtractor:
             return model
 
         # Extract info
+        from remora.ydl.extractor import extract_info
+
         info = await run_sync(extract_info, url)
         result = ExtractAdapter.validate_python(info)
 
         # Save to cache
         if self.use_cache:
-            await save_info(str(result.url), result.model_dump_json())
+            await save_info(url, result.model_dump_json())
 
         return result
 
@@ -85,15 +92,15 @@ class MediaExtractor:
 
     async def _extract_from_cache(
         self,
-        query: str,
+        string: str,
         validator: Callable[[str], T],
     ) -> T | None:
         try:
-            if self.use_cache and (cached_data := await load_info(query)):
+            if self.use_cache and (cached_data := await load_info(string)):
                 return validator(cached_data)
         except ValidationError as e:
             logger.exception(e)
             logger.debug("Cache is corrupted, deleting.")
-            await remove_info(query)
+            await remove_info(string)
 
         return None

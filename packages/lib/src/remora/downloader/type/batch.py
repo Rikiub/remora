@@ -133,7 +133,7 @@ class DownloadBatch:
         # Get real data
         match data:
             case LazyPlaylist():
-                playlist = await self.extractor.resolve(data)
+                playlist = await self.extractor.extract(data)
             case Playlist():
                 playlist = data
 

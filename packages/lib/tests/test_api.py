@@ -12,7 +12,7 @@ PLAYLIST = (
 
 
 async def test_single(tmp_path: Path):
-    result = await MediaExtractor().extract_url(URL)
+    result = await MediaExtractor().extract(URL)
 
     assert result.type == "media"
 
@@ -25,7 +25,7 @@ async def test_single(tmp_path: Path):
 
 
 async def test_list(tmp_path: Path):
-    result = await MediaExtractor().extract_url(PLAYLIST)
+    result = await MediaExtractor().extract(PLAYLIST)
 
     assert result.type == "playlist"
 
@@ -39,7 +39,7 @@ async def test_list(tmp_path: Path):
 
 @pytest.fixture(scope="session")
 async def streams():
-    result = await MediaExtractor().extract_url(URL)
+    result = await MediaExtractor().extract(URL)
     assert result.type == "media"
     assert len(result.streams) >= 1
     return result.streams

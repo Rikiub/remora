@@ -9,7 +9,7 @@ from remora.extractor import MediaExtractor
 async def download(tmp_path: Path):
     async def wrap(url: str):
         extractor = MediaExtractor(use_cache=False)
-        result = await extractor.extract_url(url)
+        result = await extractor.extract(url)
 
         async for event in MediaDownloader(
             quality=1,

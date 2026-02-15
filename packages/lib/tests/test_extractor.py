@@ -9,7 +9,7 @@ EXTRACTOR = MediaExtractor(use_cache=False)
 
 
 async def extract_url(url: str) -> Media | Playlist:
-    result = await EXTRACTOR.extract_url(url)
+    result = await EXTRACTOR.extract(url)
     return result
 
 
@@ -64,7 +64,7 @@ class TestSearch:
         assert len(result.medias) >= 1
 
         for entry in result.medias:
-            entry = await EXTRACTOR.resolve(entry)
+            entry = await EXTRACTOR.extract(entry)
             assert isinstance(entry, Media)
 
     async def test_resolve_playlists(self):
@@ -73,7 +73,7 @@ class TestSearch:
         assert len(result.playlists) >= 1
 
         for entry in result.playlists:
-            entry = await EXTRACTOR.resolve(entry)
+            entry = await EXTRACTOR.extract(entry)
             assert isinstance(entry, Playlist)
 
 

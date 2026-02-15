@@ -85,7 +85,7 @@ class DownloadPipeline:
             media = await self.resolve_media()
 
             # Select Streams
-            video_stream, audio_stream = StreamSelector(self.config).resolve(media)
+            video_stream, audio_stream = StreamSelector(self.config).extract(media)
             stream = video_stream or audio_stream
 
             if not stream:
@@ -187,7 +187,7 @@ class DownloadPipeline:
         self._stream.send_nowait(Resolving(id=self.id, media=self.media))
 
         if not isinstance(self.media, Media):
-            self.media = await self.extractor.resolve(self.media)
+            self.media = await self.extractor.extract(self.media)
 
         self._stream.send_nowait(Resolved(id=self.id, media=self.media))
         return self.media
