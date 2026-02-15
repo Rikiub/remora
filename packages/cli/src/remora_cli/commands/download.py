@@ -131,5 +131,5 @@ What format you want request?
 
     async for result in extract_queries(query, extractor):
         async with ProgressCallback(CONFIG.quiet) as progress:
-            async for event in downloader.download_all(result):
+            async for event in downloader.download_batch(result):
                 await progress.playlist_callback(event)

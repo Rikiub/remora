@@ -15,7 +15,7 @@ async def download(tmp_path: Path):
             quality=1,
             output=tmp_path,
             extractor=extractor,
-        ).download_all(result):
+        ).download_batch(result):
             if event.type == "media" and event.status == "finished":
                 if not event.filepath.is_file():
                     raise FileNotFoundError(event.filepath)

@@ -35,6 +35,7 @@ class FormatConfig:
     output: StrPath = DEFAULT_OUTPUT_TEMPLATE
     ffmpeg_path: StrPath | None = None
     embed_metadata: bool = True
+    max_workers: int = 4
 
     def __post_init__(self):
         from remora.template.parser import validate_output

@@ -32,7 +32,7 @@ async def test_list(tmp_path: Path):
     if result.type == "playlist":
         downloader = MediaDownloader("audio", quality=1, output=tmp_path)
 
-        async for event in downloader.download_all(result):
+        async for event in downloader.download_batch(result):
             if event.type == "media" and event.status == "finished":
                 assert event.filepath.is_file()
 

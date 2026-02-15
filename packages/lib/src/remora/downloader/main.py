@@ -1,16 +1,13 @@
 from typing import AsyncIterable
 from remora.downloader.config import DEFAULT_OUTPUT_TEMPLATE, FormatConfig
-from remora.downloader.type.bulk import DownloadBulk
+from remora.downloader.type.batch import DownloadBatch
+from remora.downloader.type.pipeline import DownloadPipeline
 from remora.extractor import MediaExtractor
-from remora.models.content.list import MediaList
 from remora.models.content.media import LazyMedia
-from remora.models.content.types import ExtractResult, MediaListEntries
+from remora.models.content.types import AnyExtractResult
 from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
 from remora.types import FILE_FORMAT, StrPath
-
-_MediaResult = ExtractResult | MediaListEntries
-MediaResult = MediaList | _MediaResult | list[LazyMedia]
 
 
 class MediaDownloader:
@@ -48,7 +45,6 @@ class MediaDownloader:
             embed_metadata=embed_metadata,
         )
         self.extractor = extractor
-        self.max_workers = max_workers
 
     async def download(self, media: LazyMedia) -> AsyncIterable[MediaEvent]:
         """Single download a `Media` result.
@@ -60,26 +56,25 @@ class MediaDownloader:
             Path to downloaded file.
         """
 
-        async for event in DownloadBulk(
+        async for event in DownloadPipeline(
             media,
             format_config=self.config,
             extractor=self.extractor,
-            max_workers=1,
         ).run():
-            if event.type == "media":
-                yield event
+            yield event
 
-    async def download_all(self, data: MediaResult) -> AsyncIterable[DownloadEvent]:
+    async def download_batch(
+        self, data: AnyExtractResult
+    ) -> AsyncIterable[DownloadEvent]:
         """Batch download any result.
 
         Returns:
             List of paths to downloaded files.
         """
 
-        async for event in DownloadBulk(
+        async for event in DownloadBatch(
             data,
-            self.config,
-            self.extractor,
-            self.max_workers,
+            format_config=self.config,
+            extractor=self.extractor,
         ).run():
             yield event
