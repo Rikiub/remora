@@ -1,15 +1,15 @@
 from typing import AsyncIterable, overload
-from remora_cli.ui.extractor import Search
 
 from anyio import Path
+from remora_cli.ui.extractor import Search
 
-from remora.models.download_options import DownloadOptions
 from remora.downloader.batch import DownloadBatch
 from remora.downloader.pipeline import DownloadPipeline
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import AnyExtractResult
+from remora.models.download_options import DownloadOptions
 from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
 from remora.models.metadata.thumbnails import Thumbnail

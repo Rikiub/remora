@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from remora import DownloadOptions, RemoraAPI, MediaExtractor
+from remora import DownloadOptions, MediaExtractor, RemoraAPI
 
 
 @pytest.fixture

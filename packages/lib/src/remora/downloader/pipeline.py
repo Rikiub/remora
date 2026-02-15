@@ -8,14 +8,14 @@ import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
-from remora.models.download_options import DownloadOptions
+from remora.downloader.debug import event_debug
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector
 from remora.downloader.stream.main import StreamDownloader
-from remora.downloader.debug import event_debug
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
+from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
     Downloading,
     Finished,

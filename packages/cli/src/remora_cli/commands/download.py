@@ -104,7 +104,7 @@ What format you want request?
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
-        from remora import RemoraAPI, DownloadOptions, MediaExtractor
+        from remora import DownloadOptions, MediaExtractor, RemoraAPI
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 

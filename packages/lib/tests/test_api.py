@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from remora import AudioStream, RemoraAPI, VideoStream, DownloadOptions, MediaExtractor
+from remora import AudioStream, DownloadOptions, MediaExtractor, RemoraAPI, VideoStream
 from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
