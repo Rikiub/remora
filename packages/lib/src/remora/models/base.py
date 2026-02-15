@@ -11,27 +11,6 @@ from pydantic import (
 from remora.ydl.types import YDLExtractInfo
 
 
-def _validate_or_none(v, handler):
-    """Models must implement __bool__ to ensure validation."""
-
-    try:
-        model = handler(v)
-
-        if model:
-            return model
-        else:
-            return None
-    except ValidationError:
-        return None
-
-
-EnsureNone = WrapValidator(_validate_or_none)
-"""Ensure data will be None if field not exists."""
-
-EnsureList = BeforeValidator(lambda v: v if v else [])
-"""Ensure data will be empty list if field not exists."""
-
-
 class RemoraBaseModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -71,3 +50,24 @@ class BaseList(RootModel[list[T]], Generic[T]):
                 return self.root[index]  # type: ignore
             case _:
                 raise TypeError(index)
+
+
+def _validate_or_none(v, handler):
+    """Models must implement __bool__ to ensure validation."""
+
+    try:
+        model = handler(v)
+
+        if model:
+            return model
+        else:
+            return None
+    except ValidationError:
+        return None
+
+
+EnsureNone = WrapValidator(_validate_or_none)
+"""Ensure data will be None if field not exists."""
+
+EnsureList = BeforeValidator(lambda v: v if v else [])
+"""Ensure data will be empty list if field not exists."""
