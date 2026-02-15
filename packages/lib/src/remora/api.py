@@ -3,7 +3,7 @@ from remora_cli.ui.extractor import Search
 
 from anyio import Path
 
-from remora.models.download_config import DownloadConfig
+from remora.models.download_options import DownloadOptions
 from remora.downloader.batch import DownloadBatch
 from remora.downloader.pipeline import DownloadPipeline
 from remora.extractor import MediaExtractor
@@ -19,10 +19,10 @@ from remora.types import SEARCH_SERVICE, StrPath, StrUrl
 class RemoraAPI:
     def __init__(
         self,
-        download_config: DownloadConfig | None = None,
+        download_config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
-        self.config = download_config or DownloadConfig()
+        self.config = download_config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
 
     @overload

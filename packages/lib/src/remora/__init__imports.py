@@ -1,7 +1,7 @@
 # ruff: noqa: F401
 
 from remora.api import RemoraAPI
-from remora.models.download_config import DownloadConfig
+from remora.models.download_options import DownloadOptions
 from remora.exceptions import (
     DownloadError,
     ExtractError,

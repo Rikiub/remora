@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 
 from loguru import logger
-from remora.models.download_config import DEFAULT_OUTPUT_TEMPLATE
+from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import FILE_FORMAT
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
@@ -104,13 +104,13 @@ What format you want request?
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
-        from remora import RemoraAPI, DownloadConfig, MediaExtractor
+        from remora import RemoraAPI, DownloadOptions, MediaExtractor
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 
     # Initialize
     try:
-        config = DownloadConfig(
+        config = DownloadOptions(
             format=format,
             quality=quality,
             output=output,

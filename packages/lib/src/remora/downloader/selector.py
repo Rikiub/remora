@@ -1,6 +1,6 @@
 from typing import TypeVar, cast
 
-from remora.models.download_config import DownloadConfig
+from remora.models.download_options import DownloadOptions
 from remora.models.content.media import Media
 from remora.models.stream.list import StreamList
 from remora.models.stream.types import AudioStream, Stream, VideoStream
@@ -11,7 +11,7 @@ T = TypeVar("T", bound=Stream)
 class StreamSelector:
     """Responsible for selecting the best video/audio formats based on config."""
 
-    def __init__(self, config: DownloadConfig):
+    def __init__(self, config: DownloadOptions):
         self._config = config
 
     def resolve(self, media: Media) -> tuple[VideoStream | None, AudioStream | None]:

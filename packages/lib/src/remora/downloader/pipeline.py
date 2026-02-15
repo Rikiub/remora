@@ -8,7 +8,7 @@ import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
-from remora.models.download_config import DownloadConfig
+from remora.models.download_options import DownloadOptions
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector
 from remora.downloader.stream.main import StreamDownloader
@@ -50,13 +50,13 @@ class DownloadPipeline:
     def __init__(
         self,
         media: LazyMedia | Media,
-        format_config: DownloadConfig | None = None,
+        format_config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         self.id = media.id
 
         self.media: Media = media  # type: ignore
-        self.config = format_config or DownloadConfig("video")
+        self.config = format_config or DownloadOptions("video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 

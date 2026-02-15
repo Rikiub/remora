@@ -3,7 +3,7 @@ from copy import copy
 from typing import AsyncIterable
 
 import anyio
-from remora.models.download_config import DownloadConfig
+from remora.models.download_options import DownloadOptions
 from remora.downloader.pipeline import DownloadPipeline
 from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor
@@ -19,11 +19,11 @@ class DownloadBatch:
     def __init__(
         self,
         data: AnyExtractResult,
-        format_config: DownloadConfig | None = None,
+        format_config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = copy(format_config) or DownloadConfig()
+        self.config = copy(format_config) or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
 
         # Parallel
