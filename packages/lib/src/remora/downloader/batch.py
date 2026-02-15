@@ -37,8 +37,8 @@ class DownloadBatch:
 
         if self.playlist:
             self.id = self.playlist.id
-            self.config.output = generate_output_template(
-                self.config.output,
+            self.config.template = generate_output_template(
+                self.config.template,
                 playlist=self.playlist,
             )
         else:
@@ -162,8 +162,8 @@ class DownloadBatch:
         # Set config
         if playlist:
             self.id = playlist.id
-            self.config.output = generate_output_template(
-                self.config.output,
+            self.config.template = generate_output_template(
+                self.config.template,
                 playlist=playlist,
             )
         else:

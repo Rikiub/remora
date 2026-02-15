@@ -93,7 +93,7 @@ class DownloadPipeline:
 
             #  Calculate Path & Check Existence
             output = generate_output_template(
-                self.config.output,
+                self.config.template,
                 media=media,
                 stream=stream,
                 default_missing="NA",
@@ -331,7 +331,7 @@ class DownloadPipeline:
         thumbnail: Path | None = None,
         subtitles: list[Path] | None = None,
     ) -> Path:
-        prc = MediaProcessor(filepath, self.config.ffmpeg_path)
+        prc = await MediaProcessor.create(filepath, self.config.ffmpeg_path)
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
@@ -382,7 +382,7 @@ class DownloadPipeline:
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
             async with track_prc("embed_metadata"):
-                await prc.embed_metadata(self.media, bool(self.media.music))
+                await prc.embed_metadata(self.media)
 
         if thumbnail:
             if prc.filepath.suffix[1:] in ThumbnailSupport:

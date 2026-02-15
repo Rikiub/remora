@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Sequence, TypedDict
 
-from anyio.to_thread import run_sync
 from typing_extensions import Self
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
 from yt_dlp.postprocessor.ffmpeg import (
@@ -19,9 +18,9 @@ from remora.ydl.types import YDLExtractInfo
 
 
 def catch(func):
-    async def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         try:
-            return await func(*args, **kwargs)
+            return func(*args, **kwargs)
         except FFmpegPostProcessorError as e:
             raise ProcessingError(str(e))
 
@@ -34,13 +33,13 @@ class RequestedFormat(TypedDict):
     acodec: str
 
 
-RequestedFormats = list[RequestedFormat]
-
-
 class YDLProcessor:
     def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None) -> None:
         self.filepath = Path(filepath)
         self.ffmpeg_path = ffmpeg_path
+
+        if not self.ffmpeg_path:
+            raise ProcessingError("FFmpeg is needed for use processors.")
 
         if not self.extension:
             raise ValueError(f'"{self.filepath}" must have a file extension')
@@ -50,47 +49,46 @@ class YDLProcessor:
         return self.filepath.suffix[1:]
 
     @catch
-    async def change_container(self, stream: str) -> Self:
+    def video_remuxer(self, format: str) -> Self:
         pp = FFmpegVideoRemuxerPP(
             None,
-            preferedformat=stream,
+            preferedformat=format,
         )
-        _, data = await run_sync(pp.run, self.params)
+        _, data = pp.run(self._params)
         self._update_filepath(data)
         return self
 
     @catch
-    async def convert_audio(
+    def extract_audio(
         self,
-        stream: str = "",
+        format: str | None = None,
         quality: int | None = None,
     ) -> Self:
         pp = FFmpegExtractAudioPP(
             None,
             nopostoverwrites=False,
-            preferredcodec=stream,
+            preferredcodec=format,
             preferredquality=quality,
         )
-
-        _, data = await run_sync(pp.run, self.params)
+        _, data = pp.run(self._params)
         self._update_filepath(data)
         return self
 
     @catch
-    async def embed_metadata(self, data: YDLExtractInfo):
+    def embed_metadata(self, data: YDLExtractInfo):
         pp = FFmpegMetadataPP(
             None,
             add_metadata=True,
             add_chapters=True,
         )
-        await run_sync(pp.run, self.params | data)
+        pp.run(self._params | data)
         return self
 
     @catch
-    async def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
+    def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
         pp = EmbedThumbnailPP()
 
-        info = self.params | {
+        info = self._params | {
             "thumbnails": [
                 {"filepath": str(thumbnail)},
             ],
@@ -108,11 +106,11 @@ class YDLProcessor:
                 }
             }
 
-        await run_sync(pp.run, info)
+        pp.run(info)
         return self
 
     @catch
-    async def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
+    def embed_subtitle(self, subtitles: Sequence[StrPath]) -> Self:
         pp = FFmpegEmbedSubtitlePP()
 
         dict_subs: dict[str, dict] = {}
@@ -129,33 +127,32 @@ class YDLProcessor:
                 },
             }
 
-        await run_sync(pp.run, self.params | {"requested_subtitles": dict_subs})
+        pp.run(self._params | {"requested_subtitles": dict_subs})
         return self
 
     @classmethod
     @catch
-    async def from_streams_merge(
+    def from_merger(
         cls,
         filepath: StrPath,
-        streams: RequestedFormats,
+        formats: list[RequestedFormat],
         ffmpeg_path: StrPath | None = None,
     ) -> Self:
         cls = cls(filepath, ffmpeg_path=ffmpeg_path)
 
         pp = FFmpegMergerPP()
-        _, data = await run_sync(
-            pp.run,
-            cls.params
+        _, data = pp.run(
+            cls._params
             | {
-                "requested_formats": streams,
-                "__files_to_merge": [item["filepath"] for item in streams],
+                "requested_formats": formats,
+                "__files_to_merge": [item["filepath"] for item in formats],
             },
         )
         cls._update_filepath(data)
         return cls
 
     @property
-    def params(self):
+    def _params(self):
         info = {
             "filepath": str(self.filepath),
             "ext": self.extension,

@@ -24,14 +24,11 @@ async def get_tempfile() -> Path:
         return Path(file.name)
 
 
-async def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path | None:
-    if ffmpeg_path:
-        ffmpeg_path = Path(ffmpeg_path)
-    else:
-        ffmpeg_path = await get_global_ffmpeg()
+async def validate_ffmpeg(ffmpeg_path: StrPath):
+    path = Path(ffmpeg_path)
 
-    if ffmpeg_path and not await check_executable_exists(ffmpeg_path):
-        raise FileNotFoundError(f"'{ffmpeg_path.name}' is not a FFmpeg executable.")
+    if await check_executable_exists(path):
+        raise FileNotFoundError(f"'{path.name}' is not a FFmpeg executable.")
 
     return ffmpeg_path
 

@@ -1,9 +1,8 @@
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, cast, get_args
+from typing import Annotated, cast, get_args
 
-from remora.exceptions import ProcessingError
-from remora.path import get_ffmpeg
+from pydantic import AfterValidator, field_validator
+from remora.models.base import RemoraBaseModel
 from remora.types import (
     AUDIO_EXTENSION,
     EXTENSION,
@@ -16,8 +15,13 @@ from remora.types import (
 DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader.name} - {title}"
 
 
-@dataclass(slots=True)
-class DownloadOptions:
+def _validate_output(template: StrPath):
+    from remora.template.parser import validate_output
+
+    validate_output(template)
+
+
+class DownloadOptions(RemoraBaseModel):
     """Configuration to shape the streams to download.
 
     If FFmpeg is not installed, options marked with (FFmpeg) will not be available.
@@ -25,28 +29,28 @@ class DownloadOptions:
     Args:
         format: Target file format to search or convert if is a extension.
         quality: Target quality to try filter.
-        output: Directory where to save files.
+        template: Directory where to save files.
         ffmpeg_path: Path to FFmpeg executable. By default, it will get the global installed FFmpeg.
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
     """
 
     format: FILE_FORMAT = "video"
     quality: int | None = None
-    output: StrPath = DEFAULT_OUTPUT_TEMPLATE
+    template: Annotated[
+        StrPath,
+        AfterValidator(_validate_output),
+    ] = DEFAULT_OUTPUT_TEMPLATE
     ffmpeg_path: StrPath | None = None
     embed_metadata: bool = True
     max_workers: int = 4
 
-    def __post_init__(self):
-        from remora.template.parser import validate_output
+    @field_validator("ffmpeg_path")
+    @classmethod
+    async def _validate_ffmpeg(self):
+        from remora.path import validate_ffmpeg
 
-        self.output = Path(self.output)
-        validate_output(self.output)
-
-    async def validate_ffmpeg(self):
-        self.ffmpeg_path = await get_ffmpeg(self.ffmpeg_path)
-        if not self.ffmpeg_path:
-            raise ProcessingError("FFmpeg is needed for use processors.")
+        if self.ffmpeg_path:
+            await validate_ffmpeg(self.ffmpeg_path)
 
     @property
     def type(self) -> FORMAT_TYPE:
@@ -79,8 +83,3 @@ class DownloadOptions:
         return (
             cast(EXTENSION, self.format) if self.format in get_args(EXTENSION) else None
         )
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dict."""
-
-        return asdict(self)

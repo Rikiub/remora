@@ -37,17 +37,17 @@ def generate_output_template(
     playlist: Playlist | None = None,
     default_missing: str | None = None,
 ) -> Path:
-    validate_output(output)
+    validate_template(output)
 
     data = {}
 
     if stream:
-        data |= flatten_dict(stream.model_dump())
+        data |= _flatten_dict(stream.model_dump())
     if media:
-        data |= flatten_dict(media.model_dump())
+        data |= _flatten_dict(media.model_dump())
     if playlist:
         wrap_playlist = PlaylistNested(playlist=playlist)
-        data |= flatten_dict(wrap_playlist.model_dump())
+        data |= _flatten_dict(wrap_playlist.model_dump())
 
     formatter = TemplateFormatter(replace=default_missing)
     template = formatter.format(str(output), **data)
@@ -56,25 +56,26 @@ def generate_output_template(
     return path
 
 
-def validate_output(output: StrPath):
+def validate_template(output: StrPath):
     from remora.template.keys import get_keys
 
     pattern = r"{(.*?)}"
     keys: list[str] = re.findall(pattern, str(output))
+    all_keys = get_keys()
 
     for key in keys:
-        if key not in get_keys():
+        if key not in all_keys:
             raise OutputTemplateError(f"Key '{{{key}}}' from '{output}' is invalid.")
 
 
-def flatten_dict(d: dict, prefix: str = "") -> dict:
+def _flatten_dict(d: dict, prefix: str = "") -> dict:
     items = {}
 
     for k, v in d.items():
         new_key = f"{prefix}{k}"
         if isinstance(v, dict):
             # Recursively flatten, but also keep the parent if it has data
-            items.update(flatten_dict(v, prefix=f"{new_key}."))
+            items.update(_flatten_dict(v, prefix=f"{new_key}."))
         else:
             items[new_key] = v
 
