@@ -76,7 +76,7 @@ class LazyMedia(LazyExtract):
     @classmethod
     def _nest_fields(cls, data):
         # Process only in YDL info dicts.
-        if isinstance(data, dict) and data.get("extractor_key"):
+        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
             # Prepare nested data
             keys = [
                 "uploader_data",

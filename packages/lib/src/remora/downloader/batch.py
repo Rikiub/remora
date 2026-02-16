@@ -3,6 +3,7 @@ from copy import copy
 from typing import AsyncIterable
 
 import anyio
+from loguru import logger
 from remora.downloader.pipeline import DownloadPipeline
 from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor
@@ -52,6 +53,9 @@ class DownloadBatch:
         self.failed = 0
 
         self.result = "success"
+
+        # Log
+        logger.debug(self.config)
 
     async def run(self) -> AsyncIterable[DownloadEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
@@ -131,11 +135,10 @@ class DownloadBatch:
         playlist = None
 
         # Get real data
-        match data:
-            case LazyPlaylist():
-                playlist = await self.extractor.extract(data)
-            case Playlist():
-                playlist = data
+        if type(data) is LazyPlaylist:
+            playlist = await self.extractor.extract(data)
+        elif isinstance(data, Playlist):
+            playlist = data
 
         match data:
             case LazyMedia():

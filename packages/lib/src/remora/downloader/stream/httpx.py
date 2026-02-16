@@ -71,7 +71,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
             StreamEvent
-        ](max_buffer_size=self.max_workers)
+        ](max_buffer_size=20)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:

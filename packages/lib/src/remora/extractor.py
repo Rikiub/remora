@@ -52,7 +52,7 @@ class MediaExtractor:
         from remora.ydl.extractor import extract_info
 
         info = await run_sync(extract_info, url)
-        result = ExtractAdapter.validate_python(info)
+        result = ExtractAdapter.validate_python(info, by_alias=True)
 
         # Save to cache
         if self.use_cache:

@@ -66,8 +66,6 @@ class DownloadPipeline:
             self.ffmpeg_path = None
             logger.debug("FFmpeg not founded, processing disabled")
 
-        logger.debug(self.config)
-
     async def run(self) -> AsyncIterator[MediaEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
 

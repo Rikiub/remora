@@ -27,11 +27,6 @@ async def extract_queries(
                     if result.type == "playlist":
                         logger.info('🔎 Playlist title: "{title}"', title=result.title)
 
-                        if not result.medias and result.playlists:
-                            logger.warning(
-                                "❗ The URL only have multiple playlists but no medias, please try again with a single playlist."
-                            )
-                            raise Exit()
                 else:
                     logger.info(
                         '🔎 Search from {extractor}: "{query}"',

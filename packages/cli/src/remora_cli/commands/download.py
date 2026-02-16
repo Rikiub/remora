@@ -2,7 +2,6 @@ from enum import Enum, StrEnum
 from pathlib import Path
 from typing import Annotated
 
-from loguru import logger
 from remora.helpers import literal_to_set
 from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import StreamTarget
@@ -127,11 +126,6 @@ What format you want request?
         download_config=config,
         extractor=MediaExtractor(use_cache=CONFIG.cache),
     )
-
-    if config.convert and not config.ffmpeg_path:
-        logger.warning(
-            "❗ FFmpeg not installed. File conversion and metadata embeding will be disabled."
-        )
 
     async for result in extract_queries(query, api.extractor):
         async with ProgressCallback(CONFIG.quiet) as progress:
