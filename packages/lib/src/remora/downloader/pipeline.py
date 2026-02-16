@@ -93,11 +93,11 @@ class DownloadPipeline:
             if not stream:
                 raise DownloadError("Streams not founded")
 
-            #  Calculate Path & Check Existence
+            # Calculate Path & Check Existence
             output = generate_output_template(
                 self.config.template,
-                media=media,
                 stream=stream,
+                media=media,
                 default_missing="NA",
             )
             output = Path(output)
@@ -198,6 +198,8 @@ class DownloadPipeline:
         return self.media
 
     async def check_output_duplicate(self, output: Path) -> Path | None:
+        output = Path(output)
+
         async for path in output.parent.iterdir():
             if await path.is_file() and path.stem == output.name:
                 path_extension = path.suffix.lstrip(".")
@@ -401,6 +403,8 @@ class DownloadPipeline:
         return Path(prc.filepath)
 
     async def move_to_final(self, src: Path, dest: Path) -> Path:
+        src, dest = Path(src), Path(dest)
+
         final_path = dest.parent / f"{dest.name}{src.suffix}"
         await final_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Annotated, cast, get_args
+from typing import Annotated, get_args
 
 from pydantic import AfterValidator
 
 from remora.models.base import RemoraBaseModel
+from remora.path import validate_ffmpeg
+from remora.template.parser import validate_template
 from remora.types import (
+    DEFAULT_TEMPLATE,
     AudioExtension,
     StreamExtension,
     StreamQuality,
@@ -13,25 +16,6 @@ from remora.types import (
     StrPath,
     VideoExtension,
 )
-
-DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader.name} - {title}"
-
-
-def _validate_template(template: StrPath):
-    from remora.template.parser import validate_template
-
-    validate_template(template)
-
-    return template
-
-
-def _validate_ffmpeg(value: StrPath | None):
-    from remora.path import validate_ffmpeg
-
-    if value:
-        validate_ffmpeg(value)
-
-    return value
 
 
 class DownloadOptions(RemoraBaseModel):
@@ -48,14 +32,14 @@ class DownloadOptions(RemoraBaseModel):
     """
 
     format: StreamTarget = "video"
-    quality: int | StreamQuality | None = None
+    quality: StreamQuality | int | None = None
     template: Annotated[
         StrPath,
-        AfterValidator(_validate_template),
-    ] = DEFAULT_OUTPUT_TEMPLATE
+        AfterValidator(validate_template),
+    ] = Path.cwd() / DEFAULT_TEMPLATE
     ffmpeg_path: Annotated[
         StrPath | None,
-        AfterValidator(_validate_ffmpeg),
+        AfterValidator(lambda v: validate_ffmpeg(v) if v else v),
     ] = None
     embed_metadata: bool = True
     max_workers: int = 4
@@ -69,7 +53,7 @@ class DownloadOptions(RemoraBaseModel):
         """
 
         if self.format in get_args(StreamType):
-            return cast(StreamType, self.format)
+            return self.format
 
         elif self.format in get_args(VideoExtension):
             return "video"
@@ -88,8 +72,4 @@ class DownloadOptions(RemoraBaseModel):
             If could convert, returns a file `EXTENSION`, else return `None`.
         """
 
-        return (
-            cast(StreamExtension, self.format)
-            if self.format in get_args(StreamExtension)
-            else None
-        )
+        return self.format if self.format in get_args(StreamExtension) else None

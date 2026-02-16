@@ -1,4 +1,3 @@
-import re
 import string
 from pathlib import Path
 
@@ -9,7 +8,7 @@ from remora.models.content.list import Playlist
 from remora.models.content.media import Media
 from remora.models.stream.types import Stream
 from remora.template.keys import PlaylistNested
-from remora.types import StrPath
+from remora.types import DEFAULT_TEMPLATE, StrPath
 
 
 class TemplateFormatter(string.Formatter):
@@ -37,11 +36,19 @@ def generate_output_template(
     media: Media | None = None,
     playlist: Playlist | None = None,
     default_missing: str | None = None,
-) -> Path:
+) -> str:
+    template_path = Path(template)
+
+    # Set default if template is directory
+    if str(template).endswith("/"):
+        template = f"{template}{DEFAULT_TEMPLATE}"
+    elif template_path.is_dir():
+        template = template_path / DEFAULT_TEMPLATE
+
     validate_template(template)
 
+    # Dump metadata
     data = {}
-
     if stream:
         data |= _flatten_dict(stream.model_dump())
     if media:
@@ -50,14 +57,18 @@ def generate_output_template(
         wrap_playlist = PlaylistNested(playlist=playlist)
         data |= _flatten_dict(wrap_playlist.model_dump())
 
+    # Format with metadata
     formatter = TemplateFormatter(replace=default_missing)
     template = formatter.format(str(template), **data)
 
-    path = Path(sanitize_filepath(template, max_len=250))
+    # Remove invalid characters and limit length
+    path = sanitize_filepath(template, max_len=250)
     return path
 
 
 def validate_template(output: StrPath):
+    import re
+
     from remora.template.keys import get_keys
 
     pattern = r"{(.*?)}"
@@ -67,6 +78,8 @@ def validate_template(output: StrPath):
     for key in keys:
         if key not in all_keys:
             raise OutputTemplateError(f"Key '{{{key}}}' from '{output}' is invalid.")
+
+    return output
 
 
 def _flatten_dict(d: dict, prefix: str = "") -> dict:

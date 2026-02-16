@@ -42,3 +42,4 @@ LoggingLevels = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 # Extra
 APP_NAME = "remora"
+DEFAULT_TEMPLATE = "{uploader.name} - {title}"

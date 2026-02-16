@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterable
+from copy import copy
 
 import anyio
 from loguru import logger
@@ -23,7 +24,7 @@ class DownloadBatch:
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = format_config or DownloadOptions()
+        self.config = copy(format_config) or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
 
         # Parallel

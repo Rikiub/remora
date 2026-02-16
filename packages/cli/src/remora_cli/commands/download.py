@@ -5,8 +5,7 @@ from typing import Annotated
 from typer import Argument, BadParameter, Option, Typer
 
 from remora.helpers import literal_to_set
-from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
-from remora.types import StreamTarget
+from remora.types import DEFAULT_TEMPLATE, StreamTarget
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
@@ -73,7 +72,7 @@ What format you want request?
         ),
     ] = None,
     output: Annotated[
-        Path,
+        str,
         Option(
             "--output",
             "-o",
@@ -81,10 +80,8 @@ What format you want request?
             rich_help_panel=HelpPanel.file,
             autocompletion=complete_output,
             show_default=False,
-            dir_okay=True,
-            file_okay=False,
         ),
-    ] = DEFAULT_OUTPUT_TEMPLATE,
+    ] = DEFAULT_TEMPLATE,
     max_workers: Annotated[
         int,
         Option(
