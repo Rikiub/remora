@@ -66,18 +66,18 @@ class DownloadPipeline:
             self.ffmpeg_path = None
             logger.debug("FFmpeg not founded, processing disabled")
 
-    async def run(self) -> AsyncIterator[MediaEvent]:
+    async def download(self) -> AsyncIterator[MediaEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(self._execute_download)
+                tg.start_soon(self._producer)
 
                 async for event in receive_stream:
                     await event_debug(event)
                     yield event
 
-    async def _execute_download(self):
+    async def _producer(self):
         async with self._stream:
             # Resolve Data
             media = await self.resolve_media()
@@ -185,7 +185,7 @@ class DownloadPipeline:
                     )
 
                 # Complete (Move to target)
-                await self.move_to_final(results.file, output)
+                results.file = await self.move_to_final(results.file, output)
             else:
                 raise DownloadError("Final file not founded")
 

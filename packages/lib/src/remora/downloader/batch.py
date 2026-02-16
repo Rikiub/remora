@@ -46,7 +46,7 @@ class DownloadBatch:
         # Log
         logger.debug(self.config)
 
-    async def run(self) -> AsyncIterable[DownloadEvent]:
+    async def download(self) -> AsyncIterable[DownloadEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
             30
         )
@@ -54,14 +54,14 @@ class DownloadBatch:
         async with receive_stream:
             try:
                 async with anyio.create_task_group() as tg:
-                    tg.start_soon(self._execute_download)
+                    tg.start_soon(self._producer)
 
                     async for event in receive_stream:
                         yield event
             except anyio.get_cancelled_exc_class():
                 yield await receive_stream.receive()
 
-    async def _execute_download(self):
+    async def _producer(self):
         async with self._stream:
             # Setup
             await self._setup()
@@ -79,7 +79,7 @@ class DownloadBatch:
             try:
                 async with anyio.create_task_group() as tg:
                     for media in self.medias:
-                        tg.start_soon(self._run_pipeline, media)
+                        tg.start_soon(self._pipeline, media)
             except anyio.get_cancelled_exc_class():
                 self.result = "cancelled"
                 raise
@@ -93,14 +93,14 @@ class DownloadBatch:
                     )
                 )
 
-    async def _run_pipeline(self, media: LazyMedia):
+    async def _pipeline(self, media: LazyMedia):
         async with self.limiter:
             try:
                 async for event in DownloadPipeline(
                     media,
                     self.config,
                     self.extractor,
-                ).run():
+                ).download():
                     await self._stream.send(event)
 
                 self.success += 1

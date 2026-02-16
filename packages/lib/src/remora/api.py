@@ -72,7 +72,7 @@ class RemoraAPI:
                 extracted,
                 format_config=self.config,
                 extractor=self.extractor,
-            ).run():
+            ).download():
                 yield event
 
     async def download_batch(
@@ -90,7 +90,7 @@ class RemoraAPI:
             extracted,
             format_config=self.config,
             extractor=self.extractor,
-        ).run():
+        ).download():
             yield event
 
     async def download_resource(self, item: Thumbnail, path: StrPath) -> Path:
