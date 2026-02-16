@@ -59,7 +59,7 @@ class DownloadBatch:
 
     async def run(self) -> AsyncIterable[DownloadEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
-            100
+            30
         )
 
         async with receive_stream:
@@ -112,7 +112,7 @@ class DownloadBatch:
                     self.config,
                     self.extractor,
                 ).run():
-                    self._stream.send_nowait(event)
+                    await self._stream.send(event)
 
                 self.success += 1
             except* MediaError:
@@ -120,7 +120,7 @@ class DownloadBatch:
                 self.failed += 1
 
             self.completed += 1
-            self._stream.send_nowait(
+            await self._stream.send(
                 PlaylistUpdate(
                     id=self.id,
                     status="update",

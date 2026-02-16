@@ -16,7 +16,7 @@ from remora.ydl.types import YDL_PROTOCOLS
 from typing_extensions import override
 
 
-class YDLFormatDownloader(BaseStreamDownloader):
+class YDLStreamDownloader(BaseStreamDownloader):
     SUPPORTED_PROTOCOLS = YDL_PROTOCOLS
 
     def __init__(
@@ -32,7 +32,7 @@ class YDLFormatDownloader(BaseStreamDownloader):
         self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
             StreamEvent
-        ](10)
+        ](20)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:

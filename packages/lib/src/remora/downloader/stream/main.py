@@ -60,9 +60,9 @@ class StreamDownloader(BaseStreamDownloader):
                 raise error
 
         # Fallback downloader
-        from remora.downloader.stream.ydl import YDLFormatDownloader
+        from remora.downloader.stream.ydl import YDLStreamDownloader
 
-        downloader = YDLFormatDownloader(
+        downloader = YDLStreamDownloader(
             self.filepath,
             self.stream,
             self.retries,

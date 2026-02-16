@@ -71,7 +71,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
             StreamEvent
-        ](max_buffer_size=20)
+        ](20)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
@@ -245,7 +245,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             event.total_bytes = event.downloaded_bytes
 
         # Send event to top function
-        self._send_stream.send_nowait(event)
+        await self._send_stream.send(event)
 
     def _get_headers(self) -> dict[str, str]:
         headers = self.stream.http_headers
