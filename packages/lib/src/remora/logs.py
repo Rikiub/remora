@@ -20,7 +20,7 @@ def disable():
     logger.disable(APP_NAME)
 
 
-def setup(level: LoggingLevels = "INFO") -> None:
+def setup(level: LoggingLevels = "DEBUG") -> None:
     enable()
 
     import sys
