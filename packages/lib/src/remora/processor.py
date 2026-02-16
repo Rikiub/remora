@@ -6,7 +6,7 @@ from remora.exceptions import FFmpegNotFoundError
 from remora.models.content.media import Media
 from remora.models.metadata.music import Music
 from remora.models.stream.types import Stream
-from remora.path import find_global_ffmpeg, validate_ffmpeg
+from remora.path import get_ffmpeg
 from remora.types import AudioExtension, StreamExtension, StrPath
 from remora.ydl.processor import RequestedFormat, YDLProcessor
 from remora.ydl.types import YDLExtractInfo
@@ -14,19 +14,19 @@ from remora.ydl.types import YDLExtractInfo
 
 class MediaProcessor:
     def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None):
-        # Validate FFmpeg
-        ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
+        self.filepath = Path(filepath)
 
+        # Validate FFmpeg
         try:
-            if not ffmpeg_path:
-                raise FileNotFoundError("FFmpeg path is needed for use processors.")
-            validate_ffmpeg(ffmpeg_path)
+            ffmpeg_path = get_ffmpeg(ffmpeg_path)
         except FileNotFoundError as e:
             raise FFmpegNotFoundError(str(e)) from e
 
+        if not self.filepath.is_file():
+            raise FileNotFoundError(f'"{self.filepath.name}" not is a file.')
+
         # Set ffmpeg
         self.ffmpeg_path = Path(ffmpeg_path)
-        self.filepath = Path(filepath)
         self._prc = YDLProcessor(self.filepath, self.ffmpeg_path)
 
     @property
@@ -66,13 +66,7 @@ class MediaProcessor:
         self._update_file(result)
         return self
 
-    @classmethod
-    async def from_streams_merge(
-        cls,
-        filepath: StrPath,
-        streams: list[tuple[Stream, Path]],
-        ffmpeg_path: StrPath | None = None,
-    ):
+    async def merge_streams(self, streams: list[tuple[Stream, Path]]):
         real_streams: list[RequestedFormat] = []
 
         for fmt in streams:
@@ -84,16 +78,8 @@ class MediaProcessor:
                 fmt = {"filepath": str(path)} | stream.to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
-        self = cls(filepath, ffmpeg_path)
-
-        result = await run_sync(
-            self._prc.from_merger,
-            filepath,
-            real_streams,
-            ffmpeg_path,
-        )
+        result = await run_sync(self._prc.merge_formats, real_streams)
         self._update_file(result)
-
         return self
 
     def _update_file(self, processor: YDLProcessor):

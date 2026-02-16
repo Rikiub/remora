@@ -130,26 +130,18 @@ class YDLProcessor:
         pp.run(self._params | {"requested_subtitles": dict_subs})
         return self
 
-    @classmethod
     @catch
-    def from_merger(
-        cls,
-        filepath: StrPath,
-        formats: list[RequestedFormat],
-        ffmpeg_path: StrPath | None = None,
-    ) -> Self:
-        cls = cls(filepath, ffmpeg_path=ffmpeg_path)
-
+    def merge_formats(self, formats: list[RequestedFormat]) -> Self:
         pp = FFmpegMergerPP()
         _, data = pp.run(
-            cls._params
+            self._params
             | {
                 "requested_formats": formats,
                 "__files_to_merge": [item["filepath"] for item in formats],
             },
         )
-        cls._update_filepath(data)
-        return cls
+        self._update_filepath(data)
+        return self
 
     @property
     def _params(self):

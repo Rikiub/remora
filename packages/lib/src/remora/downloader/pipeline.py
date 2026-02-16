@@ -31,7 +31,7 @@ from remora.models.event.processor import (
 )
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.path import find_global_ffmpeg, get_tempfile, validate_ffmpeg
+from remora.path import get_ffmpeg, get_tempfile
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template
 from remora.types import SupportedExtensions
@@ -60,13 +60,11 @@ class DownloadPipeline:
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
-        self.ffmpeg_path = None
         try:
-            self.ffmpeg_path = validate_ffmpeg(
-                self.config.ffmpeg_path or find_global_ffmpeg()
-            )
+            self.ffmpeg_path = get_ffmpeg()
         except FileNotFoundError:
-            logger.debug("FFmpeg not founded, processing will be disabled")
+            self.ffmpeg_path = None
+            logger.debug("FFmpeg not founded, processing disabled")
 
         logger.debug(self.config)
 
@@ -311,6 +309,7 @@ class DownloadPipeline:
         ):
             extension = self.config.convert or "mp4"
             filepath = pathlib.Path(f"{get_tempfile()}.{extension}")
+            filepath.touch()
 
             merging = MergingProcessor(
                 id=self.id,
@@ -322,10 +321,9 @@ class DownloadPipeline:
             )
             self._stream.send_nowait(merging)
 
-            prc = await MediaProcessor.from_streams_merge(
-                filepath,
-                streams=[(video_stream, video_file), (audio_stream, audio_file)],
-                ffmpeg_path=self.ffmpeg_path,
+            prc = MediaProcessor(filepath, self.ffmpeg_path)
+            prc = await prc.merge_streams(
+                streams=[(video_stream, video_file), (audio_stream, audio_file)]
             )
 
             merging.step = "completed"

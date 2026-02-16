@@ -23,6 +23,15 @@ def get_tempfile() -> Path:
         return Path(file.name)
 
 
+def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path:
+    ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
+
+    if not ffmpeg_path:
+        raise FileNotFoundError("FFmpeg path is needed for use processors.")
+
+    return validate_ffmpeg(ffmpeg_path)
+
+
 @cache
 def find_global_ffmpeg() -> Path | None:
     path = shutil.which("ffmpeg")
