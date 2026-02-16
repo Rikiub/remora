@@ -2,15 +2,16 @@ from pathlib import Path
 from typing import Annotated, cast, get_args
 
 from pydantic import AfterValidator
+
 from remora.models.base import RemoraBaseModel
 from remora.types import (
     AudioExtension,
-    StreamQuality,
     StreamExtension,
+    StreamQuality,
     StreamTarget,
     StreamType,
-    VideoExtension,
     StrPath,
+    VideoExtension,
 )
 
 DEFAULT_OUTPUT_TEMPLATE = Path.cwd() / "{uploader.name} - {title}"

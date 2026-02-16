@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
+
 from anyio.to_thread import run_sync
 
 from remora.exceptions import FFmpegNotFoundError

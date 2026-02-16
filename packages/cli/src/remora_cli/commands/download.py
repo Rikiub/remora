@@ -2,6 +2,8 @@ from enum import Enum, StrEnum
 from pathlib import Path
 from typing import Annotated
 
+from typer import Argument, BadParameter, Option, Typer
+
 from remora.helpers import literal_to_set
 from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import StreamTarget
@@ -9,7 +11,6 @@ from remora_cli.completions import complete_output, complete_query, complete_res
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
 from remora_cli.ui.rich import Status
-from typer import Argument, BadParameter, Option, Typer
 
 
 class HelpPanel(str, Enum):

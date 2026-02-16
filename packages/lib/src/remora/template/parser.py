@@ -3,6 +3,7 @@ import string
 from pathlib import Path
 
 from pathvalidate import sanitize_filepath
+
 from remora.exceptions import OutputTemplateError
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media

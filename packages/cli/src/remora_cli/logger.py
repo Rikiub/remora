@@ -1,9 +1,9 @@
 import logging
 
 from loguru import logger
-from remora.types import APP_NAME, LoggingLevels
 from rich.logging import RichHandler
 
+from remora.types import APP_NAME, LoggingLevels
 from remora_cli.ui.rich import CONSOLE
 
 

@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence, TypedDict
+from typing import TypedDict
 
 from typing_extensions import Self
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP

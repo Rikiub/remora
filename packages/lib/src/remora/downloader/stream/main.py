@@ -1,13 +1,14 @@
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 from loguru import logger
+from typing_extensions import override
+
 from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
 from remora.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloadError
 from remora.models.event.stream import StreamEvent
 from remora.models.stream.types import Stream
 from remora.types import StrPath
-from typing_extensions import override
 
 
 class StreamDownloader(BaseStreamDownloader):

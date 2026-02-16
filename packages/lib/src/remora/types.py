@@ -1,11 +1,11 @@
 from os import PathLike
 from typing import Literal
 
-from remora.ydl.types import VideoExtension as YDLVideoExtension
-from remora.ydl.types import AudioExtension as YDLAudioExtension
-from remora.ydl.types import YDLExtensions
-
 from pydantic import HttpUrl
+
+from remora.ydl.types import AudioExtension as YDLAudioExtension
+from remora.ydl.types import VideoExtension as YDLVideoExtension
+from remora.ydl.types import YDLExtensions
 
 # Extension
 VideoExtension = YDLVideoExtension

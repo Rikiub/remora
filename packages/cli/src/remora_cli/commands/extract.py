@@ -2,11 +2,12 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from loguru import logger
+from typer import Argument, Option, Typer
+
 from remora_cli.completions import complete_query, complete_template_key
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
 from remora_cli.ui.rich import Console, Status
-from typer import Argument, Option, Typer
 
 
 class HelpPanel(StrEnum):
@@ -60,9 +61,10 @@ async def extract(
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
+        from rich.json import JSON
+
         from remora import MediaExtractor
         from remora_cli.ui.extractor import dict_to_table, extract_queries
-        from rich.json import JSON
 
     console = Console()
     extractor = MediaExtractor(use_cache=CONFIG.cache)

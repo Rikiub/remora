@@ -2,8 +2,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
-from remora_cli.config import CONFIG
 from typer import Option, Typer
+
+from remora_cli.config import CONFIG
 
 
 def show_version(show: bool) -> None:

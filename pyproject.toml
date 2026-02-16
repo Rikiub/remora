@@ -16,7 +16,7 @@ typeCheckingMode = "standard"
 
 # ruff
 [tool.ruff]
-src = ["packages"]
+src = ["packages/*/src"]
 
 [tool.ruff.lint]
 select = [
@@ -25,3 +25,4 @@ select = [
     "UP", # pyupgrade (modernize)
     "I",  # isort (sort imports)
 ]
+ignore = ["E501"] # ignore "line too long"

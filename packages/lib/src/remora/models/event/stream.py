@@ -2,8 +2,9 @@ from collections.abc import Callable
 from typing import Annotated, Literal
 
 from pydantic import Field
-from remora.models.event.base import BaseEvent, FileEvent
 from typing_extensions import Self
+
+from remora.models.event.base import BaseEvent, FileEvent
 
 
 class DownloadingStream(BaseEvent):

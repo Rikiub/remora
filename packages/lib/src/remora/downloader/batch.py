@@ -1,7 +1,8 @@
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 import anyio
 from loguru import logger
+
 from remora.downloader.pipeline import DownloadPipeline
 from remora.exceptions import MediaError
 from remora.extractor import MediaExtractor

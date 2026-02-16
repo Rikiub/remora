@@ -1,13 +1,15 @@
 import pathlib
 import shutil
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator, cast
+from typing import cast
 
 import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
+
 from remora.downloader.debug import event_debug
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.selector import StreamSelector

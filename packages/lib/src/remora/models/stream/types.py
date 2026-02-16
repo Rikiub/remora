@@ -11,11 +11,11 @@ from pydantic import (
     field_serializer,
     model_serializer,
 )
+from typing_extensions import override
+
 from remora.models.base import YDLSerializable
 from remora.types import AudioExtension, StreamExtension, VideoExtension
 from remora.ydl.types import YDLFormatInfo
-from typing_extensions import override
-
 
 Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 AudioCodecField = Field(alias="acodec")

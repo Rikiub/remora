@@ -1,7 +1,7 @@
-from typing import AsyncIterable, overload
+from collections.abc import AsyncIterable
+from typing import overload
 
 from anyio import Path
-from remora_cli.ui.extractor import Search
 
 from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist
@@ -12,6 +12,7 @@ from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
 from remora.models.metadata.thumbnails import Thumbnail
 from remora.types import SearchService, StrPath, StrUrl
+from remora_cli.ui.extractor import Search
 
 
 class RemoraAPI:

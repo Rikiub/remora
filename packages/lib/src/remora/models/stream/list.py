@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import bisect
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Generic, Iterator, Literal, overload
+from typing import Generic, Literal, overload
 
 from pydantic import OnErrorOmit
+from typing_extensions import Self, TypeVar, override
+
 from remora.models.base import BaseList
 from remora.models.stream.codecs import get_codec_rank
 from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.types import StreamType
-from typing_extensions import Self, TypeVar, override
 
 
 def stream_sort(stream: Stream):

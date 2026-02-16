@@ -1,6 +1,7 @@
 """Raw info extractor."""
 
-from typing import Callable, TypeVar, overload
+from collections.abc import Callable
+from typing import TypeVar, overload
 
 from anyio.to_thread import run_sync
 from loguru import logger

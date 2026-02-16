@@ -1,8 +1,9 @@
 """Custom `Rich` classes."""
 
-from remora_cli.config import CONFIG
 from rich.console import Console, RenderableType
 from rich.status import Status as _Status
+
+from remora_cli.config import CONFIG
 
 CONSOLE = Console(stderr=True)
 

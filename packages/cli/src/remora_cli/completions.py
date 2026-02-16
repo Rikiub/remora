@@ -1,7 +1,9 @@
-from typing import Generator, Literal, get_args
+from collections.abc import Generator
+from typing import Literal, get_args
+
+from typer import BadParameter
 
 from remora.types import SearchService, StreamQuality
-from typer import BadParameter
 
 SearchTarget = Literal["url", SearchService]
 
@@ -20,8 +22,7 @@ def complete_resolution() -> Generator[str, None, None]:
 def complete_template_key() -> Generator[str, None, None]:
     from remora.template.keys import get_keys
 
-    for key in get_keys():
-        yield key
+    yield from get_keys()
 
 
 def complete_output(incomplete: str) -> Generator[str, None, None]:
