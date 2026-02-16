@@ -1,14 +1,27 @@
 [dependency-groups]
 dev = ["anyio>=4.12.1", "pytest>=9.0.0", "ruff>=0.15.0"]
 
+# pytest
 [tool.pytest.ini_options]
 anyio_mode = "auto"
 
-[tool.pyright]
-include = ["packages"]
-
+# uv
 [tool.uv.workspace]
 members = ["packages/*"]
 
-[tool.uv.sources]
-remora = { workspace = true }
+# pyright
+[tool.pyright]
+include = ["packages"]
+typeCheckingMode = "standard"
+
+# ruff
+[tool.ruff]
+src = ["packages"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle (ruff default)
+    "F",  # pyflakes (ruff default)
+    "UP", # pyupgrade (modernize)
+    "I",  # isort (sort imports)
+]
