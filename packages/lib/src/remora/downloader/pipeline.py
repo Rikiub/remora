@@ -26,11 +26,7 @@ from remora.models.event.media import (
     Resolving,
     Warning,
 )
-from remora.models.event.processor import (
-    MergingProcessor,
-    Processor,
-    ProcessorTask,
-)
+from remora.models.event.processor import MergingProcessor, Processor, ProcessorTask
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.path import get_ffmpeg, get_tempfile
