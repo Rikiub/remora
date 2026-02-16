@@ -73,11 +73,15 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
     )
 
     info = {"thumbnails": [thumbnail]}
-    final = ydl._write_thumbnails(  # type: ignore
-        label=filepath,
-        info_dict=info,
-        filename=str(filepath),
-    )
+
+    try:
+        final = ydl._write_thumbnails(  # type: ignore
+            label=filepath,
+            info_dict=info,
+            filename=str(filepath),
+        )
+    except YDLDownloadError as e:
+        raise MetadataDownloadError(str(e))
 
     if final:
         return Path(final[0][0])
@@ -99,10 +103,13 @@ def download_subtitles(
     )
     info = {"requested_subtitles": subs}
 
-    final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
-        info_dict=info,
-        filename=str(filepath),
-    )
+    try:
+        final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
+            info_dict=info,
+            filename=str(filepath),
+        )
+    except YDLDownloadError as e:
+        raise MetadataDownloadError(str(e))
 
     if final:
         result = [Path(entry[0]) for entry in final]

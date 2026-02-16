@@ -21,6 +21,8 @@ def _validate_template(template: StrPath):
 
     validate_template(template)
 
+    return template
+
 
 def _validate_ffmpeg(value: StrPath | None):
     from remora.path import validate_ffmpeg

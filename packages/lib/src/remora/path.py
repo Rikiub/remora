@@ -34,16 +34,16 @@ def find_global_ffmpeg() -> Path | None:
 
 
 @cache
-def validate_ffmpeg(ffmpeg_path: StrPath | None):
+def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
     if not ffmpeg_path:
         raise FileNotFoundError("FFmpeg executable not founded.")
 
-    path = Path(ffmpeg_path)
+    ffmpeg_path = Path(ffmpeg_path)
 
-    if check_executable_exists(path):
-        raise FileNotFoundError(f"'{path.name}' is not a FFmpeg executable.")
+    if not check_executable_exists(ffmpeg_path):
+        raise FileNotFoundError(f"'{ffmpeg_path.name}' is not a FFmpeg executable.")
 
-    return ffmpeg_path
+    return Path(ffmpeg_path)
 
 
 def check_executable_exists(file: StrPath) -> bool:

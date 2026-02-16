@@ -29,3 +29,6 @@ class MetadataDownloadError(DownloadError):
 
 class ProcessingError(MediaError):
     """Postprocessing error."""
+
+
+class FFmpegNotFoundError(ProcessingError): ...

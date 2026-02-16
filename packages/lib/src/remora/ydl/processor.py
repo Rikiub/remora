@@ -12,7 +12,7 @@ from yt_dlp.postprocessor.ffmpeg import (
     FFmpegVideoRemuxerPP,
 )
 
-from remora.exceptions import ProcessingError
+from remora.exceptions import FFmpegNotFoundError, ProcessingError
 from remora.types import StrPath
 from remora.ydl.types import YDLExtractInfo
 
@@ -39,7 +39,7 @@ class YDLProcessor:
         self.ffmpeg_path = ffmpeg_path
 
         if not self.ffmpeg_path:
-            raise ProcessingError("FFmpeg is needed for use processors.")
+            raise FFmpegNotFoundError("FFmpeg is needed for use processors.")
 
         if not self.extension:
             raise ValueError(f'"{self.filepath}" must have a file extension')

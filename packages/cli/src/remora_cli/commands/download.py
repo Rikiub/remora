@@ -1,8 +1,9 @@
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from loguru import logger
+from remora.helpers import literal_to_set
 from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
 from remora.types import StreamTarget
 from remora_cli.completions import complete_output, complete_query, complete_resolution
@@ -16,6 +17,8 @@ class HelpPanel(str, Enum):
     file = "File"
     downloader = "Downloader"
 
+
+FormatEnum = StrEnum("FormatEnum", {v.upper(): v for v in literal_to_set(StreamTarget)})
 
 app = Typer()
 
@@ -37,7 +40,7 @@ async def download(
         ),
     ],
     format: Annotated[
-        Literal[StreamTarget],
+        FormatEnum,  # type: ignore
         Option(
             "--format",
             "-f",

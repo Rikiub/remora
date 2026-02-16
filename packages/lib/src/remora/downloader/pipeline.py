@@ -31,7 +31,7 @@ from remora.models.event.processor import (
 )
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.path import get_tempfile
+from remora.path import find_global_ffmpeg, get_tempfile, validate_ffmpeg
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template
 from remora.types import SupportedExtensions
@@ -60,6 +60,14 @@ class DownloadPipeline:
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
+        self.ffmpeg_path = None
+        try:
+            self.ffmpeg_path = validate_ffmpeg(
+                self.config.ffmpeg_path or find_global_ffmpeg()
+            )
+        except FileNotFoundError:
+            logger.debug("FFmpeg not founded, processing will be disabled")
+
         logger.debug(self.config)
 
     async def run(self) -> AsyncIterator[MediaEvent]:
@@ -80,8 +88,14 @@ class DownloadPipeline:
 
             # Select Streams
             video_stream, audio_stream = StreamSelector(self.config).resolve(media)
-            stream = video_stream or audio_stream
 
+            if not self.ffmpeg_path:
+                if self.config.type == "video":
+                    audio_stream = None
+                elif self.config.type == "audio":
+                    video_stream = None
+
+            stream = video_stream or audio_stream
             if not stream:
                 raise DownloadError("Streams not founded")
 
@@ -166,7 +180,7 @@ class DownloadPipeline:
                 tg.start_soon(dl_subtitles)
 
             if results.file:
-                if self.config.ffmpeg_path:
+                if self.ffmpeg_path:
                     results.file = await self.process(
                         results.file,
                         stream,
@@ -176,6 +190,8 @@ class DownloadPipeline:
 
                 # Complete (Move to target)
                 await self.move_to_final(results.file, output)
+            else:
+                raise DownloadError("Final file not founded")
 
     async def resolve_media(self) -> Media:
         self._stream.send_nowait(Resolving(id=self.id, media=self.media))
@@ -276,16 +292,20 @@ class DownloadPipeline:
 
         try:
             async with anyio.create_task_group() as tg:
-                if audio_stream:
-                    tg.start_soon(download_audio)
-                if video_stream:
+                if self.ffmpeg_path and (video_stream and audio_stream):
                     tg.start_soon(download_video)
+                    tg.start_soon(download_audio)
+
+                elif video_stream:
+                    tg.start_soon(download_video)
+                elif audio_stream:
+                    tg.start_soon(download_audio)
         except* DownloadError as eg:
             raise eg.exceptions[0]
 
         # Merge if necessary
         if (
-            self.config.ffmpeg_path
+            self.ffmpeg_path
             and (video_file and video_stream)
             and (audio_file and audio_stream)
         ):
@@ -300,11 +320,12 @@ class DownloadPipeline:
                 video_stream=video_stream,
                 audio_stream=audio_stream,
             )
+            self._stream.send_nowait(merging)
 
             prc = await MediaProcessor.from_streams_merge(
                 filepath,
                 streams=[(video_stream, video_file), (audio_stream, audio_file)],
-                ffmpeg_path=self.config.ffmpeg_path,
+                ffmpeg_path=self.ffmpeg_path,
             )
 
             merging.step = "completed"
@@ -325,7 +346,7 @@ class DownloadPipeline:
         thumbnail: Path | None = None,
         subtitles: list[Path] | None = None,
     ) -> Path:
-        prc = MediaProcessor(filepath, self.config.ffmpeg_path)
+        prc = MediaProcessor(filepath, self.ffmpeg_path)
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):

@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Sequence
 from anyio.to_thread import run_sync
 
-from remora.exceptions import ProcessingError
+from remora.exceptions import FFmpegNotFoundError
 from remora.models.content.media import Media
 from remora.models.metadata.music import Music
 from remora.models.stream.types import Stream
@@ -14,18 +14,20 @@ from remora.ydl.types import YDLExtractInfo
 
 class MediaProcessor:
     def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None):
-        self._prc = YDLProcessor(filepath, ffmpeg_path)
-        self.filepath = Path(filepath)
-
         # Validate FFmpeg
         ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
 
-        if not ffmpeg_path:
-            raise ProcessingError("FFmpeg is needed for use processors.")
-        validate_ffmpeg(ffmpeg_path)
+        try:
+            if not ffmpeg_path:
+                raise FileNotFoundError("FFmpeg path is needed for use processors.")
+            validate_ffmpeg(ffmpeg_path)
+        except FileNotFoundError as e:
+            raise FFmpegNotFoundError(str(e)) from e
 
         # Set ffmpeg
         self.ffmpeg_path = Path(ffmpeg_path)
+        self.filepath = Path(filepath)
+        self._prc = YDLProcessor(self.filepath, self.ffmpeg_path)
 
     @property
     def extension(self) -> str:
