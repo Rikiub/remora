@@ -6,11 +6,6 @@ if TYPE_CHECKING:
     from .__init__imports import *  # noqa: F403
 else:
     from lazy_imports import LazyModule, as_package, load, module_source
-    from loguru import logger
-
-    from remora.types import APP_NAME
-
-    logger.disable(APP_NAME)
 
     load(
         LazyModule(

@@ -38,7 +38,6 @@ StreamQuality = VideoQuality | AudioQuality
 # Generics
 StrPath = str | PathLike[str]
 StrUrl = str | HttpUrl
-LoggingLevels = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 # Extra
 APP_NAME = "remora"

@@ -23,12 +23,18 @@ class BaseStreamDownloader(ABC):
         self.retries = retries
 
     def _log_stream(self):
-        type = "video" if isinstance(self.stream, VideoStream) else "audio"
-        logger.debug(
-            'Downloading {type} stream "{id}" (extension:{extension} | quality:{quality}) with "{class_name}"',
-            type=type,
-            id=self.stream.id,
-            extension=self.stream.extension,
-            quality=self.stream.quality,
-            class_name=self.__class__.__name__,
+        stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"
+
+        data = {
+            "status": "downloading",
+            "stream_id": self.stream.id,
+            "stream_type": stream_type,
+            "quality": self.stream.quality,
+            "extension": self.stream.extension,
+            "downloader": self.__class__.__name__,
+        }
+
+        logger.bind(**data).debug(
+            'Downloading {stream_type} stream "{stream_id}" (extension:{extension} | quality:{quality}) with "{downloader}"',
+            **data,
         )

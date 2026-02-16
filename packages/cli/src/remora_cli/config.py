@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from remora.types import LoggingLevels
+from remora.logs import LoggingLevels
 
 
 @dataclass(slots=True)

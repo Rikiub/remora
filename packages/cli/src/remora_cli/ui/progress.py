@@ -48,7 +48,7 @@ class ProgressCallback:
                     self.progress.update(
                         event.id,
                         description=name,
-                        status="Ready",
+                        status="Preparing[blink]...[/]",
                     )
                 case "downloading":
                     self.progress.update(
@@ -114,7 +114,7 @@ class ProgressCallback:
         content: str,
         prefix: str = "  ",
     ) -> str:
-        return f'   {prefix} "{name}": {content}'
+        return f'{prefix} "{name}": {content}'
 
     def _media_display_name(self, media: LazyMedia) -> str:
         """Get pretty representation of media name."""

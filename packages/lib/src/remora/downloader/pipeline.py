@@ -76,116 +76,117 @@ class DownloadPipeline:
                     yield event
 
     async def _producer(self):
-        async with self._stream:
-            # Resolve Data
-            media = await self.resolve_media()
+        with logger.contextualize(media_id=self.id, media_title=self.media.title):
+            async with self._stream:
+                # Resolve Data
+                media = await self.resolve_media()
 
-            # Select Streams
-            video_stream, audio_stream = StreamSelector(self.config).resolve(media)
+                # Select Streams
+                video_stream, audio_stream = StreamSelector(self.config).resolve(media)
 
-            if not self.ffmpeg_path:
-                if self.config.type == "video":
-                    audio_stream = None
-                elif self.config.type == "audio":
-                    video_stream = None
+                if not self.ffmpeg_path:
+                    if self.config.type == "video":
+                        audio_stream = None
+                    elif self.config.type == "audio":
+                        video_stream = None
 
-            stream = video_stream or audio_stream
-            if not stream:
-                raise DownloadError("Streams not founded")
+                stream = video_stream or audio_stream
+                if not stream:
+                    raise DownloadError("Streams not founded")
 
-            # Calculate Path & Check Existence
-            output = generate_output_template(
-                self.config.template,
-                stream=stream,
-                media=media,
-                default_missing="NA",
-            )
-            output = Path(output)
-            await output.parent.mkdir(parents=True, exist_ok=True)
+                # Calculate Path & Check Existence
+                output = generate_output_template(
+                    self.config.template,
+                    stream=stream,
+                    media=media,
+                    default_missing="NA",
+                )
+                output = Path(output)
+                await output.parent.mkdir(parents=True, exist_ok=True)
 
-            if await self.check_output_duplicate(output):
-                return
+                if await self.check_output_duplicate(output):
+                    return
 
-            # Download resources
-            results = DownloadContext()
+                # Download resources
+                results = DownloadContext()
 
-            async def dl_file():
-                try:
-                    results.file = await self.download_streams(
-                        video_stream,
-                        audio_stream,
-                        media.duration,
-                    )
-                except* DownloadError as eg:
-                    error = eg.exceptions[0]
-
-                    await self._stream.send(
-                        Warning(
-                            id=self.id,
-                            media=self.media,
-                            message=str(error),
-                        )
-                    )
-                    await self._stream.send(
-                        Finished(
-                            id=self.id,
-                            media=self.media,
-                            filepath=pathlib.Path(),
-                            result="failed",
-                        )
-                    )
-                    raise
-
-            async def dl_thumbnail():
-                if media.thumbnails:
+                async def dl_file():
                     try:
-                        results.thumbnail = await download_thumbnail(
-                            get_tempfile(),
-                            media.thumbnails[-1],
+                        results.file = await self.download_streams(
+                            video_stream,
+                            audio_stream,
+                            media.duration,
                         )
-                    except MetadataDownloadError as e:
+                    except* DownloadError as eg:
+                        error = eg.exceptions[0]
+
                         await self._stream.send(
                             Warning(
                                 id=self.id,
                                 media=self.media,
-                                message=str(e),
+                                message=str(error),
                             )
                         )
-
-            async def dl_subtitles():
-                if media.subtitles:
-                    try:
-                        results.subtitles = await download_subtitles(
-                            get_tempfile(),
-                            media.subtitles,
-                        )
-                    except MetadataDownloadError as e:
                         await self._stream.send(
-                            Warning(
+                            Finished(
                                 id=self.id,
                                 media=self.media,
-                                message=str(e),
+                                filepath=pathlib.Path(),
+                                result="failed",
                             )
                         )
+                        raise
 
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(dl_file)
-                tg.start_soon(dl_thumbnail)
-                tg.start_soon(dl_subtitles)
+                async def dl_thumbnail():
+                    if media.thumbnails:
+                        try:
+                            results.thumbnail = await download_thumbnail(
+                                get_tempfile(),
+                                media.thumbnails[-1],
+                            )
+                        except MetadataDownloadError as e:
+                            await self._stream.send(
+                                Warning(
+                                    id=self.id,
+                                    media=self.media,
+                                    message=str(e),
+                                )
+                            )
 
-            if results.file:
-                if self.ffmpeg_path:
-                    results.file = await self.process(
-                        results.file,
-                        stream,
-                        results.thumbnail,
-                        results.subtitles,
-                    )
+                async def dl_subtitles():
+                    if media.subtitles:
+                        try:
+                            results.subtitles = await download_subtitles(
+                                get_tempfile(),
+                                media.subtitles,
+                            )
+                        except MetadataDownloadError as e:
+                            await self._stream.send(
+                                Warning(
+                                    id=self.id,
+                                    media=self.media,
+                                    message=str(e),
+                                )
+                            )
 
-                # Complete (Move to target)
-                results.file = await self.move_to_final(results.file, output)
-            else:
-                raise DownloadError("Final file not founded")
+                async with anyio.create_task_group() as tg:
+                    tg.start_soon(dl_file)
+                    tg.start_soon(dl_thumbnail)
+                    tg.start_soon(dl_subtitles)
+
+                if results.file:
+                    if self.ffmpeg_path:
+                        results.file = await self.process(
+                            results.file,
+                            stream,
+                            results.thumbnail,
+                            results.subtitles,
+                        )
+
+                    # Complete (Move to target)
+                    results.file = await self.move_to_final(results.file, output)
+                else:
+                    raise DownloadError("Final file not founded")
 
     async def resolve_media(self) -> Media:
         await self._stream.send(Resolving(id=self.id, media=self.media))

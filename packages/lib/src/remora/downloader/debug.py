@@ -11,7 +11,11 @@ from remora.models.event.media import (
 
 
 async def event_debug(event: MediaEvent):
-    with logger.contextualize(media_id=event.id, status=event.status):
+    with logger.contextualize(
+        media_id=event.id,
+        media_title=event.media.title,
+        status=event.status,
+    ):
         match event:
             case Resolving():
                 logger.debug("Resolving Media")

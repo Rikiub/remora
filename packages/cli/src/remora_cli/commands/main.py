@@ -16,12 +16,12 @@ def show_version(show: bool) -> None:
         raise SystemExit()
 
 
-app = Typer()
-
-
 class HelpPanel(StrEnum):
     DISPLAY = "Display"
     EXTRACTION = "Extraction"
+
+
+app = Typer()
 
 
 @app.command()
@@ -67,6 +67,6 @@ def main(
     CONFIG.cache = cache
 
     # Setup logger
-    from remora_cli.logger import start_logger
+    from remora_cli.logs import setup_logging
 
-    start_logger(CONFIG.log_level)
+    setup_logging(CONFIG.log_level)

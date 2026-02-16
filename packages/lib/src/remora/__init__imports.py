@@ -1,5 +1,6 @@
 # ruff: noqa: F401
 
+from remora import logs
 from remora.api import RemoraAPI
 from remora.exceptions import (
     DownloadError,
