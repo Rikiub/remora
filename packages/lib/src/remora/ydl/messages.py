@@ -9,7 +9,7 @@ class ExceptMsg(NamedTuple):
 
 MESSAGES: list[ExceptMsg] = [
     ExceptMsg(
-        matchs=["HTTP Error"],
+        matchs=["HTTP Error 403"],
         text=lambda v: (
             v
             + " : You may have exceeded the page request limit, received an IP block, among others. Please try again later."

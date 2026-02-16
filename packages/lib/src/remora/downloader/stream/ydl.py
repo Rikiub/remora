@@ -32,7 +32,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
         self._log_stream()
         self._send_stream, receive_stream = anyio.create_memory_object_stream[
             StreamEvent
-        ](20)
+        ](30)
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
@@ -46,6 +46,12 @@ class YDLStreamDownloader(BaseStreamDownloader):
     async def _execute_download(self):
         from remora.ydl.downloader import download_format
 
+        def callback(event):
+            try:
+                self._send_stream.send_nowait(event)
+            except anyio.WouldBlock:
+                pass
+
         async with self._send_stream:
             event = DownloadingStream()
 
@@ -53,9 +59,6 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 download_format,
                 self.filepath,
                 self.stream.to_ydl_dict(),
-                lambda data: event._ydl_progress(
-                    data,
-                    lambda new_event: self._send_stream.send_nowait(new_event),
-                ),
+                lambda data: event._ydl_progress(data, callback),
             )
             self.filepath = Path(path)
