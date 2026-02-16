@@ -1,4 +1,4 @@
-from remora.types import FORMAT_TYPE
+from remora.types import StreamType
 
 VIDEO_CODEC_RANK = {
     "vp9": 10,
@@ -22,7 +22,7 @@ AUDIO_CODEC_RANK = {
 
 def get_codec_rank(
     codec: str | None,
-    type: FORMAT_TYPE,
+    type: StreamType,
 ) -> int:
     if not codec:
         return 0

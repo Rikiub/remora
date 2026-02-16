@@ -1,19 +1,19 @@
 from typing import Generator, Literal, get_args
 
-from remora.types import SEARCH_SERVICE, VIDEO_RESOLUTION
+from remora.types import SearchService, StreamQuality
 from typer import BadParameter
 
-SEARCH_TARGET = Literal["url", SEARCH_SERVICE]
+SearchTarget = Literal["url", SearchService]
 
 
 def complete_query(incomplete: str) -> Generator[str, None, None]:
-    for name in get_args(SEARCH_TARGET):
+    for name in get_args(SearchTarget):
         if name.startswith(incomplete):
             yield name + ":"
 
 
 def complete_resolution() -> Generator[str, None, None]:
-    for name in get_args(VIDEO_RESOLUTION):
+    for name in get_args(StreamQuality):
         yield str(name)
 
 
@@ -32,9 +32,9 @@ def complete_output(incomplete: str) -> Generator[str, None, None]:
 
 def parse_queries(
     queries: list[str],
-) -> Generator[tuple[SEARCH_TARGET, str], None, None]:
-    providers: list[SEARCH_TARGET] = [entry for entry in get_args(SEARCH_TARGET)]
-    target: SEARCH_TARGET
+) -> Generator[tuple[SearchTarget, str], None, None]:
+    providers: list[SearchTarget] = [entry for entry in get_args(SearchTarget)]
+    target: SearchTarget
 
     for entry in queries:
         selection = entry.split(":")[0]

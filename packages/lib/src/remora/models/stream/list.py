@@ -8,7 +8,7 @@ from pydantic import OnErrorOmit
 from remora.models.base import BaseList
 from remora.models.stream.codecs import get_codec_rank
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.types import FORMAT_TYPE
+from remora.types import StreamType
 from typing_extensions import Self, TypeVar, override
 
 
@@ -47,11 +47,10 @@ def stream_sort(stream: Stream):
         )
 
 
-StreamType = OnErrorOmit[VideoStream | AudioStream]
 T = TypeVar("T", default=Stream, bound=Stream)
 
 
-class StreamList(BaseList[StreamType], Generic[T]):
+class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
     """List of streams which can be filtered."""
 
     def filter(
@@ -94,7 +93,7 @@ class StreamList(BaseList[StreamType], Generic[T]):
         return StreamList[AudioStream]([s for s in self.root if s.type == "audio"])
 
     @cached_property
-    def type(self) -> FORMAT_TYPE:
+    def type(self) -> StreamType:
         """
         Determine main stream type.
         It will check if is 'video' or 'audio'.
@@ -124,7 +123,7 @@ class StreamList(BaseList[StreamType], Generic[T]):
         return self.__class__(
             sorted(
                 self.root,
-                key=filter,
+                key=filter,  # type: ignore
                 reverse=reverse,
             )
         )
@@ -160,8 +159,8 @@ class StreamList(BaseList[StreamType], Generic[T]):
             return before
 
     @override
-    def __iter__(self) -> Iterator[T]:
-        return super().__iter__()
+    def __iter__(self) -> Iterator[T]:  # type: ignore
+        return super().__iter__()  # type: ignore
 
     @overload
     def __getitem__(self, index: int) -> T: ...
@@ -170,5 +169,5 @@ class StreamList(BaseList[StreamType], Generic[T]):
     def __getitem__(self, index: slice) -> Self: ...
 
     @override
-    def __getitem__(self, index) -> T | Self:
+    def __getitem__(self, index) -> T | Self:  # type: ignore
         return super().__getitem__(index)

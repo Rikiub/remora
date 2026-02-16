@@ -1,7 +1,7 @@
 import logging
 
 from loguru import logger
-from remora.types import APP_NAME, LOGGING_LEVELS
+from remora.types import APP_NAME, LoggingLevels
 from rich.logging import RichHandler
 
 from remora_cli.ui.rich import CONSOLE
@@ -28,7 +28,7 @@ class ColorFormatter(logging.Formatter):
         return color + message
 
 
-def start_logger(level: LOGGING_LEVELS):
+def start_logger(level: LoggingLevels):
     if level == "INFO":
         verbose = False
     else:

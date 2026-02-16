@@ -1,10 +1,10 @@
 from enum import Enum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from loguru import logger
 from remora.models.download_options import DEFAULT_OUTPUT_TEMPLATE
-from remora.types import FILE_FORMAT
+from remora.types import StreamTarget
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
@@ -37,7 +37,7 @@ async def download(
         ),
     ],
     format: Annotated[
-        FILE_FORMAT,
+        Literal[StreamTarget],
         Option(
             "--format",
             "-f",
@@ -113,11 +113,10 @@ What format you want request?
         config = DownloadOptions(
             format=format,
             quality=quality,
-            output=output,
+            template=output,
             max_workers=max_workers,
             ffmpeg_path=ffmpeg_path,
         )
-        await config.validate_ffmpeg()
     except FileNotFoundError as err:
         raise BadParameter(str(err))
 

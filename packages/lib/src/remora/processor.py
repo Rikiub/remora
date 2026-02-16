@@ -1,5 +1,5 @@
+from pathlib import Path
 from typing import Sequence
-from anyio import Path
 from anyio.to_thread import run_sync
 
 from remora.exceptions import ProcessingError
@@ -7,16 +7,12 @@ from remora.models.content.media import Media
 from remora.models.metadata.music import Music
 from remora.models.stream.types import Stream
 from remora.path import find_global_ffmpeg, validate_ffmpeg
-from remora.types import AUDIO_EXTENSION, EXTENSION, StrPath
+from remora.types import AudioExtension, StreamExtension, StrPath
 from remora.ydl.processor import RequestedFormat, YDLProcessor
 from remora.ydl.types import YDLExtractInfo
 
 
 class MediaProcessor:
-    filepath: Path
-    ffmpeg_path: Path | None
-    _prc: YDLProcessor
-
     def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None):
         self._prc = YDLProcessor(filepath, ffmpeg_path)
         self.filepath = Path(filepath)
@@ -35,14 +31,14 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.filepath.suffix[1:]
 
-    async def change_container(self, format: str | EXTENSION):
+    async def change_container(self, format: str | StreamExtension):
         result = await run_sync(self._prc.video_remuxer, format)
         self._update_file(result)
         return self
 
     async def convert_audio(
         self,
-        format: str | AUDIO_EXTENSION | None = None,
+        format: str | AudioExtension | None = None,
         quality: int | None = None,
     ):
         result = await run_sync(self._prc.extract_audio, format, quality)

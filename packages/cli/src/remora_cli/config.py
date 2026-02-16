@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from remora.types import LOGGING_LEVELS
+from remora.types import LoggingLevels
 
 
 @dataclass(slots=True)
@@ -10,7 +10,7 @@ class _Config:
     cache: bool = False
 
     @property
-    def log_level(self) -> LOGGING_LEVELS:
+    def log_level(self) -> LoggingLevels:
         if self.quiet:
             return "CRITICAL"
         elif self.verbose:

@@ -4,11 +4,12 @@ from typing import Annotated, cast, get_args
 from pydantic import AfterValidator
 from remora.models.base import RemoraBaseModel
 from remora.types import (
-    AUDIO_EXTENSION,
-    EXTENSION,
-    FILE_FORMAT,
-    FORMAT_TYPE,
-    VIDEO_EXTENSION,
+    AudioExtension,
+    StreamQuality,
+    StreamExtension,
+    StreamTarget,
+    StreamType,
+    VideoExtension,
     StrPath,
 )
 
@@ -43,8 +44,8 @@ class DownloadOptions(RemoraBaseModel):
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
     """
 
-    format: FILE_FORMAT = "video"
-    quality: int | None = None
+    format: StreamTarget = "video"
+    quality: int | StreamQuality | None = None
     template: Annotated[
         StrPath,
         AfterValidator(_validate_template),
@@ -57,27 +58,27 @@ class DownloadOptions(RemoraBaseModel):
     max_workers: int = 4
 
     @property
-    def type(self) -> FORMAT_TYPE:
+    def type(self) -> StreamType:
         """Determine general type.
 
         Returns:
             "video" or "audio".
         """
 
-        if self.format in get_args(FORMAT_TYPE):
-            return cast(FORMAT_TYPE, self.format)
+        if self.format in get_args(StreamType):
+            return cast(StreamType, self.format)
 
-        elif self.format in get_args(VIDEO_EXTENSION):
+        elif self.format in get_args(VideoExtension):
             return "video"
 
-        elif self.format in get_args(AUDIO_EXTENSION):
+        elif self.format in get_args(AudioExtension):
             return "audio"
 
         else:
-            raise TypeError(self.format, "is invalid. Should be:", FILE_FORMAT)
+            raise ValueError(self.format, "is invalid. Should be:", StreamTarget)
 
     @property
-    def convert(self) -> EXTENSION | None:
+    def convert(self) -> StreamExtension | None:
         """Check if would convert the files.
 
         Returns:
@@ -85,5 +86,7 @@ class DownloadOptions(RemoraBaseModel):
         """
 
         return (
-            cast(EXTENSION, self.format) if self.format in get_args(EXTENSION) else None
+            cast(StreamExtension, self.format)
+            if self.format in get_args(StreamExtension)
+            else None
         )

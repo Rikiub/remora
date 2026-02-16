@@ -11,7 +11,7 @@ from remora.models.base import YDLSerializable
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import ExtractAdapter
-from remora.types import SEARCH_SERVICE, StrUrl
+from remora.types import SearchService, StrUrl
 
 T = TypeVar("T", bound=YDLSerializable)
 
@@ -63,7 +63,7 @@ class MediaExtractor:
     async def extract_search(
         self,
         query: str,
-        service: SEARCH_SERVICE,
+        service: SearchService,
         limit: int = 20,
     ) -> Search:
         """Extract media from search service."""
@@ -98,9 +98,8 @@ class MediaExtractor:
         try:
             if self.use_cache and (cached_data := await load_info(string)):
                 return validator(cached_data)
-        except ValidationError as e:
-            logger.exception(e)
-            logger.debug("Cache is corrupted, deleting.")
+        except ValidationError:
+            logger.opt(exception=True).debug("Cache is corrupted, deleting.")
             await remove_info(string)
 
         return None

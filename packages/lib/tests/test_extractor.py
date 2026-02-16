@@ -3,7 +3,7 @@ from remora.exceptions import ExtractError
 from remora.extractor import MediaExtractor
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media
-from remora.ydl.extractor import SEARCH_SERVICE
+from remora.ydl.extractor import SearchService
 
 EXTRACTOR = MediaExtractor(use_cache=False)
 
@@ -15,7 +15,7 @@ async def extract_url(url: str) -> Media | Playlist:
 
 async def extract_search(
     query: str = "Sub Urban - Rabbit Hole",
-    service: SEARCH_SERVICE = "youtube",
+    service: SearchService = "youtube",
 ):
     search = await EXTRACTOR.extract_search(query, service)
     assert len(search.entries) >= 1

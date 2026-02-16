@@ -1,12 +1,13 @@
-from enum import Enum
-from typing import Any, Final, Literal, get_args
+from typing import Any, Final, Literal
+
+from remora.helpers import literal_to_set
 
 # Video
 CommonVideoExtension = Literal["avi", "flv", "mkv", "mov", "mp4", "webm"]
 ExtraVideoExtension = Literal[
     "3g2", "3gp", "f4v", "mk3d", "divx", "mpg", "ogv", "m4v", "wmv"
 ]
-VideoExtension = Literal[CommonVideoExtension, ExtraVideoExtension]
+VideoExtension = CommonVideoExtension | ExtraVideoExtension
 
 # Audio
 CommonAudioExtension = Literal[
@@ -27,35 +28,36 @@ ExtraAudioExtension = Literal[
     "wma",
     "weba",
 ]
-AudioExtension = Literal[CommonAudioExtension, ExtraAudioExtension]
+AudioExtension = CommonAudioExtension | ExtraAudioExtension
 
 # Video and Audio
-FormatExtension = Literal[VideoExtension, AudioExtension]
+FormatExtension = VideoExtension | AudioExtension
 
 
-class SupportedExtensions(frozenset[str], Enum):
-    """Sets of file extensions supported by YT-DLP."""
+class YDLExtensions:
+    """Sets of format extensions supported by YT-DLP."""
 
-    VIDEO = frozenset(get_args(VideoExtension))
-    AUDIO = frozenset(get_args(AudioExtension))
-    ALL = frozenset(get_args(FormatExtension))
+    VIDEO: Final = literal_to_set(VideoExtension)
+    AUDIO: Final = literal_to_set(AudioExtension)
+    ALL: Final = literal_to_set(FormatExtension)
+
+    THUMBNAIL: Final = frozenset(
+        {
+            "mp3",
+            "mkv",
+            "mka",
+            "mp4",
+            "m4a",
+            "m4v",
+            "mov",
+            "ogg",
+            "opus",
+            "flac",
+        }
+    )
 
 
-THUMBNAIL_SUPPORT: Final = frozenset[str](
-    {
-        "mp3",
-        "mkv",
-        "mka",
-        "mp4",
-        "m4a",
-        "m4v",
-        "mov",
-        "ogg",
-        "opus",
-        "flac",
-    }
-)
-SUPPORTED_PROTOCOLS: Final = frozenset(
+YDL_PROTOCOLS: Final = frozenset(
     {
         "rtmp",
         "rtmpe",

@@ -9,15 +9,17 @@ from pydantic import (
     HttpUrl,
     SerializerFunctionWrapHandler,
     field_serializer,
-    field_validator,
     model_serializer,
 )
 from remora.models.base import YDLSerializable
-from remora.ydl.types import SupportedExtensions, YDLFormatInfo
+from remora.types import AudioExtension, StreamExtension, VideoExtension
+from remora.ydl.types import YDLFormatInfo
 from typing_extensions import override
+
 
 Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 AudioCodecField = Field(alias="acodec")
+ExtensionField = Field(alias="ext")
 
 
 class YDLArgs(BaseModel):
@@ -33,7 +35,7 @@ class Stream(ABC, YDLArgs, YDLSerializable):
     url: HttpUrl
     protocol: str
     available_at: int | None = None
-    extension: Annotated[str, Field(alias="ext")]
+    extension: Annotated[StreamExtension, Field(alias="ext")]
     filesize: Annotated[
         int | None,
         Field(
@@ -66,6 +68,10 @@ class Stream(ABC, YDLArgs, YDLSerializable):
 
 class AudioStream(Stream):
     type: Literal["audio"] = "audio"
+    extension: Annotated[  # type: ignore
+        AudioExtension,
+        ExtensionField,
+    ]
     audio_codec: Annotated[  # type: ignore
         Codec, AudioCodecField
     ]
@@ -87,15 +93,12 @@ class AudioStream(Stream):
         result |= {"vcodec": "none"}
         return result
 
-    @field_validator("extension")
-    @classmethod
-    def _validate_extension(cls, value) -> str:
-        if value not in SupportedExtensions.AUDIO:
-            raise ValueError(f"{value} not is a valid extension.")
-        return value
-
 
 class VideoStream(Stream):
+    extension: Annotated[  # type: ignore
+        VideoExtension,
+        ExtensionField,
+    ]
     video_codec: Annotated[Codec, Field(alias="vcodec")]
     type: Literal["video"] = "video"
     width: int
@@ -111,10 +114,3 @@ class VideoStream(Stream):
     @override
     def display_quality(self) -> str:
         return str(self.quality) + "p"
-
-    @field_validator("extension")
-    @classmethod
-    def _validate_extension(cls, value) -> str:
-        if value not in SupportedExtensions.VIDEO:
-            raise ValueError(f"{value} not is a valid extension.")
-        return value

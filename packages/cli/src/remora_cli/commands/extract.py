@@ -103,6 +103,7 @@ async def extract(
             data = result.model_dump(
                 include={*include} or None,
                 exclude=default_exclude or None,
+                mode="json",
             )
             table = dict_to_table(data)
             console.print(table)

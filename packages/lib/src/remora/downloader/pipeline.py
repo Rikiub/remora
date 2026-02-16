@@ -34,7 +34,7 @@ from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.path import get_tempfile
 from remora.processor import MediaProcessor
 from remora.template.parser import generate_output_template
-from remora.ydl.types import SupportedExtensions, THUMBNAIL_SUPPORT
+from remora.types import SupportedExtensions
 
 
 @dataclass(slots=True)
@@ -56,7 +56,7 @@ class DownloadPipeline:
         self.id = media.id
 
         self.media: Media = media  # type: ignore
-        self.config = format_config or DownloadOptions("video")
+        self.config = format_config or DownloadOptions(format="video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
@@ -75,12 +75,6 @@ class DownloadPipeline:
 
     async def _execute_download(self):
         async with self._stream:
-            # Check ffmpeg existence
-            try:
-                await self.config.validate_ffmpeg()
-            except FileNotFoundError as e:
-                raise ProcessingError(str(e)) from e
-
             # Resolve Data
             media = await self.resolve_media()
 
@@ -385,7 +379,7 @@ class DownloadPipeline:
                 await prc.embed_metadata(self.media)
 
         if thumbnail:
-            if prc.filepath.suffix[1:] in THUMBNAIL_SUPPORT:
+            if prc.filepath.suffix[1:] in SupportedExtensions.THUMBNAIL:
                 async with track_prc("embed_thumbnail"):
                     await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 

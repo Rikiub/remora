@@ -7,7 +7,7 @@ from yt_dlp.networking.exceptions import RequestError
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora.exceptions import ExtractError
-from remora.types import SEARCH_SERVICE
+from remora.types import SearchService
 from remora.ydl.messages import format_except_message
 from remora.ydl.types import YDLExtractInfo
 from remora.ydl.wrapper import YDL
@@ -15,7 +15,7 @@ from remora.ydl.wrapper import YDL
 
 @dataclass(slots=True)
 class SearchQuery:
-    service: SEARCH_SERVICE
+    service: SearchService
     template: str
 
     def build(self, query: str, limit: int = 20) -> str:
@@ -31,7 +31,7 @@ SEARCH_QUERIES = [
 
 def extract_query(
     query: str,
-    service: str | SEARCH_SERVICE,
+    service: str | SearchService,
     limit: int = 20,
 ) -> YDLExtractInfo:
     """Extract info from search service."""
@@ -40,7 +40,7 @@ def extract_query(
         result = [item for item in SEARCH_QUERIES if item.service == service]
         result = result[0]
     except IndexError:
-        raise ValueError(f"{service} is invalid. Should be: {SEARCH_SERVICE}")
+        raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
     return extract_info(result.build(query, limit))
 

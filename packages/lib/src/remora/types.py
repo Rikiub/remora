@@ -1,24 +1,44 @@
 from os import PathLike
 from typing import Literal
 
+from remora.ydl.types import VideoExtension as YDLVideoExtension
+from remora.ydl.types import AudioExtension as YDLAudioExtension
+from remora.ydl.types import YDLExtensions
+
 from pydantic import HttpUrl
 
-# FORMAT
-VIDEO_EXTENSION = Literal["mp4", "mkv", "mov"]
-AUDIO_EXTENSION = Literal["m4a", "opus", "mp3"]
-EXTENSION = Literal[VIDEO_EXTENSION, AUDIO_EXTENSION]
+# Extension
+VideoExtension = YDLVideoExtension
+AudioExtension = YDLAudioExtension
+StreamExtension = VideoExtension | AudioExtension
 """Common lossy compression containers formats with thumbnail and metadata support."""
 
-FORMAT_TYPE = Literal["video", "audio"]
-FILE_FORMAT = Literal[FORMAT_TYPE, EXTENSION]
-VIDEO_RESOLUTION = Literal[144, 240, 360, 480, 720, 1080]
 
-# SEARCH
-SEARCH_SERVICE = Literal["soundcloud", "youtube", "ytmusic"]
+class SupportedExtensions:
+    """File extensions supported."""
+
+    VIDEO = YDLExtensions.VIDEO
+    AUDIO = YDLExtensions.AUDIO
+    ALL = YDLExtensions.ALL
+
+    THUMBNAIL = YDLExtensions.THUMBNAIL
+
+
+# Target
+StreamType = Literal["video", "audio"]
+StreamTarget = StreamType | StreamExtension
+
+SearchService = Literal["soundcloud", "youtube", "ytmusic"]
+
+# Quality
+AudioQuality = Literal[128, 256, 360]
+VideoQuality = Literal[144, 240, 360, 480, 720, 1080]
+StreamQuality = VideoQuality | AudioQuality
+
+# Generics
+StrPath = str | PathLike[str]
+StrUrl = str | HttpUrl
+LoggingLevels = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 # Extra
 APP_NAME = "remora"
-LOGGING_LEVELS = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-
-StrPath = str | PathLike[str]
-StrUrl = str | HttpUrl

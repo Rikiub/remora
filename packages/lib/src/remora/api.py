@@ -11,7 +11,7 @@ from remora.models.download_options import DownloadOptions
 from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
 from remora.models.metadata.thumbnails import Thumbnail
-from remora.types import SEARCH_SERVICE, StrPath, StrUrl
+from remora.types import SearchService, StrPath, StrUrl
 
 
 class RemoraAPI:
@@ -41,7 +41,7 @@ class RemoraAPI:
     async def extract_search(
         self,
         query: str,
-        service: SEARCH_SERVICE,
+        service: SearchService,
         limit: int = 20,
     ) -> Search:
         """Extract media from search service."""

@@ -10,7 +10,7 @@ async def download(tmp_path: Path):
         api = RemoraAPI(
             download_config=DownloadOptions(
                 quality=1,
-                output=tmp_path,
+                template=tmp_path,
             ),
             extractor=MediaExtractor(use_cache=False),
         )
