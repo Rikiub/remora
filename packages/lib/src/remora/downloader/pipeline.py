@@ -61,7 +61,7 @@ class DownloadPipeline:
         self.incomplete: bool = False
 
         try:
-            self.ffmpeg_path = get_ffmpeg()
+            self.ffmpeg_path = get_ffmpeg(self.config.ffmpeg_path)
         except FileNotFoundError:
             self.ffmpeg_path = None
             logger.debug("FFmpeg not founded, processing disabled")
@@ -121,14 +121,14 @@ class DownloadPipeline:
                 except* DownloadError as eg:
                     error = eg.exceptions[0]
 
-                    self._stream.send_nowait(
+                    await self._stream.send(
                         Warning(
                             id=self.id,
                             media=self.media,
                             message=str(error),
                         )
                     )
-                    self._stream.send_nowait(
+                    await self._stream.send(
                         Finished(
                             id=self.id,
                             media=self.media,
@@ -146,7 +146,7 @@ class DownloadPipeline:
                             media.thumbnails[-1],
                         )
                     except MetadataDownloadError as e:
-                        self._stream.send_nowait(
+                        await self._stream.send(
                             Warning(
                                 id=self.id,
                                 media=self.media,
@@ -162,7 +162,7 @@ class DownloadPipeline:
                             media.subtitles,
                         )
                     except MetadataDownloadError as e:
-                        self._stream.send_nowait(
+                        await self._stream.send(
                             Warning(
                                 id=self.id,
                                 media=self.media,
@@ -190,13 +190,13 @@ class DownloadPipeline:
                 raise DownloadError("Final file not founded")
 
     async def resolve_media(self) -> Media:
-        self._stream.send_nowait(Resolving(id=self.id, media=self.media))
+        await self._stream.send(Resolving(id=self.id, media=self.media))
 
         media = cast(LazyMedia | Media, self.media)
         if not isinstance(media, Media):
             self.media = await self.extractor.extract(media)
 
-        self._stream.send_nowait(Resolved(id=self.id, media=self.media))
+        await self._stream.send(Resolved(id=self.id, media=self.media))
         return self.media
 
     async def check_output_duplicate(self, output: Path) -> Path | None:
@@ -208,7 +208,7 @@ class DownloadPipeline:
                     path_extension in SupportedExtensions.VIDEO
                     or path_extension in SupportedExtensions.AUDIO
                 ):
-                    self._stream.send_nowait(
+                    await self._stream.send(
                         Finished(
                             id=self.id,
                             media=self.media,
@@ -250,7 +250,7 @@ class DownloadPipeline:
                     v = streams_events["video"]
                     a = streams_events["audio"]
 
-                    self._stream.send_nowait(
+                    await self._stream.send(
                         Downloading(
                             id=self.id,
                             media=self.media,
@@ -317,7 +317,7 @@ class DownloadPipeline:
                 video_stream=video_stream,
                 audio_stream=audio_stream,
             )
-            self._stream.send_nowait(merging)
+            await self._stream.send(merging)
 
             prc = MediaProcessor(filepath, self.ffmpeg_path)
             prc = await prc.merge_streams(
@@ -325,7 +325,7 @@ class DownloadPipeline:
             )
 
             merging.step = "completed"
-            self._stream.send_nowait(merging)
+            await self._stream.send(merging)
 
             return Path(prc.filepath)
         elif video_file:
@@ -353,7 +353,7 @@ class DownloadPipeline:
                 step="started",
                 task=task,
             )
-            self._stream.send_nowait(event)
+            await self._stream.send(event)
 
             try:
                 yield
@@ -361,13 +361,13 @@ class DownloadPipeline:
                 event.filepath = prc.filepath
                 event.step = "completed"
 
-                self._stream.send_nowait(event)
+                await self._stream.send(event)
             except ProcessingError as error:
                 if raise_exceptions:
                     raise
 
                 self.incomplete = True
-                self._stream.send_nowait(
+                await self._stream.send(
                     Warning(id=self.id, media=self.media, message=str(error))
                 )
 
@@ -409,7 +409,7 @@ class DownloadPipeline:
         # Use shutil.move for compability between cross filesystems
         await run_sync(shutil.move, src, final_path)
 
-        self._stream.send_nowait(
+        await self._stream.send(
             Finished(
                 id=self.id,
                 media=self.media,

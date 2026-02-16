@@ -31,13 +31,13 @@ class TemplateFormatter(string.Formatter):
 
 
 def generate_output_template(
-    output: StrPath,
+    template: StrPath,
     stream: Stream | None = None,
     media: Media | None = None,
     playlist: Playlist | None = None,
     default_missing: str | None = None,
 ) -> Path:
-    validate_template(output)
+    validate_template(template)
 
     data = {}
 
@@ -50,7 +50,7 @@ def generate_output_template(
         data |= _flatten_dict(wrap_playlist.model_dump())
 
     formatter = TemplateFormatter(replace=default_missing)
-    template = formatter.format(str(output), **data)
+    template = formatter.format(str(template), **data)
 
     path = Path(sanitize_filepath(template, max_len=250))
     return path

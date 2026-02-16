@@ -1,5 +1,3 @@
-import secrets
-from copy import copy
 from typing import AsyncIterable
 
 import anyio
@@ -24,7 +22,7 @@ class DownloadBatch:
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = copy(format_config) or DownloadOptions()
+        self.config = format_config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
 
         # Parallel
@@ -32,18 +30,9 @@ class DownloadBatch:
 
         # Data
         self.id = ""
-        self._data = data
         self.medias: list[LazyMedia] = []
         self.playlist: Playlist | None = None
-
-        if self.playlist:
-            self.id = self.playlist.id
-            self.config.template = generate_output_template(
-                self.config.template,
-                playlist=self.playlist,
-            )
-        else:
-            self.id = secrets.token_urlsafe(6)
+        self._data = data
 
         # State
         self.completed = 0
@@ -70,14 +59,14 @@ class DownloadBatch:
                     async for event in receive_stream:
                         yield event
             except anyio.get_cancelled_exc_class():
-                yield receive_stream.receive_nowait()
+                yield await receive_stream.receive()
 
     async def _execute_download(self):
         async with self._stream:
             # Setup
             await self._setup()
 
-            self._stream.send_nowait(
+            await self._stream.send(
                 PlaylistUpdate(
                     id=self.id,
                     status="started",
@@ -170,4 +159,6 @@ class DownloadBatch:
                 playlist=playlist,
             )
         else:
+            import secrets
+
             self.id = secrets.token_urlsafe(6)
