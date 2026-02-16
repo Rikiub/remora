@@ -75,7 +75,8 @@ class LazyMedia(LazyExtract):
     @model_validator(mode="before")
     @classmethod
     def _nest_fields(cls, data):
-        if isinstance(data, dict):
+        # Process only in YDL info dicts.
+        if isinstance(data, dict) and data.get("extractor_key"):
             # Prepare nested data
             keys = [
                 "uploader_data",
