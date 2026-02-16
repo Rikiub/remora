@@ -4,6 +4,9 @@ dev = ["anyio>=4.12.1", "pytest>=9.0.0", "ruff>=0.15.0"]
 [tool.pytest.ini_options]
 anyio_mode = "auto"
 
+[tool.pyright]
+include = ["packages"]
+
 [tool.uv.workspace]
 members = ["packages/*"]
 
