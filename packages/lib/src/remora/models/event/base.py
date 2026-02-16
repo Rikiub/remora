@@ -9,16 +9,16 @@ from remora.models.content.media import Media
 class BaseEvent(BaseModel): ...
 
 
-class EventId(BaseModel):
+class EventID(BaseModel):
     id: str
 
 
-class BaseMediaEvent(EventId):
+class BaseMediaEvent(EventID):
     type: Literal["media"] = "media"
     media: Media
 
 
-class BasePlaylistEvent(EventId):
+class BasePlaylistEvent(EventID):
     type: Literal["playlist"] = "playlist"
 
 

@@ -26,7 +26,7 @@ from remora.models.event.media import (
     Resolving,
     Warning,
 )
-from remora.models.event.processor import MergingProcessor, Processor, ProcessorTask
+from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.stream.types import AudioStream, Stream, VideoStream
 from remora.path import get_ffmpeg, get_tempfile
@@ -54,7 +54,7 @@ class DownloadPipeline:
         self.id = media.id
 
         self.media: Media = media  # type: ignore
-        self.config = format_config or DownloadOptions(format="video")
+        self.config: DownloadOptions = format_config or DownloadOptions(format="video")
         self.extractor = extractor or MediaExtractor()
         self.incomplete: bool = False
 
@@ -228,12 +228,12 @@ class DownloadPipeline:
 
         streams_events = {
             "video": DownloadingStream(
-                downloaded_bytes=0,
-                total_bytes=video_stream.filesize or 0 if video_stream else 0,
+                downloaded=0,
+                total=video_stream.filesize or 0 if video_stream else 0,
             ),
             "audio": DownloadingStream(
-                downloaded_bytes=0,
-                total_bytes=audio_stream.filesize or 0 if audio_stream else 0,
+                downloaded=0,
+                total=audio_stream.filesize or 0 if audio_stream else 0,
             ),
         }
 
@@ -254,8 +254,8 @@ class DownloadPipeline:
                         Downloading(
                             id=self.id,
                             media=self.media,
-                            downloaded_bytes=v.downloaded_bytes + a.downloaded_bytes,
-                            total_bytes=v.total_bytes + a.total_bytes,
+                            downloaded=v.downloaded + a.downloaded,
+                            total=v.total + a.total,
                             speed=v.speed + a.speed,
                             elapsed=max(v.elapsed, a.elapsed),
                         )
@@ -309,7 +309,7 @@ class DownloadPipeline:
             filepath = pathlib.Path(f"{get_tempfile()}.{extension}")
             filepath.touch()
 
-            merging = MergingProcessor(
+            merging = MergeProcessing(
                 id=self.id,
                 media=self.media,
                 filepath=filepath,
@@ -346,7 +346,7 @@ class DownloadPipeline:
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
-            event = Processor(
+            event = Processing(
                 id=self.id,
                 media=self.media,
                 filepath=prc.filepath,

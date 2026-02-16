@@ -6,7 +6,10 @@ from pydantic import Field
 
 from remora.models.content.media import LazyMedia
 from remora.models.event.base import BaseMediaEvent, FileEvent
-from remora.models.event.processor import Processing
+from remora.models.event.process import (
+    ProcessEvent,
+    Processing,  # noqa: F401
+)
 from remora.models.event.stream import DownloadingStream
 
 
@@ -38,6 +41,6 @@ class Finished(BaseMediaEvent, FileEvent):
 
 
 MediaEvent = Annotated[
-    Resolving | Resolved | Downloading | Retrying | Processing | Warning | Finished,
+    Resolving | Resolved | Downloading | Retrying | ProcessEvent | Warning | Finished,
     Field(discriminator="status"),
 ]

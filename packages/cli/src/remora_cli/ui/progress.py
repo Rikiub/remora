@@ -4,7 +4,7 @@ from loguru import logger
 
 from remora.models.content.media import LazyMedia
 from remora.models.event.main import DownloadEvent
-from remora.models.event.processor import Processing
+from remora.models.event.process import ProcessEvent
 from remora_cli.ui.rich_progress import DownloadProgress
 
 
@@ -54,8 +54,8 @@ class ProgressCallback:
                     self.progress.update(
                         event.id,
                         status="Downloading",
-                        completed=event.downloaded_bytes,
-                        total=event.total_bytes,
+                        completed=event.downloaded,
+                        total=event.total,
                     )
                 case "processing":
                     self.processor_callback(event)
@@ -88,7 +88,7 @@ class ProgressCallback:
         await anyio.sleep(1.0)
         self.progress.remove_task(event.id)
 
-    def processor_callback(self, event: Processing):
+    def processor_callback(self, event: ProcessEvent):
         match event.task:
             case "convert_audio":
                 if event.step == "started":

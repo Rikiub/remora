@@ -15,20 +15,20 @@ ProcessorTask = Literal[
 ]
 
 
-class Processor(BaseMediaEvent, FileEvent):
+class Processing(BaseMediaEvent, FileEvent):
     status: Literal["processing"] = "processing"
     step: Literal["started", "completed"]
     task: ProcessorTask
 
 
-class MergingProcessor(Processor):
+class MergeProcessing(Processing):
     task: Literal["merge_formats"] = "merge_formats"  # type: ignore
 
     video_stream: VideoStream
     audio_stream: AudioStream
 
 
-Processing = Annotated[
-    Processor | MergingProcessor,
+ProcessEvent = Annotated[
+    Processing | MergeProcessing,
     Field(discriminator="task"),
 ]

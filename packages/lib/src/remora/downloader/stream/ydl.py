@@ -27,6 +27,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
         retries: int = DEFAULT_RETRIES,
     ):
         super().__init__(filepath, stream, retries=retries)
+        self._event = DownloadingStream()
 
     @override
     async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
@@ -37,29 +38,49 @@ class YDLStreamDownloader(BaseStreamDownloader):
 
         async with receive_stream:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(self._execute_download)
+                tg.start_soon(self._producer)
 
                 async for event in receive_stream:
                     yield event
 
                 yield FinishedStream(filepath=pathlib.Path(self.filepath))
 
-    async def _execute_download(self):
+    async def _producer(self):
         from remora.ydl.downloader import download_format
 
-        def callback(event):
-            try:
-                self._send_stream.send_nowait(event)
-            except anyio.WouldBlock:
-                pass
-
         async with self._send_stream:
-            event = DownloadingStream()
-
             path = await run_sync(
                 download_format,
                 self.filepath,
                 self.stream.to_ydl_dict(),
-                lambda data: event._ydl_progress(data, callback),
+                self._ydl_progress,
+                self.retries,
             )
             self.filepath = Path(path)
+
+    def _ydl_progress(self, data: dict) -> None:
+        """`YT-DLP` progress hook, but stable and without issues."""
+
+        d = data
+        event = self._event
+
+        match d["status"]:
+            case "downloading":
+                downloaded_bytes = d.get("downloaded_bytes") or 0
+                total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+
+                if downloaded_bytes > event.downloaded:
+                    event.downloaded = downloaded_bytes
+
+                if total_bytes > event.total:
+                    event.total = total_bytes
+
+                event.speed = d.get("speed") or 0
+                event.elapsed = d.get("elapsed") or 0
+            case "finished":
+                event.downloaded = event.total
+
+        try:
+            self._send_stream.send_nowait(event)
+        except anyio.WouldBlock:
+            pass

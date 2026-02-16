@@ -44,7 +44,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         if not total and self.stream.bitrate and self.duration:
             total = int((self.stream.bitrate * 1000 * self.duration) / 8)
 
-        self.event = DownloadingStream(total_bytes=total)
+        self.event = DownloadingStream(total=total)
         self.file_size = total
 
         # Workers
@@ -113,7 +113,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         # Fix file size
         if remote_total_size:
             self.file_size = remote_total_size
-            self.event.total_bytes = remote_total_size
+            self.event.total = remote_total_size
 
         # Determine chunks: Use user preference OR 1 if ranges aren't supported
         # Also use 1 if total_size is unknown (0)
@@ -236,10 +236,10 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
     async def _update_progress(self, size: int):
         event = self.event
-        event.downloaded_bytes += size
+        event.downloaded += size
 
-        if event.downloaded_bytes > event.total_bytes:
-            event.total_bytes = event.downloaded_bytes
+        if event.downloaded > event.total:
+            event.total = event.downloaded
 
         # Send event to top function
         await self._send_stream.send(event)

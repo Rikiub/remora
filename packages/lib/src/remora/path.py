@@ -5,6 +5,7 @@ import tempfile
 from functools import cache
 from pathlib import Path
 
+from remora.exceptions import FFmpegNotFoundError
 from remora.types import APP_NAME, StrPath
 
 TMP_DIR = Path(tempfile.mkdtemp(prefix=f"{APP_NAME}-"))
@@ -45,12 +46,12 @@ def find_global_ffmpeg() -> Path | None:
 @cache
 def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
     if not ffmpeg_path:
-        raise FileNotFoundError("FFmpeg executable not founded.")
+        raise FFmpegNotFoundError("FFmpeg executable not founded.")
 
     ffmpeg_path = Path(ffmpeg_path)
 
     if not check_executable_exists(ffmpeg_path):
-        raise FileNotFoundError(f"'{ffmpeg_path.name}' is not a FFmpeg executable.")
+        raise FFmpegNotFoundError(f"'{ffmpeg_path.name}' is not a FFmpeg executable.")
 
     return Path(ffmpeg_path)
 
