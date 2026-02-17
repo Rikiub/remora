@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from remora.models.event._base import BasePlaylistEvent
+from remora.models.event.media import MediaEvent
 
 
 class PlaylistUpdate(BasePlaylistEvent):
@@ -23,4 +24,9 @@ class FinishedPlaylist(PlaylistUpdate):
 PlaylistEvent = Annotated[
     PlaylistUpdate | FinishedPlaylist,
     Field(discriminator="status"),
+]
+
+BatchEvent = Annotated[
+    PlaylistEvent | MediaEvent,
+    Field(discriminator="type"),
 ]

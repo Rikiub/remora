@@ -9,12 +9,12 @@ from remora._internal.extractor import MediaExtractor
 from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import MediaError
 from remora.models.download_options import DownloadOptions
-from remora.models.event.list import (
+from remora.models.event.playlist import (
+    BatchEvent,
     FinishedPlaylist,
     FinishedPlaylistResult,
     PlaylistUpdate,
 )
-from remora.models.event.main import DownloadEvent
 from remora.models.media.item import LazyMedia
 from remora.models.media.list import LazyPlaylist, MediaList, Playlist
 from remora.models.media.types import AnyExtractResult
@@ -49,10 +49,8 @@ class DownloadBatch:
         # Log
         logger.debug(self.config)
 
-    async def download(self) -> AsyncIterable[DownloadEvent]:
-        self._stream, receive_stream = anyio.create_memory_object_stream[DownloadEvent](
-            30
-        )
+    async def download(self) -> AsyncIterable[BatchEvent]:
+        self._stream, receive_stream = anyio.create_memory_object_stream[BatchEvent](30)
 
         async with receive_stream:
             try:

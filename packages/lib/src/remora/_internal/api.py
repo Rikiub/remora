@@ -5,8 +5,8 @@ from anyio import Path
 
 from remora._internal.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
-from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
+from remora.models.event.playlist import BatchEvent
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
@@ -55,11 +55,11 @@ class Remora:
     def download(self, item: Media | Playlist) -> AsyncIterable[MediaEvent]: ...
 
     @overload
-    def download(self, item: LazyPlaylist) -> AsyncIterable[DownloadEvent]: ...
+    def download(self, item: LazyPlaylist) -> AsyncIterable[BatchEvent]: ...
 
     async def download(
         self, item: StrUrl | LazyMedia | LazyPlaylist
-    ) -> AsyncIterable[MediaEvent | DownloadEvent]:
+    ) -> AsyncIterable[MediaEvent | BatchEvent]:
         extracted = await self.extract(item)
 
         if isinstance(extracted, LazyPlaylist):
@@ -79,7 +79,7 @@ class Remora:
     async def download_batch(
         self,
         item: StrUrl | AnyExtractResult,
-    ) -> AsyncIterable[DownloadEvent]:
+    ) -> AsyncIterable[BatchEvent]:
         if isinstance(item, StrUrl):
             extracted = await self.extract(item)
         else:

@@ -2,7 +2,7 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
-from remora.models.event.main import DownloadEvent
+from remora.models.event.playlist import BatchEvent
 from remora.models.event.process import ProcessEvent
 from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
@@ -16,7 +16,7 @@ class ProgressCallback:
         self._tg: TaskGroup | None = None
         self._exit_stack = anyio.create_task_group()
 
-    async def playlist_callback(self, event: DownloadEvent):
+    async def playlist_callback(self, event: BatchEvent):
         if self.disable:
             return
 
@@ -84,7 +84,7 @@ class ProgressCallback:
                     if self._tg:
                         self._tg.start_soon(self._finish_item, event)
 
-    async def _finish_item(self, event: DownloadEvent):
+    async def _finish_item(self, event: BatchEvent):
         await anyio.sleep(1.0)
         self.progress.remove_task(event.id)
 
