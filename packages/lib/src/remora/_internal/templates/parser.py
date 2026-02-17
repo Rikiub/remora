@@ -7,7 +7,7 @@ from remora._internal.templates.keys import PlaylistNested
 from remora.exceptions import OutputTemplateError
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media
-from remora.models.stream.types import Stream
+from remora.models.stream.format import Stream
 from remora.types import DEFAULT_TEMPLATE, StrPath
 
 

@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl
 
-from remora.models.base import YDLSerializable
+from remora.models._base import YDLSerializable
 
 # Types
 PLAYLIST_EXTRACTORS = ["YoutubeTab"]
@@ -23,9 +23,9 @@ ExtractorField = Annotated[
 class Extract(YDLSerializable):
     """Base identifier for media objects."""
 
-    extractor: ExtractorField
     url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
     id: str
+    extractor: ExtractorField
 
 
 class LazyExtract(Extract): ...

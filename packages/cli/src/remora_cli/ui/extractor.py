@@ -8,7 +8,7 @@ from typer import Exit
 
 from remora import MediaExtractor
 from remora.exceptions import MediaError
-from remora.models.content.list import Search
+from remora.models.content.list import SearchList
 from remora.models.content.types import ExtractResult
 from remora_cli.completions import parse_queries
 from remora_cli.ui.rich import Status
@@ -17,7 +17,7 @@ from remora_cli.ui.rich import Status
 async def extract_queries(
     queries: list[str],
     extractor: MediaExtractor,
-) -> AsyncIterable[ExtractResult | Search]:
+) -> AsyncIterable[ExtractResult | SearchList]:
     for target, entry in parse_queries(queries):
         try:
             with Status("Searching[blink]...[/]"):

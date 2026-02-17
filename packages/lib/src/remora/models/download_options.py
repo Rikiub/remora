@@ -5,7 +5,7 @@ from pydantic import AfterValidator
 
 from remora._internal.path import validate_ffmpeg
 from remora._internal.templates.parser import validate_template
-from remora.models.base import RemoraBaseModel
+from remora.models._base import RemoraBaseModel
 from remora.types import (
     DEFAULT_TEMPLATE,
     AudioExtension,

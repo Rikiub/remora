@@ -1,12 +1,10 @@
-from datetime import datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, Field, HttpUrl
 
-from remora.models.metadata.base import Metadata
+from remora.models.metadata._base import Metadata
 
 
-# Basics
 class Uploader(Metadata):
     name: Annotated[
         str,
@@ -24,12 +22,6 @@ class Channel(Metadata):
     url: Annotated[HttpUrl | None, Field(alias="channel_url")] = None
     is_verified: Annotated[bool | None, Field(alias="channel_is_verified")] = None
     followers: Annotated[int | None, Field(alias="channel_follower_count")] = None
-
-
-class Datetime(Metadata):
-    modified: Annotated[datetime | None, Field(alias="modified_date")] = None
-    uploaded: Annotated[datetime | None, Field(alias="upload_date")] = None
-    released: Annotated[datetime | None, Field(alias="release_date")] = None
 
 
 class Metrics(Metadata):

@@ -6,48 +6,12 @@ from functools import cached_property
 from typing import Generic, Literal, overload
 
 from pydantic import OnErrorOmit
+from remora.models.stream.format import AudioStream, Stream, VideoStream
 from typing_extensions import Self, TypeVar, override
 
-from remora.models.base import BaseList
-from remora.models.stream.codecs import get_codec_rank
-from remora.models.stream.types import AudioStream, Stream, VideoStream
+from remora.models._base import BaseList
+from remora.models.stream._codecs import get_codec_rank, stream_sort
 from remora.types import StreamType
-
-
-def stream_sort(stream: Stream):
-    filesize = stream.filesize or 0
-
-    if isinstance(stream, VideoStream):
-        is_video = 1
-
-        height = stream.height
-        fps = stream.fps or 0
-
-        vcodec = get_codec_rank(stream.video_codec, "video")
-        acodec = get_codec_rank(stream.audio_codec, "audio")
-
-        return (
-            is_video,
-            height,
-            fps,
-            vcodec,
-            acodec,
-            filesize,
-        )
-
-    elif isinstance(stream, AudioStream):
-        is_video = 0
-
-        bitrate = stream.bitrate
-        acodec = get_codec_rank(stream.audio_codec, "audio")
-
-        return (
-            is_video,
-            acodec,
-            filesize,
-            bitrate,
-        )
-
 
 T = TypeVar("T", default=Stream, bound=Stream)
 

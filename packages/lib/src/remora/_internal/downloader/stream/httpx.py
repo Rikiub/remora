@@ -13,7 +13,7 @@ from remora._internal.downloader.stream.base import (
 )
 from remora.exceptions import DownloadError
 from remora.models.event.stream import DownloadingStream, FinishedStream, StreamEvent
-from remora.models.stream.types import Stream
+from remora.models.stream.format import Stream
 from remora.types import StrPath
 
 _HTTP_PROTOCOLS = {

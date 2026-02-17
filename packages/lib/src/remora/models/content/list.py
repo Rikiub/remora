@@ -4,8 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import AliasChoices, Field, HttpUrl, SkipValidation, computed_field
 
-from remora.models.base import YDLSerializable
-from remora.models.content.base import (
+from remora.models._base import YDLSerializable
+from remora.models.content._base import (
     URL_CHOICES,
     ExtractorField,
     LazyExtract,
@@ -16,7 +16,7 @@ from remora.models.metadata.thumbnails import Thumbnail
 
 
 class MediaList(YDLSerializable):
-    entries: Entries = []
+    entries: _Entries = []
 
     @computed_field
     @property
@@ -59,18 +59,18 @@ class LazyPlaylist(MediaList, LazyExtract):
 
 class Playlist(LazyPlaylist):
     type: Annotated[Literal["playlist"], TypeField] = "playlist"  # type: ignore
-    entries: EntriesField  # type: ignore
+    entries: _EntriesField  # type: ignore
 
 
-class Search(MediaList):
+class SearchList(MediaList):
     type: Literal["search"] = "search"
     extractor: ExtractorField
 
     query: str = ""
     service: str = ""
 
-    entries: EntriesField  # type: ignore
+    entries: _EntriesField  # type: ignore
 
 
-Entries = list[LazyMedia | LazyPlaylist]
-EntriesField = Annotated[Entries, Field(alias="entries", min_length=1, repr=False)]
+_Entries = list[LazyMedia | LazyPlaylist]
+_EntriesField = Annotated[_Entries, Field(alias="entries", min_length=1, repr=False)]

@@ -16,7 +16,7 @@ from remora.models.event.stream import (
     FinishedStream,
     StreamEvent,
 )
-from remora.models.stream.types import Stream
+from remora.models.stream.format import Stream
 from remora.types import StrPath
 
 

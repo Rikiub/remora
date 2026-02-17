@@ -3,8 +3,8 @@ from copy import copy
 
 import anyio
 from loguru import logger
-from remora._internal.downloader.pipeline import DownloadPipeline
 
+from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
 from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import MediaError

@@ -78,6 +78,7 @@ async def extract(
         "medias",
         "playlists",
         "entries",
+        "is_cache",
     }
     default_exclude = {*exclude, *default_exclude}
 

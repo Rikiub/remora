@@ -5,16 +5,16 @@ from typing import Annotated, Generic, Literal, Self, overload
 from pydantic import BeforeValidator, Field
 from typing_extensions import TypeVar
 
-from remora.models.base import BaseList, YDLSerializable
-from remora.models.metadata.base import Metadata
+from remora.models._base import BaseList, YDLSerializable
+from remora.models.metadata._base import Metadata
 
 SubtitleType = Literal["remote", "content"]
 
 
 class BaseSubtitle(Metadata, YDLSerializable):
     type: SubtitleType
-    language: str
     name: str = ""
+    language: str
     extension: Annotated[str, Field(alias="ext")]
 
 

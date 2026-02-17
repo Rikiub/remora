@@ -1,5 +1,5 @@
-from remora.models.base import YDLSerializable
-from remora.models.metadata.base import Metadata
+from remora.models._base import YDLSerializable
+from remora.models.metadata._base import Metadata
 
 
 class Thumbnail(Metadata, YDLSerializable):

@@ -8,8 +8,8 @@ from loguru import logger
 from pydantic import ValidationError
 
 from remora._internal.cache import load_info, remove_info, save_info
-from remora.models.base import YDLSerializable
-from remora.models.content.list import LazyPlaylist, Playlist, Search
+from remora.models._base import YDLSerializable
+from remora.models.content.list import LazyPlaylist, Playlist, SearchList
 from remora.models.content.media import LazyMedia, Media
 from remora.models.content.types import ExtractAdapter
 from remora.types import SearchService, StrUrl
@@ -66,7 +66,7 @@ class MediaExtractor:
         query: str,
         service: SearchService,
         limit: int = 20,
-    ) -> Search:
+    ) -> SearchList:
         """Extract media from search service."""
 
         from remora._internal.ydl.extractor import extract_query
@@ -78,12 +78,12 @@ class MediaExtractor:
         )
 
         # Load from cache
-        if model := await self._extract_from_cache(query, Search.model_validate):
+        if model := await self._extract_from_cache(query, SearchList.model_validate):
             return model
 
         # Extract info
         info = await run_sync(extract_query, query, service, limit)
-        result = Search(query=query, service=service, **info)
+        result = SearchList(query=query, service=service, **info)
 
         # Save to cache
         if self.use_cache:

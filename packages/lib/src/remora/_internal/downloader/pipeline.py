@@ -31,7 +31,7 @@ from remora.models.event.media import (
 )
 from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
 from remora.models.event.stream import DownloadingStream, StreamEvent
-from remora.models.stream.types import AudioStream, Stream, VideoStream
+from remora.models.stream.format import AudioStream, Stream, VideoStream
 from remora.types import SupportedExtensions
 
 

@@ -4,19 +4,19 @@ from pydantic import (
     AfterValidator,
     BeforeValidator,
     Field,
-    PlainSerializer,
     PrivateAttr,
     field_validator,
     model_validator,
 )
 
-from remora.models.base import EnsureList, EnsureNone
-from remora.models.content.base import PLAYLIST_EXTRACTORS, LazyExtract, TypeField
-from remora.models.metadata.general import Channel, Datetime, Metrics, Uploader
-from remora.models.metadata.music import Music
+from remora.models._base import EnsureList, EnsureNone
+from remora.models.content._base import PLAYLIST_EXTRACTORS, LazyExtract, TypeField
+from remora.models.metadata.music import MusicMetadata
+from remora.models.metadata.playback import Chapter, Heatmap
+from remora.models.metadata.social import Channel, Metrics, Uploader
 from remora.models.metadata.subtitles import SubtitleList
+from remora.models.metadata.temporal import Timestamp
 from remora.models.metadata.thumbnails import Thumbnail
-from remora.models.metadata.timelapse import Chapter, Heatmap
 from remora.models.stream.list import StreamList
 
 
@@ -34,36 +34,36 @@ class LazyMedia(LazyExtract):
     type: Annotated[
         Literal["media"],
         BeforeValidator(_validate_type),
-        PlainSerializer(lambda v: "url"),
         TypeField,
     ] = "media"
     title: str = ""
     description: Annotated[str | None, EnsureNone] = None
     live_status: LiveStatus = "not_live"
 
-    # Ownership
+    # Temporal
+    duration: float = 0
+    timestamp: Annotated[Timestamp, Field(alias="timestamp_info")]
+
+    # Social
     uploader: Annotated[
         Uploader | None,
         EnsureNone,
-        Field(alias="uploader_data"),
+        Field(alias="uploader_info"),
     ] = None
     channel: Annotated[
         Channel | None,
         EnsureNone,
-        Field(alias="channel_data"),
+        Field(alias="channel_info"),
     ] = None
-    music: Annotated[Music | None, EnsureNone] = None
-
-    # Engagement
-    categories: Annotated[list[str], EnsureList] = []
-    tags: Annotated[list[str], EnsureList] = []
-
     metrics: Annotated[Metrics | None, EnsureNone] = None
     heatmap: list[Heatmap] | None = None
 
-    # Chronology
-    datetime: Datetime
-    duration: float = 0
+    # Metadata
+    music: Annotated[MusicMetadata | None, EnsureNone] = None
+
+    categories: Annotated[list[str], EnsureList] = []
+    tags: Annotated[list[str], EnsureList] = []
+
     thumbnails: list[Thumbnail] = []
 
     @field_validator("extractor")
@@ -78,13 +78,15 @@ class LazyMedia(LazyExtract):
     def _nest_fields(cls, data):
         # Process only in YDL info dicts.
         if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
+            data.pop("timestamp", None)
+
             # Prepare nested data
             keys = [
-                "uploader_data",
-                "channel_data",
-                "music",
+                "uploader_info",
+                "channel_info",
+                "timestamp_info",
                 "metrics",
-                "datetime",
+                "music",
             ]
 
             for key in keys:
@@ -112,12 +114,17 @@ class LazyMedia(LazyExtract):
 
         return data
 
+    def to_ydl_dict(self):
+        info = super().to_ydl_dict()
+        info |= {"_type": "url"}
+        return info
+
 
 class Media(LazyMedia):
     """Online media representation."""
 
-    chapters: Annotated[list[Chapter], EnsureList] = []
     subtitles: SubtitleList = SubtitleList()
+    chapters: Annotated[list[Chapter], EnsureList] = []
     streams: Annotated[
         StreamList,
         AfterValidator(lambda list: list.sort_by("best")),

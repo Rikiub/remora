@@ -8,8 +8,8 @@ from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
 from remora.models.content.media import Media
-from remora.models.metadata.music import Music
-from remora.models.stream.types import Stream
+from remora.models.metadata.music import MusicMetadata
+from remora.models.stream.format import Stream
 from remora.types import AudioExtension, StreamExtension, StrPath
 
 
@@ -87,7 +87,7 @@ class MediaProcessor:
         self.filepath = Path(processor.filepath)
 
 
-def _media_to_ydl_music(media: Media, music: Music) -> YDLExtractInfo:
+def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
     meta = {}
 
     # Track
@@ -106,7 +106,7 @@ def _media_to_ydl_music(media: Media, music: Music) -> YDLExtractInfo:
         meta |= {"meta_album_artist": ", ".join(music.album_artists)}
 
     # Year
-    if uploaded := media.datetime.uploaded:
+    if uploaded := media.timestamp.uploaded:
         meta |= {"meta_date": str(uploaded.year)}
 
     return meta

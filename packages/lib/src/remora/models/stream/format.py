@@ -14,12 +14,12 @@ from pydantic import (
 from typing_extensions import override
 
 from remora._internal.ydl.types import YDLFormatInfo
-from remora.models.base import YDLSerializable
+from remora.models._base import YDLSerializable
 from remora.types import AudioExtension, StreamExtension, VideoExtension
 
-Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
-AudioCodecField = Field(alias="acodec")
-ExtensionField = Field(alias="ext")
+_Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
+_AudioCodecField = Field(alias="acodec")
+_ExtensionField = Field(alias="ext")
 
 
 class YDLArgs(BaseModel):
@@ -44,7 +44,7 @@ class Stream(ABC, YDLArgs, YDLSerializable):
         ),
     ] = None
     bitrate: Annotated[float, Field(alias="tbr")] = 0
-    audio_codec: Annotated[Codec | None, AudioCodecField] = None
+    audio_codec: Annotated[_Codec | None, _AudioCodecField] = None
 
     def to_ydl_dict(self) -> YDLFormatInfo:
         return super().to_ydl_dict()
@@ -70,10 +70,10 @@ class AudioStream(Stream):
     type: Literal["audio"] = "audio"
     extension: Annotated[  # type: ignore
         AudioExtension,
-        ExtensionField,
+        _ExtensionField,
     ]
     audio_codec: Annotated[  # type: ignore
-        Codec, AudioCodecField
+        _Codec, _AudioCodecField
     ]
     language: str | None = None
 
@@ -97,9 +97,9 @@ class AudioStream(Stream):
 class VideoStream(Stream):
     extension: Annotated[  # type: ignore
         VideoExtension,
-        ExtensionField,
+        _ExtensionField,
     ]
-    video_codec: Annotated[Codec, Field(alias="vcodec")]
+    video_codec: Annotated[_Codec, Field(alias="vcodec")]
     type: Literal["video"] = "video"
     width: int
     height: int

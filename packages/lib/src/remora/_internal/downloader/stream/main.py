@@ -10,7 +10,7 @@ from remora._internal.downloader.stream.base import (
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloadError
 from remora.models.event.stream import StreamEvent
-from remora.models.stream.types import Stream
+from remora.models.stream.format import Stream
 from remora.types import StrPath
 
 
