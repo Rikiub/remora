@@ -7,6 +7,7 @@ from pydantic import (
     RootModel,
     ValidationError,
     WrapValidator,
+    model_validator,
 )
 
 from remora._internal.ydl.types import YDLExtractInfo
@@ -19,6 +20,20 @@ class RemoraBaseModel(BaseModel):
 class YDLSerializable(RemoraBaseModel):
     def to_ydl_dict(self) -> YDLExtractInfo:
         return self.model_dump(by_alias=True, mode="json")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_ydl(cls, data):
+        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
+            # Remove conflictive keys
+            data.pop("timestamp", None)
+
+            return cls._transform_ydl_dict(data)
+        return data
+
+    @classmethod
+    def _transform_ydl_dict(cls, info: YDLExtractInfo) -> YDLExtractInfo:
+        return info
 
 
 T = TypeVar("T")

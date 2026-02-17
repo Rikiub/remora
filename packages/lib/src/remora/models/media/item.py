@@ -6,16 +6,14 @@ from pydantic import (
     Field,
     PrivateAttr,
     field_validator,
-    model_validator,
 )
+from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
-from remora.models.media._base import PLAYLIST_EXTRACTORS, LazyExtract, TypeField
+from remora.models.media._base import PLAYLIST_EXTRACTORS, LazyExtractID, TypeField
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
-from remora.models.metadata.social import Channel, Metrics, Uploader
 from remora.models.metadata.subtitle import SubtitleList
-from remora.models.metadata.temporal import Timestamp
 from remora.models.metadata.thumbnail import Thumbnail
 from remora.models.stream.list import StreamList
 
@@ -29,7 +27,7 @@ def _validate_type(value: str):
 LiveStatus = Literal["live", "upcoming", "was_live", "not_live"]
 
 
-class LazyMedia(LazyExtract):
+class LazyMedia(LazyExtractID):
     # Identity
     type: Annotated[
         Literal["media"],
@@ -40,31 +38,20 @@ class LazyMedia(LazyExtract):
     description: Annotated[str | None, EnsureNone] = None
     live_status: LiveStatus = "not_live"
 
-    # Temporal
-    duration: float = 0
-    timestamp: Annotated[Timestamp, Field(alias="timestamp_info")]
-
-    # Social
-    uploader: Annotated[
-        Uploader | None,
-        EnsureNone,
-        Field(alias="uploader_info"),
-    ] = None
-    channel: Annotated[
-        Channel | None,
-        EnsureNone,
-        Field(alias="channel_info"),
-    ] = None
-    metrics: Annotated[Metrics | None, EnsureNone] = None
-    heatmap: list[Heatmap] | None = None
-
     # Metadata
+    duration: float = 0
+    heatmap: list[Heatmap] = []
     music: Annotated[MusicMetadata | None, EnsureNone] = None
 
     categories: Annotated[list[str], EnsureList] = []
     tags: Annotated[list[str], EnsureList] = []
 
     thumbnails: list[Thumbnail] = []
+
+    def to_ydl_dict(self):
+        info = super().to_ydl_dict()
+        info |= {"_type": "url"}
+        return info
 
     @field_validator("extractor")
     @classmethod
@@ -73,51 +60,34 @@ class LazyMedia(LazyExtract):
             raise ValueError(f"'{v}' extractor is for playlists only.")
         return v
 
-    @model_validator(mode="before")
     @classmethod
-    def _nest_fields(cls, data):
-        # Process only in YDL info dicts.
-        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
-            # Remove conflictive keys
-            data.pop("timestamp", None)
+    @override
+    def _transform_ydl_dict(cls, info):
+        info = super()._transform_ydl_dict(info)
 
-            # Prepare nested data
-            keys = [
-                "uploader_info",
-                "channel_info",
-                "timestamp_info",
-                "metrics",
-                "music",
-            ]
+        # Nested fields
+        info["music"] = info
 
-            for key in keys:
-                if key not in data:
-                    data[key] = data
+        # Prepare live status
+        live_status: LiveStatus = "not_live"
 
-            # Prepare live status
-            live_status: LiveStatus = "not_live"
+        is_live = info.get("is_live")
+        was_live = info.get("was_live")
+        is_upcoming = (
+            info.get("live_status") == "is_upcoming"
+            or info.get("availability") == "upcoming"
+        )
 
-            is_live = data.get("is_live")
-            was_live = data.get("was_live")
-            is_upcoming = (
-                data.get("live_status") == "is_upcoming"
-                or data.get("availability") == "upcoming"
-            )
+        if is_live:
+            live_status = "live"
+        elif is_upcoming:
+            live_status = "upcoming"
+        elif was_live:
+            live_status = "was_live"
 
-            if is_live:
-                live_status = "live"
-            elif is_upcoming:
-                live_status = "upcoming"
-            elif was_live:
-                live_status = "was_live"
+        info["live_status"] = live_status
 
-            data["live_status"] = live_status
-
-        return data
-
-    def to_ydl_dict(self):
-        info = super().to_ydl_dict()
-        info |= {"_type": "url"}
+        # End
         return info
 
 

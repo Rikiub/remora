@@ -2,20 +2,26 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import AliasChoices, Field, HttpUrl, SkipValidation, computed_field
+from pydantic import (
+    AliasChoices,
+    Field,
+    HttpUrl,
+    SkipValidation,
+    computed_field,
+)
 
-from remora.models._base import YDLSerializable
 from remora.models.media._base import (
     URL_CHOICES,
+    BaseExtract,
     ExtractorField,
-    LazyExtract,
+    LazyExtractID,
     TypeField,
 )
 from remora.models.media.item import LazyMedia
 from remora.models.metadata.thumbnail import Thumbnail
 
 
-class MediaList(YDLSerializable):
+class MediaList(BaseExtract):
     entries: _Entries = []
 
     @computed_field
@@ -29,7 +35,7 @@ class MediaList(YDLSerializable):
         return [item for item in self.entries if item.type == "playlist"]
 
 
-class LazyPlaylist(MediaList, LazyExtract):
+class LazyPlaylist(MediaList, LazyExtractID):
     type: Annotated[Literal["playlist"], SkipValidation] = "playlist"
 
     url: Annotated[
@@ -53,7 +59,7 @@ class LazyPlaylist(MediaList, LazyExtract):
             validation_alias=AliasChoices("playlist_title", "title"),
         ),
     ] = ""
-    uploader: str | None = None
+
     thumbnails: list[Thumbnail] = []
 
 
