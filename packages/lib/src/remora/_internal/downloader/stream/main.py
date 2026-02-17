@@ -3,15 +3,12 @@ from collections.abc import AsyncIterable
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.stream.base import (
-    DEFAULT_RETRIES,
-    BaseStreamDownloader,
-)
+from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloadError
 from remora.models.event.stream import StreamEvent
 from remora.models.stream.item import Stream
-from remora.types import StrPath
+from remora.types import DEFAULT_RETRIES, StrPath
 
 
 class StreamDownloader(BaseStreamDownloader):

@@ -4,9 +4,7 @@ from anyio import Path
 from loguru import logger
 
 from remora.models.stream.item import Stream, VideoStream
-from remora.types import StrPath
-
-DEFAULT_RETRIES = 3
+from remora.types import DEFAULT_RETRIES, StrPath
 
 
 class BaseStreamDownloader(ABC):

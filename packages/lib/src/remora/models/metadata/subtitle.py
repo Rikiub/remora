@@ -17,6 +17,15 @@ class BaseSubtitle(Metadata, YDLSerializable):
     language: str
     extension: Annotated[str, Field(alias="ext")]
 
+    def to_ydl_dict(self) -> dict[str, list[dict[str, str]]]:
+        entry = self.model_dump(
+            by_alias=True,
+            mode="json",
+            exclude={"type", "language"},
+        )
+        data = {self.language: [entry]}
+        return data
+
 
 class ExternalSubtitle(BaseSubtitle):
     type: Literal["external"] = "external"  # type: ignore
@@ -101,13 +110,15 @@ class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
     def to_ydl_dict(self):
         """Convert back into the nested yt-dlp dictionary format:"""
 
-        data: dict[str, list[dict[str, str]]] = {}
+        data = {}
 
-        for sub in self.root:
-            entry = sub.model_dump(
-                by_alias=True,
-                exclude={"type", "language"},
-            )
-            data[sub.language].append(entry)
+        for subtitle in self.root:
+            entry = subtitle.to_ydl_dict()
+
+            for lang, sub in entry.items():
+                for value in sub:
+                    if not data.get(lang):
+                        data[lang] = []
+                    data[lang].append(value)
 
         return data

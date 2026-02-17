@@ -8,9 +8,7 @@ from remora._internal.ydl.messages import format_except_message
 from remora._internal.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import DownloadError, MetadataDownloadError
-from remora.types import StrPath
-
-DEFAULT_RETRIES = 3
+from remora.types import DEFAULT_RETRIES, StrPath
 
 
 def download_format(

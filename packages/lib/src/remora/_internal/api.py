@@ -1,16 +1,18 @@
 from collections.abc import AsyncIterable
+from pathlib import Path
 from typing import overload
-
-from anyio import Path
 
 from remora._internal.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
+from remora.models.event.stream import StreamEvent
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
+from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail
+from remora.models.stream.item import Stream
 from remora.types import SearchService, StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
 
@@ -77,8 +79,7 @@ class Remora:
                 yield event
 
     async def download_batch(
-        self,
-        item: StrUrl | AnyExtractResult,
+        self, item: StrUrl | AnyExtractResult
     ) -> AsyncIterable[BatchEvent]:
         if isinstance(item, StrUrl):
             extracted = await self.extract(item)
@@ -94,10 +95,44 @@ class Remora:
         ).download():
             yield event
 
-    async def download_resource(self, item: Thumbnail, path: StrPath) -> Path:
+    async def download_stream(
+        self,
+        item: Stream,
+        path: StrPath,
+        retries: int | None = None,
+    ) -> AsyncIterable[StreamEvent]:
+        from remora._internal.downloader.stream.main import StreamDownloader
+
+        downloader = StreamDownloader(
+            path,
+            item,
+            retries=retries or self.config.retries,
+        )
+        async for event in downloader.download():
+            yield event
+
+    @overload
+    async def download_resource(self, item: Thumbnail, path) -> Path: ...
+
+    @overload
+    async def download_resource(self, item: ExternalSubtitle, path) -> Path: ...
+
+    @overload
+    async def download_resource(self, item: SubtitleList, path) -> list[Path]: ...
+
+    async def download_resource(
+        self,
+        item: Thumbnail | ExternalSubtitle | SubtitleList,
+        path: StrPath,
+    ) -> Path | list[Path]:
         match item:
             case Thumbnail():
                 from remora._internal.downloader.metadata import download_thumbnail
 
-                thumbnail = await download_thumbnail(path, item)
-                return thumbnail
+                path = await download_thumbnail(path, item)
+                return path
+            case SubtitleList() | ExternalSubtitle():
+                from remora._internal.downloader.metadata import download_subtitles
+
+                paths = await download_subtitles(path, item)
+                return paths

@@ -41,3 +41,4 @@ StrUrl = str | HttpUrl
 # Extra
 APP_NAME = "remora"
 DEFAULT_TEMPLATE = "{uploader.name} - {title}"
+DEFAULT_RETRIES = 3

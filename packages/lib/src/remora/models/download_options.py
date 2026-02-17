@@ -7,6 +7,7 @@ from remora._internal.path import validate_ffmpeg
 from remora._internal.templates.parser import validate_template
 from remora.models._base import RemoraBaseModel
 from remora.types import (
+    DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
     AudioExtension,
     StreamExtension,
@@ -37,12 +38,15 @@ class DownloadOptions(RemoraBaseModel):
         StrPath,
         AfterValidator(validate_template),
     ] = Path.cwd() / DEFAULT_TEMPLATE
+
     ffmpeg_path: Annotated[
         StrPath | None,
         AfterValidator(lambda v: validate_ffmpeg(v) if v else v),
     ] = None
     embed_metadata: bool = True
+
     max_workers: int = 4
+    retries: int = DEFAULT_RETRIES
 
     @property
     def type(self) -> StreamType:

@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterable
-from copy import copy
 
 import anyio
 from loguru import logger
@@ -28,15 +27,15 @@ class DownloadBatch:
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = copy(format_config) or DownloadOptions()
+        self.config = format_config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
-        self._data = data
+        self._item = data
 
         # Fields
         self.id: str
         self.medias: list[LazyMedia] = []
-        self.playlist: Playlist | None = None
+        self.playlist: Playlist | None
 
         self.completed: int
         self.totat: int
@@ -124,24 +123,23 @@ class DownloadBatch:
             )
 
     async def _setup(self):
-        data = self.medias or self._data
-
-        medias = []
-        playlist = None
+        item = self.medias or self._item
 
         # Get real data
-        if type(data) is LazyPlaylist:
-            playlist = await self.extractor.extract(data)
-        elif isinstance(data, Playlist):
-            playlist = data
+        playlist = None
 
-        match data:
+        if type(item) is LazyPlaylist:
+            playlist = await self.extractor.extract(item)
+        elif isinstance(item, Playlist):
+            playlist = item
+
+        match item:
             case LazyMedia():
-                medias: list[LazyMedia] = [data]
+                medias: list[LazyMedia] = [item]
             case MediaList():
-                medias = data.medias
+                medias = item.medias
             case list():
-                medias = data
+                medias = item
             case _:
                 raise TypeError("Unable to unpack media.")
 
@@ -160,10 +158,12 @@ class DownloadBatch:
         # Set config
         if playlist:
             self.id = playlist.id
-            self.config.template = generate_output_template(
+
+            template = generate_output_template(
                 self.config.template,
                 playlist=playlist,
             )
+            self.config = self.config.model_copy(update={"template": template})
         else:
             import secrets
 
