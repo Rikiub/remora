@@ -14,6 +14,17 @@ class HelpPanel(StrEnum):
     FORMAT = "Format"
 
 
+DEFAULT_EXCLUDE = {
+    "streams",
+    "subtitles",
+    "chapters",
+    "thumbnails",
+    "heatmap",
+    "medias",
+    "playlists",
+    "entries",
+    "is_cache",
+}
 app = Typer()
 
 
@@ -59,31 +70,19 @@ async def extract(
 ):
     """Extract metadata from [green]URL[/] or search [green]SERVICE[/]."""
 
-    # Lazy Import
+    # Lazy startup
     with Status("Starting[blink]...[/]"):
         from rich.json import JSON
 
         from remora import MediaExtractor
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
-    console = Console()
-    extractor = MediaExtractor(use_cache=CONFIG.cache)
+        console = Console()
+        extractor = MediaExtractor(use_cache=CONFIG.cache)
 
-    default_exclude = {
-        "streams",
-        "subtitles",
-        "chapters",
-        "thumbnails",
-        "heatmap",
-        "medias",
-        "playlists",
-        "entries",
-        "is_cache",
-    }
-    default_exclude = {*exclude, *default_exclude}
-
-    for key in include:
-        default_exclude.discard(key)
+        default_exclude = {*exclude, *DEFAULT_EXCLUDE}
+        for key in include:
+            default_exclude.discard(key)
 
     async for result in extract_queries(query, extractor):
         if result.type == "media" and result.is_cache:

@@ -70,6 +70,7 @@ class DownloadProgress:
     """Start and render progress bar."""
 
     def __init__(self, disable: bool = False) -> None:
+        self.disable = disable
         self.counter = CounterProgress(disable=disable)
         self._progress = Progress(
             TextColumn(
@@ -119,10 +120,12 @@ class DownloadProgress:
         )
 
     def start(self):
-        self._live.start()
+        if not self.disable:
+            self._live.start()
 
     def stop(self):
-        self._live.stop()
+        if not self.disable:
+            self._live.stop()
 
     def __enter__(self):
         self.start()

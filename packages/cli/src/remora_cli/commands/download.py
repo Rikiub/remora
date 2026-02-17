@@ -18,7 +18,6 @@ class HelpPanel(str, Enum):
 
 
 FormatEnum = StrEnum("FormatEnum", {v.upper(): v for v in literal_to_set(StreamTarget)})
-
 app = Typer()
 
 
@@ -102,30 +101,30 @@ What format you want request?
 ):
     """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
 
-    # Lazy Import
+    # Lazy startup
     with Status("Starting[blink]...[/]"):
         from remora import DownloadOptions, MediaExtractor, Remora
+        from remora.exceptions import OutputTemplateError
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 
-    # Initialize
-    try:
-        config = DownloadOptions(
-            format=format,
-            quality=quality,
-            template=output,
-            max_workers=max_workers,
-            ffmpeg_path=ffmpeg_path,
+        try:
+            config = DownloadOptions(
+                format=format,
+                quality=quality,
+                template=output,
+                max_workers=max_workers,
+                ffmpeg_path=ffmpeg_path,
+            )
+        except OutputTemplateError as error:
+            raise BadParameter(str(error))
+
+        remora = Remora(
+            download_config=config,
+            extractor=MediaExtractor(use_cache=CONFIG.cache),
         )
-    except FileNotFoundError as err:
-        raise BadParameter(str(err))
 
-    api = Remora(
-        download_config=config,
-        extractor=MediaExtractor(use_cache=CONFIG.cache),
-    )
-
-    async for result in extract_queries(query, api.extractor):
+    async for result in extract_queries(query, remora.extractor):
         async with ProgressCallback(CONFIG.quiet) as progress:
-            async for event in api.download_batch(result):
+            async for event in remora.download_batch(result):
                 await progress.playlist_callback(event)
