@@ -9,4 +9,4 @@ from remora.models.download_options import DownloadOptions
 from remora.models.event.list import PlaylistEvent
 from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
-from remora.models.stream.format import AudioStream, VideoStream
+from remora.models.stream.format import AudioStream, Stream, VideoStream

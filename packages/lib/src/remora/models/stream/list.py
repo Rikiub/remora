@@ -1,22 +1,21 @@
 from __future__ import annotations
 
 import bisect
-from collections.abc import Iterator
 from functools import cached_property
-from typing import Generic, Literal, overload
+from typing import Generic, Literal
 
 from pydantic import OnErrorOmit
-from remora.models.stream.format import AudioStream, Stream, VideoStream
-from typing_extensions import Self, TypeVar, override
+from typing_extensions import Self, TypeVar
 
 from remora.models._base import BaseList
 from remora.models.stream._codecs import get_codec_rank, stream_sort
+from remora.models.stream.format import AudioStream, Stream, VideoStream
 from remora.types import StreamType
 
 T = TypeVar("T", default=Stream, bound=Stream)
 
 
-class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
+class StreamList(BaseList[OnErrorOmit[T]], Generic[T]):
     """List of streams which can be filtered."""
 
     def filter(
@@ -39,13 +38,13 @@ class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
             items = (
                 s
                 for s in items
-                if s.type == "video" and s.video_codec.startswith(video_codec)
+                if isinstance(s, VideoStream) and s.video_codec.startswith(video_codec)
             )
         if audio_codec:
             items = (
                 s
                 for s in items
-                if s.type == "audio" and s.audio_codec.startswith(audio_codec)
+                if isinstance(s, AudioStream) and s.audio_codec.startswith(audio_codec)
             )
         if protocol:
             items = (s for s in items if s.protocol == protocol)
@@ -53,10 +52,14 @@ class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
         return self.__class__(list(items))
 
     def only_video(self) -> StreamList[VideoStream]:
-        return StreamList[VideoStream]([s for s in self.root if s.type == "video"])
+        return StreamList[VideoStream](
+            [s for s in self.root if isinstance(s, VideoStream)]
+        )
 
     def only_audio(self) -> StreamList[AudioStream]:
-        return StreamList[AudioStream]([s for s in self.root if s.type == "audio"])
+        return StreamList[AudioStream](
+            [s for s in self.root if isinstance(s, AudioStream)]
+        )
 
     @cached_property
     def type(self) -> StreamType:
@@ -89,7 +92,7 @@ class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
         return self.__class__(
             sorted(
                 self.root,
-                key=filter,  # type: ignore
+                key=filter,
                 reverse=reverse,
             )
         )
@@ -123,17 +126,3 @@ class StreamList(BaseList[OnErrorOmit[VideoStream | AudioStream]], Generic[T]):
             return after
         else:
             return before
-
-    @override
-    def __iter__(self) -> Iterator[T]:  # type: ignore
-        return super().__iter__()  # type: ignore
-
-    @overload
-    def __getitem__(self, index: int) -> T: ...
-
-    @overload
-    def __getitem__(self, index: slice) -> Self: ...
-
-    @override
-    def __getitem__(self, index) -> T | Self:  # type: ignore
-        return super().__getitem__(index)

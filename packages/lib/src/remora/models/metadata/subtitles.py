@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Annotated, Generic, Literal, Self, overload
+from typing import Annotated, Generic, Literal, Self
 
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, HttpUrl
 from typing_extensions import TypeVar
 
 from remora.models._base import BaseList, YDLSerializable
 from remora.models.metadata._base import Metadata
 
-SubtitleType = Literal["remote", "content"]
+SubtitleType = Literal["external", "embedded"]
 
 
 class BaseSubtitle(Metadata, YDLSerializable):
@@ -18,14 +18,20 @@ class BaseSubtitle(Metadata, YDLSerializable):
     extension: Annotated[str, Field(alias="ext")]
 
 
-class SubtitleRemote(BaseSubtitle):
-    type: Literal["remote"] = "remote"  # type: ignore
-    url: str
+class ExternalSubtitle(BaseSubtitle):
+    type: Literal["external"] = "external"  # type: ignore
+    url: HttpUrl
 
 
-class SubtitleContent(BaseSubtitle):
-    type: Literal["content"] = "content"  # type: ignore
-    content: Annotated[str, Field(alias="data")]
+class EmbeddedSubtitle(BaseSubtitle):
+    type: Literal["embedded"] = "embedded"  # type: ignore
+    text: Annotated[str, Field(alias="data")]
+
+
+Subtitle = Annotated[
+    ExternalSubtitle | EmbeddedSubtitle,
+    Field(discriminator="type"),
+]
 
 
 def _parse_ydl_subtitles(data):
@@ -35,7 +41,7 @@ def _parse_ydl_subtitles(data):
 
         for lang, sub in subtitles.items():
             for value in sub:
-                sub_type: SubtitleType = "remote" if "url" in value else "content"
+                sub_type: SubtitleType = "external" if "url" in value else "embedded"
                 entry = {
                     **value,
                     "type": sub_type,
@@ -48,24 +54,33 @@ def _parse_ydl_subtitles(data):
     return data
 
 
-Subtitle = Annotated[
-    SubtitleRemote | SubtitleContent,
-    Field(discriminator="type"),
-]
-
-T = TypeVar("T", bound=BaseSubtitle, default=BaseSubtitle)
+T = TypeVar("T", bound=Subtitle, default=Subtitle)
 
 
-class SubtitleList(YDLSerializable, BaseList[Subtitle], Generic[T]):
+class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
     root: Annotated[
-        list[Subtitle],
+        list[T],
         BeforeValidator(_parse_ydl_subtitles),
     ] = []
 
     @property
     def languages(self) -> set[str]:
         """Return all unique language codes available."""
-        return {s.language for s in self.root if s.type == "remote"}
+        return {s.language for s in self.root if isinstance(s, ExternalSubtitle)}
+
+    @property
+    def external(self) -> SubtitleList[ExternalSubtitle]:
+        """Subtitles hosted on a URL."""
+        return SubtitleList[ExternalSubtitle](  # type: ignore
+            [item for item in self if isinstance(item, ExternalSubtitle)],
+        )
+
+    @property
+    def embedded(self) -> SubtitleList[EmbeddedSubtitle]:
+        """Subtitles found inside the media file."""
+        return SubtitleList[EmbeddedSubtitle](  # type: ignore
+            [item for item in self if isinstance(item, EmbeddedSubtitle)],
+        )
 
     def filter(self, language: str | None = None, extension: str | None = None) -> Self:
         """Filter subtitles by options."""
@@ -76,32 +91,12 @@ class SubtitleList(YDLSerializable, BaseList[Subtitle], Generic[T]):
             items = (
                 s
                 for s in items
-                if isinstance(s, SubtitleRemote) and s.language.startswith(language)
+                if isinstance(s, ExternalSubtitle) and s.language.startswith(language)
             )
         if extension:
             items = (s for s in items if s.extension == extension)
 
         return self.__class__(list(items))
-
-    @overload
-    def by_type(self, type: Literal["remote"]) -> SubtitleList[SubtitleRemote]: ...
-
-    @overload
-    def by_type(self, type: Literal["content"]) -> SubtitleList[SubtitleContent]: ...
-
-    def by_type(
-        self, type: SubtitleType
-    ) -> SubtitleList[SubtitleRemote] | SubtitleList[SubtitleContent]:
-        if type == "remote":
-            model = SubtitleRemote
-        elif type == "content":
-            model = SubtitleContent
-        else:
-            raise ValueError("Invalid subtitle type:", type)
-
-        return SubtitleList[model](  # type: ignore
-            [item for item in self if item.type == type],
-        )
 
     def to_ydl_dict(self):
         """Convert back into the nested yt-dlp dictionary format:"""
@@ -113,6 +108,6 @@ class SubtitleList(YDLSerializable, BaseList[Subtitle], Generic[T]):
                 by_alias=True,
                 exclude={"type", "language"},
             )
-            data[sub.language] = [entry]
+            data[sub.language].append(entry)
 
         return data
