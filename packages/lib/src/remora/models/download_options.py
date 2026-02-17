@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, get_args
+from typing import Annotated, cast, get_args
 
 from pydantic import AfterValidator
 
@@ -53,7 +53,7 @@ class DownloadOptions(RemoraBaseModel):
         """
 
         if self.format in get_args(StreamType):
-            return self.format
+            return cast(StreamType, self.format)
 
         elif self.format in get_args(VideoExtension):
             return "video"
@@ -72,4 +72,8 @@ class DownloadOptions(RemoraBaseModel):
             If could convert, returns a file `EXTENSION`, else return `None`.
         """
 
-        return self.format if self.format in get_args(StreamExtension) else None
+        return (
+            cast(StreamExtension, self.format)
+            if self.format in get_args(StreamExtension)
+            else None
+        )
