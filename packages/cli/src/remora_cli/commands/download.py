@@ -104,7 +104,7 @@ What format you want request?
 
     # Lazy Import
     with Status("Starting[blink]...[/]"):
-        from remora import DownloadOptions, MediaExtractor, RemoraAPI
+        from remora import DownloadOptions, MediaExtractor, Remora
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 
@@ -120,7 +120,7 @@ What format you want request?
     except FileNotFoundError as err:
         raise BadParameter(str(err))
 
-    api = RemoraAPI(
+    api = Remora(
         download_config=config,
         extractor=MediaExtractor(use_cache=CONFIG.cache),
     )

@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from remora import DownloadOptions, MediaExtractor, RemoraAPI
+from remora import DownloadOptions, MediaExtractor, Remora
 
 
 @pytest.fixture
 def download(tmp_path: Path):
     async def wrap(url: str):
-        api = RemoraAPI(
+        api = Remora(
             download_config=DownloadOptions(
                 quality=1,
                 template=tmp_path,

@@ -15,7 +15,7 @@ from remora.types import SearchService, StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
 
 
-class RemoraAPI:
+class Remora:
     def __init__(
         self,
         download_config: DownloadOptions | None = None,

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from remora import AudioStream, DownloadOptions, MediaExtractor, RemoraAPI, VideoStream
+from remora import AudioStream, DownloadOptions, MediaExtractor, Remora, VideoStream
 from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
@@ -12,7 +12,7 @@ PLAYLIST = (
 
 
 async def test_single(tmp_path: Path):
-    api = RemoraAPI(
+    api = Remora(
         download_config=DownloadOptions(format="audio", quality=1, template=tmp_path),
         extractor=MediaExtractor(use_cache=False),
     )
@@ -23,7 +23,7 @@ async def test_single(tmp_path: Path):
 
 
 async def test_list(tmp_path: Path):
-    api = RemoraAPI(
+    api = Remora(
         download_config=DownloadOptions(format="audio", quality=1, template=tmp_path),
         extractor=MediaExtractor(use_cache=False),
     )

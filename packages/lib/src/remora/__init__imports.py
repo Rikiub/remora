@@ -1,7 +1,7 @@
 # ruff: noqa: F401
 
 from remora import exceptions, logs, models, types
-from remora._internal.api import RemoraAPI
+from remora._internal.api import Remora
 from remora._internal.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, Playlist, SearchList
 from remora.models.content.media import LazyMedia, Media
