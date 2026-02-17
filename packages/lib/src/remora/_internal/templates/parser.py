@@ -5,9 +5,9 @@ from pathvalidate import sanitize_filepath
 
 from remora._internal.templates.keys import PlaylistNested
 from remora.exceptions import OutputTemplateError
-from remora.models.content.list import Playlist
-from remora.models.content.media import Media
-from remora.models.stream.format import Stream
+from remora.models.media.item import Media
+from remora.models.media.list import Playlist
+from remora.models.stream.item import Stream
 from remora.types import DEFAULT_TEMPLATE, StrPath
 
 

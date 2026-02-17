@@ -1,4 +1,4 @@
-from remora.models.stream.format import AudioStream, Stream, VideoStream
+from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StreamType
 
 VIDEO_CODEC_RANK = {

@@ -5,8 +5,8 @@ from typing import Annotated, Union, get_args, get_origin
 
 from pydantic import BaseModel, RootModel
 
-from remora.models.content.list import Playlist
-from remora.models.content.media import Media
+from remora.models.media.item import Media
+from remora.models.media.list import Playlist
 
 
 class PlaylistNested(BaseModel):

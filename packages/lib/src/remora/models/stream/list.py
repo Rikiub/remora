@@ -9,7 +9,7 @@ from typing_extensions import Self, TypeVar
 
 from remora.models._base import BaseList
 from remora.models.stream._codecs import get_codec_rank, stream_sort
-from remora.models.stream.format import AudioStream, Stream, VideoStream
+from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StreamType
 
 T = TypeVar("T", default=Stream, bound=Stream)

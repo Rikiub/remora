@@ -1,7 +1,7 @@
 from pydantic import TypeAdapter
 
-from remora.models.content.list import LazyPlaylist, MediaList, Playlist
-from remora.models.content.media import LazyMedia, Media
+from remora.models.media.item import LazyMedia, Media
+from remora.models.media.list import LazyPlaylist, MediaList, Playlist
 
 LazyExtractResult = LazyMedia | LazyPlaylist
 ExtractResult = Media | Playlist

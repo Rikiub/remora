@@ -3,22 +3,22 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from remora.models.content.media import Media
+from remora.models.media.item import Media
 
 
 class BaseEvent(BaseModel): ...
 
 
-class EventID(BaseModel):
+class BaseEventID(BaseModel):
     id: str
 
 
-class BaseMediaEvent(EventID):
+class BaseMediaEvent(BaseEventID):
     type: Literal["media"] = "media"
     media: Media
 
 
-class BasePlaylistEvent(EventID):
+class BasePlaylistEvent(BaseEventID):
     type: Literal["playlist"] = "playlist"
 
 

@@ -2,9 +2,9 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
-from remora.models.content.media import LazyMedia
 from remora.models.event.main import DownloadEvent
 from remora.models.event.process import ProcessEvent
+from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
 
 

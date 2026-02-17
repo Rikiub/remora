@@ -9,9 +9,9 @@ from pydantic import ValidationError
 
 from remora._internal.cache import load_info, remove_info, save_info
 from remora.models._base import YDLSerializable
-from remora.models.content.list import LazyPlaylist, Playlist, SearchList
-from remora.models.content.media import LazyMedia, Media
-from remora.models.content.types import ExtractAdapter
+from remora.models.media.item import LazyMedia, Media
+from remora.models.media.list import LazyPlaylist, Playlist, SearchList
+from remora.models.media.types import ExtractAdapter
 from remora.types import SearchService, StrUrl
 
 T = TypeVar("T", bound=YDLSerializable)

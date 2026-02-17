@@ -19,7 +19,6 @@ from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
-from remora.models.content.media import LazyMedia, Media
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
     Downloading,
@@ -31,7 +30,8 @@ from remora.models.event.media import (
 )
 from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
 from remora.models.event.stream import DownloadingStream, StreamEvent
-from remora.models.stream.format import AudioStream, Stream, VideoStream
+from remora.models.media.item import LazyMedia, Media
+from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import SupportedExtensions
 
 

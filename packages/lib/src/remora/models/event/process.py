@@ -4,7 +4,7 @@ from pydantic import Field
 
 from remora.models.event._base import BaseMediaEvent
 from remora.models.event.media import FileEvent
-from remora.models.stream.format import AudioStream, VideoStream
+from remora.models.stream.item import AudioStream, VideoStream
 
 ProcessorTask = Literal[
     "change_container",

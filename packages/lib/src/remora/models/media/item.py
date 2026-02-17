@@ -10,7 +10,7 @@ from pydantic import (
 )
 
 from remora.models._base import EnsureList, EnsureNone
-from remora.models.content._base import PLAYLIST_EXTRACTORS, LazyExtract, TypeField
+from remora.models.media._base import PLAYLIST_EXTRACTORS, LazyExtract, TypeField
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
 from remora.models.metadata.social import Channel, Metrics, Uploader

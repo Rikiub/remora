@@ -4,12 +4,12 @@ from typing import overload
 from anyio import Path
 
 from remora._internal.extractor import MediaExtractor
-from remora.models.content.list import LazyPlaylist, Playlist
-from remora.models.content.media import LazyMedia, Media
-from remora.models.content.types import AnyExtractResult
 from remora.models.download_options import DownloadOptions
 from remora.models.event.main import DownloadEvent
 from remora.models.event.media import MediaEvent
+from remora.models.media.item import LazyMedia, Media
+from remora.models.media.list import LazyPlaylist, Playlist
+from remora.models.media.types import AnyExtractResult
 from remora.models.metadata.thumbnails import Thumbnail
 from remora.types import SearchService, StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList

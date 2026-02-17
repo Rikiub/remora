@@ -8,8 +8,8 @@ from typer import Exit
 
 from remora import MediaExtractor
 from remora.exceptions import MediaError
-from remora.models.content.list import SearchList
-from remora.models.content.types import ExtractResult
+from remora.models.media.list import SearchList
+from remora.models.media.types import ExtractResult
 from remora_cli.completions import parse_queries
 from remora_cli.ui.rich import Status
 

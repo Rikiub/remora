@@ -4,13 +4,13 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from remora.models.content.media import LazyMedia
 from remora.models.event._base import BaseMediaEvent, FileEvent
 from remora.models.event.process import (
     ProcessEvent,
     Processing,  # noqa: F401
 )
 from remora.models.event.stream import DownloadingStream
+from remora.models.media.item import LazyMedia
 
 
 class Resolving(BaseMediaEvent):

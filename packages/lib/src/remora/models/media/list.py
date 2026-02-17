@@ -5,13 +5,13 @@ from typing import Annotated, Literal
 from pydantic import AliasChoices, Field, HttpUrl, SkipValidation, computed_field
 
 from remora.models._base import YDLSerializable
-from remora.models.content._base import (
+from remora.models.media._base import (
     URL_CHOICES,
     ExtractorField,
     LazyExtract,
     TypeField,
 )
-from remora.models.content.media import LazyMedia
+from remora.models.media.item import LazyMedia
 from remora.models.metadata.thumbnails import Thumbnail
 
 

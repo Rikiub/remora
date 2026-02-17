@@ -7,9 +7,9 @@ from remora._internal.path import get_ffmpeg
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
-from remora.models.content.media import Media
+from remora.models.media.item import Media
 from remora.models.metadata.music import MusicMetadata
-from remora.models.stream.format import Stream
+from remora.models.stream.item import Stream
 from remora.types import AudioExtension, StreamExtension, StrPath
 
 

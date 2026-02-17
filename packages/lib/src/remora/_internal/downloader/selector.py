@@ -1,8 +1,8 @@
 from typing import TypeVar, cast
 
-from remora.models.content.media import Media
 from remora.models.download_options import DownloadOptions
-from remora.models.stream.format import AudioStream, Stream, VideoStream
+from remora.models.media.item import Media
+from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.models.stream.list import StreamList
 
 T = TypeVar("T", bound=Stream)
