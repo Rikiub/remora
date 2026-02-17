@@ -12,7 +12,7 @@ from remora.models.media._base import (
     TypeField,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.metadata.thumbnails import Thumbnail
+from remora.models.metadata.thumbnail import Thumbnail
 
 
 class MediaList(YDLSerializable):

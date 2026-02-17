@@ -14,9 +14,9 @@ from remora.models.media._base import PLAYLIST_EXTRACTORS, LazyExtract, TypeFiel
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
 from remora.models.metadata.social import Channel, Metrics, Uploader
-from remora.models.metadata.subtitles import SubtitleList
+from remora.models.metadata.subtitle import SubtitleList
 from remora.models.metadata.temporal import Timestamp
-from remora.models.metadata.thumbnails import Thumbnail
+from remora.models.metadata.thumbnail import Thumbnail
 from remora.models.stream.list import StreamList
 
 
@@ -78,6 +78,7 @@ class LazyMedia(LazyExtract):
     def _nest_fields(cls, data):
         # Process only in YDL info dicts.
         if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
+            # Remove conflictive keys
             data.pop("timestamp", None)
 
             # Prepare nested data

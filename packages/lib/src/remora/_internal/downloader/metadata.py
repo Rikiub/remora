@@ -1,8 +1,8 @@
 from anyio import Path
 from anyio.to_thread import run_sync
 
-from remora.models.metadata.subtitles import SubtitleList
-from remora.models.metadata.thumbnails import Thumbnail
+from remora.models.metadata.subtitle import SubtitleList
+from remora.models.metadata.thumbnail import Thumbnail
 from remora.types import StrPath
 
 

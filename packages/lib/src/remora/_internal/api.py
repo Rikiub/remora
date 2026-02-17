@@ -10,7 +10,7 @@ from remora.models.event.media import MediaEvent
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
-from remora.models.metadata.thumbnails import Thumbnail
+from remora.models.metadata.thumbnail import Thumbnail
 from remora.types import SearchService, StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
 
