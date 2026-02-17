@@ -35,9 +35,12 @@ class Warning(BaseMediaEvent):
     message: str
 
 
+FinishedResult = Literal["success", "incomplete", "skipped", "failed"]
+
+
 class Finished(BaseMediaEvent, FileEvent):
     status: Literal["finished"] = "finished"
-    result: Literal["success", "incomplete", "skipped", "failed"]
+    result: FinishedResult
 
 
 MediaEvent = Annotated[

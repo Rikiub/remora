@@ -9,7 +9,11 @@ from remora._internal.extractor import MediaExtractor
 from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import MediaError
 from remora.models.download_options import DownloadOptions
-from remora.models.event.list import FinishedPlaylist, PlaylistUpdate
+from remora.models.event.list import (
+    FinishedPlaylist,
+    FinishedPlaylistResult,
+    PlaylistUpdate,
+)
 from remora.models.event.main import DownloadEvent
 from remora.models.media.item import LazyMedia
 from remora.models.media.list import LazyPlaylist, MediaList, Playlist
@@ -26,24 +30,21 @@ class DownloadBatch:
         # Internals
         self.config = copy(format_config) or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
-
-        # Parallel
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
-
-        # Data
-        self.id = ""
-        self.medias: list[LazyMedia] = []
-        self.playlist: Playlist | None = None
         self._data = data
 
-        # State
-        self.completed = 0
-        self.total = 0
+        # Fields
+        self.id: str
+        self.medias: list[LazyMedia] = []
+        self.playlist: Playlist | None = None
 
-        self.success = 0
-        self.failed = 0
+        self.completed: int
+        self.totat: int
 
-        self.result = "success"
+        self.success: int
+        self.failed: int
+
+        self.result: FinishedPlaylistResult
 
         # Log
         logger.debug(self.config)
@@ -65,7 +66,6 @@ class DownloadBatch:
 
     async def _producer(self):
         async with self._stream:
-            # Setup
             await self._setup()
 
             await self._stream.send(
@@ -77,23 +77,28 @@ class DownloadBatch:
                 )
             )
 
-            # Tasks
-            try:
-                async with anyio.create_task_group() as tg:
-                    for media in self.medias:
-                        tg.start_soon(self._pipeline, media)
-            except anyio.get_cancelled_exc_class():
-                self.result = "cancelled"
-                raise
-            finally:
-                self._stream.send_nowait(
-                    FinishedPlaylist(
-                        id=self.id,
-                        completed=self.completed,
-                        total=self.total,
-                        result=self.result,  # type: ignore
+            with logger.contextualize(
+                playlist_id=self.id,
+                playlist_title=self.playlist.title if self.playlist else None,
+                playlist_total=len(self.medias),
+            ):
+                try:
+                    # Tasks
+                    async with anyio.create_task_group() as tg:
+                        for media in self.medias:
+                            tg.start_soon(self._pipeline, media)
+                except anyio.get_cancelled_exc_class():
+                    self.result = "cancelled"
+                    raise
+                finally:
+                    self._stream.send_nowait(
+                        FinishedPlaylist(
+                            id=self.id,
+                            completed=self.completed,
+                            total=self.total,
+                            result=self.result,
+                        )
                     )
-                )
 
     async def _pipeline(self, media: LazyMedia):
         async with self.limiter:
@@ -121,7 +126,8 @@ class DownloadBatch:
             )
 
     async def _setup(self):
-        data = self._data
+        data = self.medias or self._data
+
         medias = []
         playlist = None
 
