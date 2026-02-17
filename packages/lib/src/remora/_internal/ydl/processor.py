@@ -13,9 +13,9 @@ from yt_dlp.postprocessor.ffmpeg import (
     FFmpegVideoRemuxerPP,
 )
 
+from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError, ProcessingError
 from remora.types import StrPath
-from remora.ydl.types import YDLExtractInfo
 
 
 def catch(func):

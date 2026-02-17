@@ -4,7 +4,7 @@ from typing import Annotated
 
 from typer import Argument, BadParameter, Option, Typer
 
-from remora.helpers import literal_to_set
+from remora._internal.helpers import literal_to_set
 from remora.types import DEFAULT_TEMPLATE, StreamTarget
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG

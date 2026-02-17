@@ -7,7 +7,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import ValidationError
 
-from remora.cache import load_info, remove_info, save_info
+from remora._internal.cache import load_info, remove_info, save_info
 from remora.models.base import YDLSerializable
 from remora.models.content.list import LazyPlaylist, Playlist, Search
 from remora.models.content.media import LazyMedia, Media
@@ -50,7 +50,7 @@ class MediaExtractor:
             return model
 
         # Extract info
-        from remora.ydl.extractor import extract_info
+        from remora._internal.ydl.extractor import extract_info
 
         info = await run_sync(extract_info, url)
         result = ExtractAdapter.validate_python(info, by_alias=True)
@@ -69,7 +69,7 @@ class MediaExtractor:
     ) -> Search:
         """Extract media from search service."""
 
-        from remora.ydl.extractor import extract_query
+        from remora._internal.ydl.extractor import extract_query
 
         logger.debug(
             'Search from "{service}": "{query}"',

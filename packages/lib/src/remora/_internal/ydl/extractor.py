@@ -6,11 +6,11 @@ from typing import cast
 from yt_dlp.networking.exceptions import RequestError
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
+from remora._internal.ydl.messages import format_except_message
+from remora._internal.ydl.types import YDLExtractInfo
+from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractError
 from remora.types import SearchService
-from remora.ydl.messages import format_except_message
-from remora.ydl.types import YDLExtractInfo
-from remora.ydl.wrapper import YDL
 
 
 @dataclass(slots=True)

@@ -10,12 +10,15 @@ from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
 
-from remora.downloader.debug import event_debug
-from remora.downloader.metadata import download_subtitles, download_thumbnail
-from remora.downloader.selector import StreamSelector
-from remora.downloader.stream.main import StreamDownloader
+from remora._internal.downloader.debug import event_debug
+from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
+from remora._internal.downloader.selector import StreamSelector
+from remora._internal.downloader.stream.main import StreamDownloader
+from remora._internal.extractor import MediaExtractor
+from remora._internal.path import get_ffmpeg, get_tempfile
+from remora._internal.processor import MediaProcessor
+from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
-from remora.extractor import MediaExtractor
 from remora.models.content.media import LazyMedia, Media
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
@@ -29,9 +32,6 @@ from remora.models.event.media import (
 from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.stream.types import AudioStream, Stream, VideoStream
-from remora.path import get_ffmpeg, get_tempfile
-from remora.processor import MediaProcessor
-from remora.template.parser import generate_output_template
 from remora.types import SupportedExtensions
 
 

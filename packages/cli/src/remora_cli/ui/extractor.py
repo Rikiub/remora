@@ -6,8 +6,8 @@ from rich.highlighter import ReprHighlighter
 from rich.table import Table
 from typer import Exit
 
+from remora import MediaExtractor
 from remora.exceptions import MediaError
-from remora.extractor import MediaExtractor
 from remora.models.content.list import Search
 from remora.models.content.types import ExtractResult
 from remora_cli.completions import parse_queries

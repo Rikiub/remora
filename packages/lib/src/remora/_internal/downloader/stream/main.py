@@ -3,8 +3,11 @@ from collections.abc import AsyncIterable
 from loguru import logger
 from typing_extensions import override
 
-from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
-from remora.downloader.stream.httpx import HttpxStreamDownloader
+from remora._internal.downloader.stream.base import (
+    DEFAULT_RETRIES,
+    BaseStreamDownloader,
+)
+from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloadError
 from remora.models.event.stream import StreamEvent
 from remora.models.stream.types import Stream
@@ -61,7 +64,7 @@ class StreamDownloader(BaseStreamDownloader):
                 raise error
 
         # Fallback downloader
-        from remora.downloader.stream.ydl import YDLStreamDownloader
+        from remora._internal.downloader.stream.ydl import YDLStreamDownloader
 
         downloader = YDLStreamDownloader(
             self.filepath,

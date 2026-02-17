@@ -20,7 +20,7 @@ def complete_resolution() -> Generator[str, None, None]:
 
 
 def complete_template_key() -> Generator[str, None, None]:
-    from remora.template.keys import get_keys
+    from remora._internal.templates.keys import get_keys
 
     yield from get_keys()
 

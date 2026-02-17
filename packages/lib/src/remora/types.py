@@ -3,13 +3,13 @@ from typing import Literal
 
 from pydantic import HttpUrl
 
-from remora.ydl.types import AudioExtension as YDLAudioExtension
-from remora.ydl.types import VideoExtension as YDLVideoExtension
-from remora.ydl.types import YDLExtensions
+from remora._internal.ydl.types import AudioExtension as _YDLAudioExtension
+from remora._internal.ydl.types import VideoExtension as _YDLVideoExtension
+from remora._internal.ydl.types import YDLExtensions as _YDLExtensions
 
 # Extension
-VideoExtension = YDLVideoExtension
-AudioExtension = YDLAudioExtension
+VideoExtension = _YDLVideoExtension
+AudioExtension = _YDLAudioExtension
 StreamExtension = VideoExtension | AudioExtension
 """Common lossy compression containers formats with thumbnail and metadata support."""
 
@@ -17,18 +17,17 @@ StreamExtension = VideoExtension | AudioExtension
 class SupportedExtensions:
     """File extensions supported."""
 
-    VIDEO = YDLExtensions.VIDEO
-    AUDIO = YDLExtensions.AUDIO
-    ALL = YDLExtensions.ALL
+    VIDEO = _YDLExtensions.VIDEO
+    AUDIO = _YDLExtensions.AUDIO
+    ALL = _YDLExtensions.ALL
 
-    THUMBNAIL = YDLExtensions.THUMBNAIL
+    THUMBNAIL = _YDLExtensions.THUMBNAIL
 
 
 # Target
+SearchService = Literal["soundcloud", "youtube", "ytmusic"]
 StreamType = Literal["video", "audio"]
 StreamTarget = StreamType | StreamExtension
-
-SearchService = Literal["soundcloud", "youtube", "ytmusic"]
 
 # Quality
 AudioQuality = Literal[128, 256, 360]

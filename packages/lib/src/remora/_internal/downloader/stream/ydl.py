@@ -6,7 +6,11 @@ from anyio import Path
 from anyio.to_thread import run_sync
 from typing_extensions import override
 
-from remora.downloader.stream.base import DEFAULT_RETRIES, BaseStreamDownloader
+from remora._internal.downloader.stream.base import (
+    DEFAULT_RETRIES,
+    BaseStreamDownloader,
+)
+from remora._internal.ydl.types import YDL_PROTOCOLS
 from remora.models.event.stream import (
     DownloadingStream,
     FinishedStream,
@@ -14,7 +18,6 @@ from remora.models.event.stream import (
 )
 from remora.models.stream.types import Stream
 from remora.types import StrPath
-from remora.ydl.types import YDL_PROTOCOLS
 
 
 class YDLStreamDownloader(BaseStreamDownloader):
@@ -46,7 +49,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 yield FinishedStream(filepath=pathlib.Path(self.filepath))
 
     async def _producer(self):
-        from remora.ydl.downloader import download_format
+        from remora._internal.ydl.downloader import download_format
 
         async with self._send_stream:
             path = await run_sync(

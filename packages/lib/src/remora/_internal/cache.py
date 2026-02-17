@@ -3,7 +3,7 @@ import time
 
 from anyio import Path
 
-from remora.path import get_cache_dir
+from remora._internal.path import get_cache_dir
 from remora.types import StrUrl
 
 EXPIRATION = 24 * 60 * 60

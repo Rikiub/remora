@@ -9,6 +9,8 @@ from loguru import logger
 
 from remora.types import APP_NAME
 
+__all__ = ["LoggingLevels", "enable", "disable", "setup"]
+
 LoggingLevels = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
@@ -29,11 +31,11 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
     logger.add(
         sys.stderr,
         level=level,
-        format=get_format,
+        format=_get_format,
     )
 
 
-def get_format(record) -> str:
+def _get_format(record) -> str:
     # Extract variables
     extra = record.get("extra", {})
     media_id: str = extra.get("media_id", "")

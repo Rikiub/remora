@@ -9,7 +9,7 @@ from pydantic import (
     WrapValidator,
 )
 
-from remora.ydl.types import YDLExtractInfo
+from remora._internal.ydl.types import YDLExtractInfo
 
 
 class RemoraBaseModel(BaseModel):

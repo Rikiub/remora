@@ -3,11 +3,11 @@ from pathlib import Path
 
 from pathvalidate import sanitize_filepath
 
+from remora._internal.templates.keys import PlaylistNested
 from remora.exceptions import OutputTemplateError
 from remora.models.content.list import Playlist
 from remora.models.content.media import Media
 from remora.models.stream.types import Stream
-from remora.template.keys import PlaylistNested
 from remora.types import DEFAULT_TEMPLATE, StrPath
 
 
@@ -69,7 +69,7 @@ def generate_output_template(
 def validate_template(output: StrPath):
     import re
 
-    from remora.template.keys import get_keys
+    from remora._internal.templates.keys import get_keys
 
     pattern = r"{(.*?)}"
     keys: list[str] = re.findall(pattern, str(output))

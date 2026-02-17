@@ -3,9 +3,9 @@ from typing import Annotated, get_args
 
 from pydantic import AfterValidator
 
+from remora._internal.path import validate_ffmpeg
+from remora._internal.templates.parser import validate_template
 from remora.models.base import RemoraBaseModel
-from remora.path import validate_ffmpeg
-from remora.template.parser import validate_template
 from remora.types import (
     DEFAULT_TEMPLATE,
     AudioExtension,

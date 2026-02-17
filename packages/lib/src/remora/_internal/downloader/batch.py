@@ -3,17 +3,17 @@ from copy import copy
 
 import anyio
 from loguru import logger
+from remora._internal.downloader.pipeline import DownloadPipeline
 
-from remora.downloader.pipeline import DownloadPipeline
+from remora._internal.extractor import MediaExtractor
+from remora._internal.templates.parser import generate_output_template
 from remora.exceptions import MediaError
-from remora.extractor import MediaExtractor
 from remora.models.content.list import LazyPlaylist, MediaList, Playlist
 from remora.models.content.media import LazyMedia
 from remora.models.content.types import AnyExtractResult
 from remora.models.download_options import DownloadOptions
 from remora.models.event.list import FinishedPlaylist, PlaylistUpdate
 from remora.models.event.main import DownloadEvent
-from remora.template.parser import generate_output_template
 
 
 class DownloadBatch:
