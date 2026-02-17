@@ -6,7 +6,7 @@ from loguru import logger
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
 from remora._internal.templates.parser import generate_output_template
-from remora.exceptions import MediaError
+from remora.exceptions import RemoraError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.playlist import (
     BatchEvent,
@@ -108,7 +108,7 @@ class DownloadBatch:
                     await self._stream.send(event)
 
                 self.success += 1
-            except* MediaError:
+            except* RemoraError:
                 self.result = "incomplete"
                 self.failed += 1
 

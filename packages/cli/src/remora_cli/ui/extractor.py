@@ -7,7 +7,7 @@ from rich.table import Table
 from typer import Exit
 
 from remora import MediaExtractor
-from remora.exceptions import MediaError
+from remora.exceptions import RemoraError
 from remora.models.media.list import SearchList
 from remora.models.media.types import ExtractResult
 from remora_cli.completions import parse_queries
@@ -41,7 +41,7 @@ async def extract_queries(
                         logger.warning("❗ No results found")
                         raise Exit()
             yield result
-        except MediaError as error:
+        except RemoraError as error:
             logger.error("❌ {error}", error=str(error))
         finally:
             logger.info("")
