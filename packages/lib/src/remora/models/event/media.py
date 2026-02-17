@@ -22,11 +22,6 @@ class Resolved(BaseMediaEvent):
     status: Literal["resolved"] = "resolved"
 
 
-class Retrying(BaseMediaEvent):
-    status: Literal["retrying"] = "retrying"
-    result: Literal["stale_cache"]
-
-
 class Downloading(DownloadingStream, BaseMediaEvent): ...
 
 
@@ -44,6 +39,6 @@ class Finished(BaseMediaEvent, FileEvent):
 
 
 MediaEvent = Annotated[
-    Resolving | Resolved | Downloading | Retrying | ProcessEvent | Warning | Finished,
+    Resolving | Resolved | Downloading | ProcessEvent | Warning | Finished,
     Field(discriminator="status"),
 ]
