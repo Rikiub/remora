@@ -7,12 +7,7 @@ from typer import Argument, BadParameter, Option, Typer
 from remora_cli.completions import complete_query, complete_template_key
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
-from remora_cli.ui.rich import Console, Status
-
-
-class HelpPanel(StrEnum):
-    FORMAT = "Format"
-
+from remora_cli.ui.rich import Console, Status, smart_print
 
 DEFAULT_EXCLUDE = {
     "streams",
@@ -65,6 +60,10 @@ def parse_keys(value: list[str]) -> list[str]:
     return value
 
 
+class HelpPanel(StrEnum):
+    FORMAT = "Format"
+
+
 app = Typer()
 
 
@@ -76,8 +75,8 @@ async def extract(
         Argument(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
-            - Insert a [green]URL[/] to extract. [grey62](Default)[/]\n
-            - Select a [green]SERVICE[/] to search and extract.
+            - Insert a [green]URL[/] to extract.\n
+            - Insert a [green]SERVICE[/] and [green]QUERY[/] to search and extract.
             """,
             show_default=False,
             autocompletion=complete_query,
@@ -85,12 +84,14 @@ async def extract(
         ),
     ],
     format: Annotated[
-        Literal["table", "json"],
+        Literal["table", "json"] | None,
         Option(
+            "--format",
+            "-f",
             help="Output format of data.",
             rich_help_panel=HelpPanel.FORMAT,
         ),
-    ] = "table",
+    ] = None,
     include: Annotated[
         list[str],
         Option(
@@ -122,36 +123,52 @@ async def extract(
         console = Console()
         extractor = MediaExtractor(use_cache=CONFIG.cache)
 
-        default_exclude = {*exclude, *DEFAULT_EXCLUDE}
-        for key in include:
-            default_exclude.discard(key)
+    # Determine user intent
+    sel_format = format
+    if not format:
+        sel_format = "table" if console.is_terminal else "json"
 
+    # Filters
+    sel_include = set(include)
+    sel_exclude = set(exclude)
+
+    if sel_format == "table" and not sel_include:
+        sel_exclude |= DEFAULT_EXCLUDE
+
+    for key in sel_include:
+        sel_exclude.discard(key)
+
+    # Extract queries
     async for result in extract_queries(query, extractor):
         if result.is_cache:
             logger.info("Data extracted from cache.")
         else:
             logger.info("Successful extraction.")
 
-        if not console.is_terminal or format == "json":
+        # Show
+        if sel_format == "json":
             data = result.model_dump_json(
-                include={*include} or None,
-                exclude=default_exclude or None,
+                include=sel_include or None,
+                exclude=sel_exclude or None,
             )
 
             if console.is_terminal:
-                data = JSON(data)
-                console.print(data)
+                smart_print(JSON(data))
             else:
                 print(data)
-        elif format == "table":
+
+        elif sel_format == "table":
             data = result.model_dump(
-                include={*include} or None,
-                exclude=default_exclude or None,
+                include=sel_include or None,
+                exclude=sel_exclude or None,
                 mode="json",
             )
 
             sorted_data = {k: data[k] for k in FIELDS_ORDER if k in data}
-            sorted_data = sorted_data | data
-
+            sorted_data |= data
             table = dict_to_table(sorted_data)
-            console.print(table)
+
+            if console.is_terminal:
+                smart_print(table)
+            else:
+                console.print(table)
