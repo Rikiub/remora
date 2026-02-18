@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from remora._internal.cache import load_info, remove_info, save_info
 from remora.models._base import YDLSerializable
+from remora.models.media._base import BaseExtract
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
 from remora.models.media.types import ExtractAdapter
@@ -45,7 +46,7 @@ class MediaExtractor:
 
         # Load from cache
         if model := await self._extract_from_cache(url, ExtractAdapter.validate_json):
-            if isinstance(model, Media):
+            if isinstance(model, BaseExtract):
                 model.is_cache = True
             return model
 

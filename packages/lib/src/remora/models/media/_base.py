@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import AliasChoices, Field, HttpUrl
+from pydantic import AliasChoices, Field, HttpUrl, PrivateAttr
 
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models._base import EnsureNone, YDLSerializable
@@ -24,7 +24,8 @@ ExtractorField = Annotated[
 
 
 # Base
-class BaseExtract(YDLSerializable): ...
+class BaseExtract(YDLSerializable):
+    is_cache: Annotated[bool, PrivateAttr()] = False
 
 
 class ExtractMetadata(BaseExtract):

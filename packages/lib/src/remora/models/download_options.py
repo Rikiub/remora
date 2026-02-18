@@ -4,7 +4,7 @@ from typing import Annotated, cast, get_args
 from pydantic import AfterValidator
 
 from remora._internal.path import validate_ffmpeg
-from remora._internal.templates.parser import validate_template
+from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
 from remora.types import (
     DEFAULT_RETRIES,

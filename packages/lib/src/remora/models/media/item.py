@@ -1,12 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import (
-    AfterValidator,
-    BeforeValidator,
-    Field,
-    PrivateAttr,
-    field_validator,
-)
+from pydantic import AfterValidator, BeforeValidator, Field, field_validator
 from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
@@ -101,4 +95,3 @@ class Media(LazyMedia):
         AfterValidator(lambda list: list.sort_by("best")),
         Field(alias="formats", min_length=1),
     ]
-    is_cache: Annotated[bool, PrivateAttr()] = False

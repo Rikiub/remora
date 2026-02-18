@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from loguru import logger
-from typer import Argument, Option, Typer
+from typer import Argument, BadParameter, Option, Typer
 
 from remora_cli.completions import complete_query, complete_template_key
 from remora_cli.config import CONFIG
@@ -25,6 +25,46 @@ DEFAULT_EXCLUDE = {
     "entries",
     "is_cache",
 }
+FIELDS_ORDER = [
+    "url",
+    "id",
+    "extractor",
+    "type",
+    "title",
+    "description",
+    "live_status",
+    "duration",
+    "timestamp",
+    "uploader",
+    "channel",
+    "metrics",
+    "music",
+    "categories",
+    "tags",
+]
+
+
+def parse_keys(value: list[str]) -> list[str]:
+    if value:
+        from remora._internal.template.key import validate_key
+        from remora.exceptions import OutputTemplateError
+
+        results = []
+
+        for item in value:
+            # Split by comma and strip whitespace
+            keys = [k.strip() for k in item.split(",") if k.strip()]
+
+            for key in keys:
+                try:
+                    validate_key(key, True)
+                    results.append(key)
+                except OutputTemplateError as e:
+                    raise BadParameter(str(e))
+        return results
+    return value
+
+
 app = Typer()
 
 
@@ -57,6 +97,7 @@ async def extract(
             help="Keys to include.",
             rich_help_panel=HelpPanel.FORMAT,
             autocompletion=complete_template_key,
+            callback=parse_keys,
         ),
     ] = [],
     exclude: Annotated[
@@ -65,6 +106,7 @@ async def extract(
             help="Keys to exclude.",
             rich_help_panel=HelpPanel.FORMAT,
             autocompletion=complete_template_key,
+            callback=parse_keys,
         ),
     ] = [],
 ):
@@ -85,7 +127,7 @@ async def extract(
             default_exclude.discard(key)
 
     async for result in extract_queries(query, extractor):
-        if result.type == "media" and result.is_cache:
+        if result.is_cache:
             logger.info("Data extracted from cache.")
         else:
             logger.info("Successful extraction.")
@@ -107,5 +149,9 @@ async def extract(
                 exclude=default_exclude or None,
                 mode="json",
             )
-            table = dict_to_table(data)
+
+            sorted_data = {k: data[k] for k in FIELDS_ORDER if k in data}
+            sorted_data = sorted_data | data
+
+            table = dict_to_table(sorted_data)
             console.print(table)

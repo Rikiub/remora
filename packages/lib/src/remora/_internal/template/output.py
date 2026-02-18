@@ -3,15 +3,35 @@ from pathlib import Path
 
 from pathvalidate import sanitize_filepath
 
-from remora._internal.templates.keys import PlaylistNested
+from remora._internal.template.generator import flatten_dict
+from remora._internal.template.key import PlaylistNested
+from remora._internal.template.key import get_keys as _get_keys
 from remora.exceptions import OutputTemplateError
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 from remora.models.stream.item import Stream
 from remora.types import DEFAULT_TEMPLATE, StrPath
 
+_OUTPUT_EXCLUDED_KEYS = {
+    "extension",
+    "heatmap",
+    "chapters",
+    "subtitles",
+    "thumbnails",
+    "streams",
+    "is_cache",
+    "playlist.is_cache",
+    "playlist.entries",
+    "playlist.thumbnails",
+}
+_KEYS = {
+    k
+    for k in _get_keys()
+    if not any(k == key or k.startswith(f"{key}.") for key in _OUTPUT_EXCLUDED_KEYS)
+}
 
-class TemplateFormatter(string.Formatter):
+
+class _TemplateFormatter(string.Formatter):
     def __init__(self, replace: str | None = None):
         self.replace = replace
 
@@ -30,7 +50,7 @@ class TemplateFormatter(string.Formatter):
         return final_value, field_name
 
 
-def generate_output_template(
+def format_template(
     template: StrPath,
     stream: Stream | None = None,
     media: Media | None = None,
@@ -50,15 +70,15 @@ def generate_output_template(
     # Dump metadata
     data = {}
     if stream:
-        data |= _flatten_dict(stream.model_dump())
+        data |= flatten_dict(stream.model_dump())
     if media:
-        data |= _flatten_dict(media.model_dump())
+        data |= flatten_dict(media.model_dump())
     if playlist:
         wrap_playlist = PlaylistNested(playlist=playlist)
-        data |= _flatten_dict(wrap_playlist.model_dump())
+        data |= flatten_dict(wrap_playlist.model_dump())
 
     # Format with metadata
-    formatter = TemplateFormatter(replace=default_missing)
+    formatter = _TemplateFormatter(replace=default_missing)
     template = formatter.format(str(template), **data)
 
     # Remove invalid characters and limit length
@@ -69,28 +89,21 @@ def generate_output_template(
 def validate_template(output: StrPath):
     import re
 
-    from remora._internal.templates.keys import get_keys
-
     pattern = r"{(.*?)}"
     keys: list[str] = re.findall(pattern, str(output))
-    all_keys = get_keys()
 
     for key in keys:
-        if key not in all_keys:
-            raise OutputTemplateError(f"Key '{{{key}}}' from '{output}' is invalid.")
+        if key not in get_keys():
+            raise OutputTemplateError(f"Key '{{{key}}}' is invalid")
 
     return output
 
 
-def _flatten_dict(d: dict, prefix: str = "") -> dict:
-    items = {}
+def validate_key(key: str):
+    if key not in get_keys():
+        raise OutputTemplateError(f"Key '{{{key}}}' is invalid")
+    return key
 
-    for k, v in d.items():
-        new_key = f"{prefix}{k}"
-        if isinstance(v, dict):
-            # Recursively flatten, but also keep the parent if it has data
-            items.update(_flatten_dict(v, prefix=f"{new_key}."))
-        else:
-            items[new_key] = v
 
-    return items
+def get_keys() -> set[str]:
+    return _KEYS

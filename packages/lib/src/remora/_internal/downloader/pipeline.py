@@ -1,12 +1,11 @@
-import pathlib
 import shutil
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import cast
 
 import anyio
-from anyio import Path
 from anyio.to_thread import run_sync
 from loguru import logger
 
@@ -17,7 +16,7 @@ from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.extractor import MediaExtractor
 from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
-from remora._internal.templates.parser import generate_output_template
+from remora._internal.template.output import format_template
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
@@ -32,7 +31,7 @@ from remora.models.event.process import MergeProcessing, Processing, ProcessorTa
 from remora.models.event.stream import DownloadingStream, StreamEvent
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import SupportedExtensions
+from remora.types import StrPath, SupportedExtensions
 
 
 @dataclass(slots=True)
@@ -95,13 +94,13 @@ class DownloadPipeline:
                     raise DownloadError("Streams not founded")
 
                 # Calculate Path & Check Existence
-                output = generate_output_template(
+                output = format_template(
                     self.config.template,
                     stream=stream,
                     media=media,
                     default_missing="NA",
                 )
-                output = Path(output)
+                output = anyio.Path(output)
                 await output.parent.mkdir(parents=True, exist_ok=True)
 
                 if await self.check_output_duplicate(output):
@@ -131,7 +130,7 @@ class DownloadPipeline:
                             Finished(
                                 id=self.id,
                                 media=self.media,
-                                filepath=pathlib.Path(),
+                                filepath=Path(),
                                 result="failed",
                             )
                         )
@@ -198,8 +197,8 @@ class DownloadPipeline:
         await self._stream.send(Resolved(id=self.id, media=self.media))
         return self.media
 
-    async def check_output_duplicate(self, output: Path) -> Path | None:
-        output = Path(output)
+    async def check_output_duplicate(self, output: StrPath) -> Path | None:
+        output = anyio.Path(output)
 
         async for path in output.parent.iterdir():
             if await path.is_file() and path.stem == output.name:
@@ -209,11 +208,12 @@ class DownloadPipeline:
                     path_extension in SupportedExtensions.VIDEO
                     or path_extension in SupportedExtensions.AUDIO
                 ):
+                    path = Path(path)
                     await self._stream.send(
                         Finished(
                             id=self.id,
                             media=self.media,
-                            filepath=pathlib.Path(path),
+                            filepath=path,
                             result="skipped",
                         )
                     )
@@ -307,7 +307,7 @@ class DownloadPipeline:
             and (audio_file and audio_stream)
         ):
             extension = self.config.convert or "mp4"
-            filepath = pathlib.Path(f"{get_tempfile()}.{extension}")
+            filepath = Path(f"{get_tempfile()}.{extension}")
             filepath.touch()
 
             merging = MergeProcessing(
@@ -403,10 +403,10 @@ class DownloadPipeline:
 
         return Path(prc.filepath)
 
-    async def move_to_final(self, src: Path, dest: Path) -> Path:
-        src, dest = Path(src), Path(dest)
+    async def move_to_final(self, src: StrPath, dest: StrPath) -> Path:
+        _src, _dest = anyio.Path(src), anyio.Path(dest)
 
-        final_path = dest.parent / f"{dest.name}{src.suffix}"
+        final_path = _dest.parent / f"{_dest.name}{_src.suffix}"
         await final_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Use shutil.move for compability between cross filesystems
@@ -416,9 +416,9 @@ class DownloadPipeline:
             Finished(
                 id=self.id,
                 media=self.media,
-                filepath=pathlib.Path(final_path),
+                filepath=Path(final_path),
                 result="incomplete" if self.incomplete else "success",
             )
         )
 
-        return final_path
+        return Path(final_path)

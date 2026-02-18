@@ -5,7 +5,7 @@ from loguru import logger
 
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
-from remora._internal.templates.parser import generate_output_template
+from remora._internal.template.output import format_template
 from remora.exceptions import RemoraError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.playlist import (
@@ -159,7 +159,7 @@ class DownloadBatch:
         if playlist:
             self.id = playlist.id
 
-            template = generate_output_template(
+            template = format_template(
                 self.config.template,
                 playlist=playlist,
             )
