@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -76,3 +77,8 @@ def format_except_message(exception: Exception) -> str:
             break
 
     return message
+
+
+def extract_status_code(error_msg: str) -> int | None:
+    match = re.search(r"HTTP Error (\d{3})", error_msg)
+    return int(match.group(1)) if match else None
