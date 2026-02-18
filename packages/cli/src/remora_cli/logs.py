@@ -8,18 +8,16 @@ from remora_cli.ui.rich import CONSOLE
 def setup_logging(level: logs.LoggingLevels):
     logs.enable()
 
-    if level == "INFO":
-        verbose = False
-    else:
-        verbose = True
+    is_verbose = level != "INFO"
 
     rich_handler = RichHandler(
         level=level,
-        show_level=verbose,
-        show_time=verbose,
-        show_path=False,
-        markup=True,
+        show_level=is_verbose,
+        show_time=is_verbose,
+        show_path=is_verbose,
         console=CONSOLE,
+        markup=True,
+        rich_tracebacks=True,
     )
 
     logger.remove()
@@ -30,27 +28,40 @@ def setup_logging(level: logs.LoggingLevels):
         backtrace=False,
     )
 
+    # Structured Logs
+    # logger.add("logs/trace.jsonl", level="DEBUG", rotation="10 MB", serialize=True)
+
+
+LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
+    "DEBUG": "blue",
+    "SUCCESS": "khaki1",
+    "INFO": "khaki1",
+    "WARNING": "yellow italic",
+    "ERROR": "red",
+    "CRITICAL": "bold red",
+}
+
 
 def get_format(record) -> str:
-    level: logs.LoggingLevels = record["level"].name  # type: ignore
+    level = record["level"]
+    extra = record.get("extra", {})
+    icon = extra.get("icon") or getattr(record["level"], "icon", "")
+
+    # Prefixes
+    status_prefix = ""
+    if (
+        level.name == "DEBUG"
+        and (media_id := extra.get("media_id"))
+        and (status := extra.get("status"))
+    ):
+        status_prefix = f"[[dim]{media_id}[/]] [bold]{status.upper():<11}[/] | "
+
+    title_prefix = ""
+    if level.name != "DEBUG" and (title := extra.get("media_title")):
+        title_prefix = f'"{title}" '
 
     # Colors
-    colors: dict[logs.LoggingLevels, str] = {
-        "DEBUG": "[blue]",
-        "INFO": "[khaki1]",
-        "WARNING": "[yellow][italic]",
-        "ERROR": "[red]",
-        "CRITICAL": "[bold red]",
-    }
-    color = colors.get(level)
+    color = LEVEL_COLORS.get(level.name, "white")
 
-    extra: dict[str, str] = record.get("extra", {})
-    status = extra.get("status", "")
-    media_id = extra.get("media_id", "")
-
-    prefix = ""
-    if status and media_id:
-        prefix = f"[[dim]{media_id}[/]] [bold]{status.upper():<11}[/] | "
-
-    # Message Format
-    return f"{prefix}{color}{{message}}[/]"
+    # Format
+    return f"{icon} {status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"

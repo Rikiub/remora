@@ -42,7 +42,7 @@ class MediaExtractor:
         else:
             url = str(item.url)
 
-        logger.debug("Extract URL: {url}", url=url)
+        logger.bind(status="extracting").debug("Extract URL: {url}", url=url)
 
         # Load from cache
         if model := await self._extract_from_cache(url, ExtractAdapter.validate_json):
@@ -72,7 +72,7 @@ class MediaExtractor:
 
         from remora._internal.ydl.extractor import extract_query
 
-        logger.debug(
+        logger.bind(status="extracting").debug(
             'Search from "{service}": "{query}"',
             service=service,
             query=query,

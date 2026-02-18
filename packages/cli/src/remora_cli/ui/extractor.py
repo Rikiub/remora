@@ -11,40 +11,48 @@ from remora.exceptions import RemoraError
 from remora.models.media.list import SearchList
 from remora.models.media.types import ExtractResult
 from remora_cli.completions import parse_queries
-from remora_cli.ui.rich import Status
+from remora_cli.ui.rich import CONSOLE, Status
 
 
 async def extract_queries(
     queries: list[str],
     extractor: MediaExtractor,
 ) -> AsyncIterable[ExtractResult | SearchList]:
-    for target, entry in parse_queries(queries):
+    for index, value in enumerate(parse_queries(queries), start=1):
+        target, entry = value
+
         try:
             with Status("Searching[blink]...[/]"):
                 if target == "url":
-                    logger.info('🔎 Extract URL: "{url}"', url=entry)
+                    logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
                     result = await extractor.extract(entry)
 
                     if result.type == "playlist":
-                        logger.info('🔎 Playlist title: "{title}"', title=result.title)
+                        logger.info(
+                            'Playlist title: "{title}"',
+                            title=result.title,
+                            icon="🔎",
+                        )
 
                 else:
                     logger.info(
-                        '🔎 Search from {extractor}: "{query}"',
+                        'Search from {extractor}: "{query}"',
                         extractor=target,
                         query=entry,
+                        icon="🔎",
                     )
 
                     result = await extractor.extract_search(entry, target)
 
                     if not result.medias:
-                        logger.warning("❗ No results found")
+                        logger.warning("No results found")
                         raise Exit()
             yield result
         except RemoraError as error:
-            logger.error("❌ {error}", error=str(error))
+            logger.error("{message}", message=str(error))
         finally:
-            logger.info("")
+            if len(queries) != index:
+                CONSOLE.rule(style="white")
 
 
 hlt = ReprHighlighter()

@@ -11,7 +11,7 @@ from remora.types import APP_NAME
 
 __all__ = ["LoggingLevels", "enable", "disable", "setup"]
 
-LoggingLevels = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+LoggingLevels = Literal["DEBUG", "SUCCESS", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 def enable():

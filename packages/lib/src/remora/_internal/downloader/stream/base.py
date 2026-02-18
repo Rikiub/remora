@@ -23,16 +23,11 @@ class BaseStreamDownloader(ABC):
     def _log_stream(self):
         stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"
 
-        data = {
-            "status": "downloading",
-            "stream_id": self.stream.id,
-            "stream_type": stream_type,
-            "quality": self.stream.quality,
-            "extension": self.stream.extension,
-            "downloader": self.__class__.__name__,
-        }
-
-        logger.bind(**data).debug(
+        logger.bind(status="downloading").debug(
             'Downloading {stream_type} stream "{stream_id}" (extension:{extension} | quality:{quality}) with "{downloader}"',
-            **data,
+            stream_id=self.stream.id,
+            stream_type=stream_type,
+            quality=self.stream.quality,
+            extension=self.stream.extension,
+            downloader=self.__class__.__name__,
         )

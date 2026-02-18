@@ -110,11 +110,11 @@ What format you want request?
 
         try:
             config = DownloadOptions(
+                output_template=output,
                 format=format,
                 quality=quality,
-                template=output,
-                max_workers=max_workers,
                 ffmpeg_path=ffmpeg_path,
+                max_workers=max_workers,
             )
         except OutputTemplateError as error:
             raise BadParameter(str(error))

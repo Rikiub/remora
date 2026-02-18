@@ -28,61 +28,60 @@ class ProgressCallback:
                     self.progress.counter.update(completed=event.completed)
                 case "finished":
                     if event.result == "success":
-                        logger.info("✅ Download completed")
+                        logger.success("Download completed")
                     elif event.result == "incomplete":
-                        logger.warning("⚠️ Completed with errors")
+                        logger.warning("Completed with errors")
                     elif event.result == "cancelled":
-                        logger.warning("❗ Download cancelled")
+                        logger.warning("Download cancelled")
 
         elif event.type == "media":
             name = self._media_display_name(event.media)
 
-            match event.status:
-                case "resolving":
-                    self.progress.add_task(
-                        event.id,
-                        description=name or "Extracting[blink]...[/]",
-                        status="Extracting[blink]...[/]",
-                    )
-                case "resolved":
-                    self.progress.update(
-                        event.id,
-                        description=name,
-                        status="Preparing[blink]...[/]",
-                    )
-                case "downloading":
-                    self.progress.update(
-                        event.id,
-                        status="Downloading",
-                        completed=event.downloaded,
-                        total=event.total,
-                    )
-                case "processing":
-                    self.processor_callback(event)
-                case "warning":
-                    logger.warning(self.fmt_log(name, f"Warning: {event.message}", "⚠️"))
-                case "finished":
-                    if event.result == "success":
-                        logger.info(self.fmt_log(name, "Completed", "☑️"))
-                        self.progress.update(event.id, status="Completed")
-                    elif event.result == "incomplete":
-                        logger.warning(self.fmt_log(name, "Completed with errors", "⚠️"))
-                        self.progress.update(event.id, status="Completed")
-                    elif event.result == "skipped":
-                        logger.info(
-                            self.fmt_log(
-                                name,
-                                f'Skipped (Exists as "{event.extension}")',
-                                "🔄",
-                            )
+            with logger.contextualize(media_title=name):
+                match event.status:
+                    case "resolving":
+                        self.progress.add_task(
+                            event.id,
+                            description=name or "Extracting[blink]...[/]",
+                            status="Extracting[blink]...[/]",
                         )
-                        self.progress.update(event.id, status="Skipped")
-                    elif event.result == "failed":
-                        logger.error(self.fmt_log(name, "Download failed", "❌"))
-                        self.progress.update(event.id, status="Error")
+                    case "resolved":
+                        self.progress.update(
+                            event.id,
+                            description=name,
+                            status="Preparing[blink]...[/]",
+                        )
+                    case "downloading":
+                        self.progress.update(
+                            event.id,
+                            status="Downloading",
+                            completed=event.downloaded,
+                            total=event.total,
+                        )
+                    case "processing":
+                        self.processor_callback(event)
+                    case "warning":
+                        logger.warning("Warning: {message}", message=event.message)
+                    case "finished":
+                        if event.result == "success":
+                            logger.success("Completed")
+                            self.progress.update(event.id, status="Completed")
+                        elif event.result == "incomplete":
+                            logger.warning("Completed with errors")
+                            self.progress.update(event.id, status="Completed")
+                        elif event.result == "skipped":
+                            logger.success(
+                                'Skipped (Exists as "{extension}")',
+                                extension=event.extension,
+                                icon="🔄",
+                            )
+                            self.progress.update(event.id, status="Skipped")
+                        elif event.result == "failed":
+                            logger.warning("Download failed")
+                            self.progress.update(event.id, status="Error")
 
-                    if self._tg:
-                        self._tg.start_soon(self._finish_item, event)
+                        if self._tg:
+                            self._tg.start_soon(self._finish_item, event)
 
     async def _finish_item(self, event: BatchEvent):
         await anyio.sleep(1.0)
@@ -107,14 +106,6 @@ class ProgressCallback:
                     event.id,
                     status="Processing[blink]...[/]",
                 )
-
-    def fmt_log(
-        self,
-        name: str,
-        content: str,
-        prefix: str = "  ",
-    ) -> str:
-        return f'{prefix} "{name}": {content}'
 
     def _media_display_name(self, media: LazyMedia) -> str:
         """Get pretty representation of media name."""

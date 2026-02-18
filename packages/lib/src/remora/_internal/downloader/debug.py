@@ -1,13 +1,6 @@
 from loguru import logger
 
-from remora.models.event.media import (
-    Finished,
-    MediaEvent,
-    ProcessEvent,
-    Processing,
-    Resolved,
-    Resolving,
-)
+from remora.models.event.media import MediaEvent, ProcessEvent
 
 
 async def event_debug(event: MediaEvent):
@@ -16,18 +9,24 @@ async def event_debug(event: MediaEvent):
         media_title=event.media.title,
         status=event.status,
     ):
-        match event:
-            case Resolving():
-                logger.debug("Resolving Media")
-            case Resolved():
-                logger.debug("Media resolved")
-            case Processing():
+        match event.status:
+            case "resolved":
+                logger.debug("Media extraction resolved")
+            case "processing":
                 await _processor_callback(event)
-            case Finished():
-                logger.debug(
-                    'Final file saved in: "{file}"',
-                    file=event.file_path,
-                )
+            case "warning":
+                logger.warning(event.message)
+            case "finished":
+                if event.result == "success":
+                    logger.debug(
+                        'Final file saved in: "{file}"',
+                        file=event.file_path,
+                    )
+                elif event.result == "skipped":
+                    logger.debug(
+                        'File "{file}" duplicated, skipping download',
+                        file=event.file_path,
+                    )
 
 
 async def _processor_callback(event: ProcessEvent):
