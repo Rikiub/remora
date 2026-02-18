@@ -106,7 +106,7 @@ def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
         meta |= {"meta_album_artist": ", ".join(music.album_artists)}
 
     # Year
-    if uploaded := media.timestamp.uploaded:
+    if uploaded := media.upload_date:
         meta |= {"meta_date": str(uploaded.year)}
 
     return meta

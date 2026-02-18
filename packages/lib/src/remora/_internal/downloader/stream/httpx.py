@@ -38,8 +38,8 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         super().__init__(filepath, stream, retries)
         self.duration = duration
 
-        # Calculate filesize
-        total = self.stream.filesize or 0
+        # Calculate file size
+        total = self.stream.size or 0
 
         if not total and self.stream.bitrate and self.duration:
             total = int((self.stream.bitrate * 1000 * self.duration) / 8)

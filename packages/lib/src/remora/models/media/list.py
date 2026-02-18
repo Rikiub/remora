@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -21,7 +22,7 @@ from remora.models.media.item import LazyMedia
 from remora.models.metadata.thumbnail import Thumbnail
 
 
-class MediaList(BaseExtract):
+class MediaList(ABC, BaseExtract):
     entries: _Entries = []
 
     @computed_field
@@ -72,8 +73,8 @@ class SearchList(MediaList):
     type: Literal["search"] = "search"
     extractor: ExtractorField
 
-    query: str = ""
-    service: str = ""
+    query: str
+    service: str
 
     entries: _EntriesField  # type: ignore
 

@@ -6,11 +6,12 @@ from typer import Argument, BadParameter, Option, Typer
 
 from remora_cli.completions import complete_query, complete_template_key
 from remora_cli.config import CONFIG
-from remora_cli.helpers import make_async
+from remora_cli.helpers import make_async, remove_missing
 from remora_cli.ui.rich import Console, Status, smart_print
 
 DEFAULT_EXCLUDE = {
     "streams",
+    "live_status",
     "subtitles",
     "chapters",
     "thumbnails",
@@ -21,15 +22,17 @@ DEFAULT_EXCLUDE = {
     "is_cache",
 }
 FIELDS_ORDER = [
+    "type",
     "url",
     "id",
     "extractor",
-    "type",
     "title",
     "description",
     "live_status",
     "duration",
-    "timestamp",
+    "upload_date",
+    "modified_date",
+    "release_date",
     "uploader",
     "channel",
     "metrics",
@@ -164,6 +167,7 @@ async def extract(
                 exclude_none=True,
                 mode="json",
             )
+            data = remove_missing(data)
 
             sorted_data = {k: data[k] for k in FIELDS_ORDER if k in data}
             sorted_data |= data

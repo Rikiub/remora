@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Annotated, cast, get_args
 
 from pydantic import AfterValidator
@@ -37,7 +36,7 @@ class DownloadOptions(RemoraBaseModel):
     template: Annotated[
         StrPath,
         AfterValidator(validate_template),
-    ] = Path.cwd() / DEFAULT_TEMPLATE
+    ] = DEFAULT_TEMPLATE
 
     ffmpeg_path: Annotated[
         StrPath | None,

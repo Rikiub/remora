@@ -47,15 +47,15 @@ class DownloadPipeline:
     def __init__(
         self,
         media: LazyMedia | Media,
-        format_config: DownloadOptions | None = None,
+        config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         self.id = media.id
 
         self.media: Media = media  # type: ignore
-        self.config: DownloadOptions = format_config or DownloadOptions(format="video")
+        self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
-        self.incomplete: bool = False
+        self.incomplete = False
 
         try:
             self.ffmpeg_path = get_ffmpeg(self.config.ffmpeg_path)
@@ -230,11 +230,11 @@ class DownloadPipeline:
         streams_events = {
             "video": DownloadingStream(
                 downloaded=0,
-                total=video_stream.filesize or 0 if video_stream else 0,
+                total=video_stream.size or 0 if video_stream else 0,
             ),
             "audio": DownloadingStream(
                 downloaded=0,
-                total=audio_stream.filesize or 0 if audio_stream else 0,
+                total=audio_stream.size or 0 if audio_stream else 0,
             ),
         }
 

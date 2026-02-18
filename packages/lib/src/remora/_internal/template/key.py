@@ -10,10 +10,14 @@ class PlaylistNested(BaseModel):
     playlist: Playlist
 
 
+class FlatNested(BaseModel):
+    medias: list
+    playlists: list
+
+
 # Generate and keep copy
-_MODELS = [Media, PlaylistNested]
-_KEYS = _get_keys(_MODELS)
-_KEYS_FLAT = _get_keys(_MODELS, True)
+_KEYS = _get_keys([Media, PlaylistNested])
+_KEYS_FLAT = _get_keys([Media, FlatNested], True)
 
 
 # Public functions

@@ -1,53 +1,43 @@
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal
+from typing import Annotated, Generic, Literal, TypeVar
 
-from pydantic import (
-    AfterValidator,
-    AliasChoices,
-    BaseModel,
-    Field,
-    HttpUrl,
-    SerializerFunctionWrapHandler,
-    field_serializer,
-    model_serializer,
-)
+from pydantic import AfterValidator, AliasChoices, BaseModel, Field, HttpUrl
 from typing_extensions import override
 
-from remora._internal.ydl.types import YDLFormatInfo
 from remora.models._base import YDLSerializable
-from remora.types import AudioExtension, StreamExtension, VideoExtension
+from remora.types import AudioExtension, StreamExtension, StreamType, VideoExtension
+
+T_Type = TypeVar("T_Type", bound=StreamType)
+T_Ext = TypeVar("T_Ext", bound=StreamExtension)
 
 _Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 _AudioCodecField = Field(alias="acodec")
-_ExtensionField = Field(alias="ext")
 
 
 class YDLArgs(BaseModel):
-    downloader_options: Annotated[dict, Field(default_factory=dict)]
-    http_headers: Annotated[dict, Field(default_factory=dict)]
+    downloader_options: dict = {}
+    http_headers: dict = {}
     cookies: str | None = None
 
 
-class BaseStream(ABC, YDLArgs, YDLSerializable):
+class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
     """Base Stream"""
 
-    id: Annotated[str, Field(alias="format_id")]
     url: HttpUrl
     protocol: str
-    available_at: int | None = None
-    extension: Annotated[StreamExtension, Field(alias="ext")]
-    filesize: Annotated[
+    id: Annotated[str, Field(alias="format_id")]
+    type: T_Type
+    extension: Annotated[T_Ext, Field(alias="ext")]
+
+    size: Annotated[
         int | None,
         Field(
             alias="filesize",
             validation_alias=AliasChoices("filesize", "filesize_approx"),
         ),
     ] = None
-    bitrate: Annotated[float, Field(alias="tbr")] = 0
+    bitrate: Annotated[float | None, Field(alias="tbr")] = None
     audio_codec: Annotated[_Codec | None, _AudioCodecField] = None
-
-    def to_ydl_dict(self) -> YDLFormatInfo:
-        return super().to_ydl_dict()
 
     @property
     @abstractmethod
@@ -61,46 +51,45 @@ class BaseStream(ABC, YDLArgs, YDLSerializable):
     def has_audio(self) -> bool:
         return bool(self.audio_codec)
 
-    @field_serializer("audio_codec")
-    def _serialize_acodec(self, value) -> str:
-        return value if value else "none"
+    @override
+    def to_ydl_dict(self):
+        info = super().to_ydl_dict()
+
+        acodec = info.get("acodec")
+        info["acodec"] = acodec if acodec else "none"
+
+        return info
 
 
-class AudioStream(BaseStream):
+class AudioStream(BaseStream[Literal["audio"], AudioExtension]):
     type: Literal["audio"] = "audio"
-    extension: Annotated[  # type: ignore
-        AudioExtension,
-        _ExtensionField,
-    ]
+
+    language: str | None = None
     audio_codec: Annotated[  # type: ignore
         _Codec, _AudioCodecField
     ]
-    language: str | None = None
 
     @property
     @override
     def quality(self) -> int:
-        return int(self.bitrate)
+        return int(self.bitrate) if self.bitrate else 0
 
     @property
     @override
     def display_quality(self) -> str:
-        return str(round(self.quality)) + "kbps"
+        return f"{round(self.quality)}kbps"
 
-    @model_serializer(mode="wrap")
-    def _serialize_model(self, handler: SerializerFunctionWrapHandler):
-        result: dict = handler(self)
-        result |= {"vcodec": "none"}
-        return result
+    @override
+    def to_ydl_dict(self):
+        info = super().to_ydl_dict()
+        info |= {"vcodec": "none"}
+        return info
 
 
-class VideoStream(BaseStream):
-    extension: Annotated[  # type: ignore
-        VideoExtension,
-        _ExtensionField,
-    ]
-    video_codec: Annotated[_Codec, Field(alias="vcodec")]
+class VideoStream(BaseStream[Literal["video"], VideoExtension]):
     type: Literal["video"] = "video"
+
+    video_codec: Annotated[_Codec, Field(alias="vcodec")]
     width: int
     height: int
     fps: float | None = None
@@ -113,7 +102,7 @@ class VideoStream(BaseStream):
     @property
     @override
     def display_quality(self) -> str:
-        return str(self.quality) + "p"
+        return f"{self.quality}p"
 
 
 Stream = VideoStream | AudioStream

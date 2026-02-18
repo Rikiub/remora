@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl, PrivateAttr
@@ -5,7 +6,6 @@ from pydantic import AliasChoices, Field, HttpUrl, PrivateAttr
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models._base import EnsureNone, YDLSerializable
 from remora.models.metadata.social import Channel, Metrics, Uploader
-from remora.models.metadata.temporal import Timestamp
 from remora.models.stream.item import override
 
 # Types
@@ -29,10 +29,10 @@ class BaseExtract(YDLSerializable):
 
 
 class ExtractMetadata(BaseExtract):
-    timestamp: Annotated[
-        Timestamp,
-        Field(alias="timestamp_info"),
-    ] = Timestamp()
+    modified_date: Annotated[datetime | None, EnsureNone] = None
+    upload_date: Annotated[datetime | None, EnsureNone] = None
+    release_date: Annotated[datetime | None, EnsureNone] = None
+
     uploader: Annotated[
         Uploader | None,
         EnsureNone,
@@ -43,16 +43,12 @@ class ExtractMetadata(BaseExtract):
         EnsureNone,
         Field(alias="channel_info"),
     ] = None
-    metrics: Annotated[
-        Metrics | None,
-        EnsureNone,
-    ] = None
+    metrics: Annotated[Metrics | None, EnsureNone] = None
 
     @classmethod
     @override
     def _transform_ydl_dict(cls, info: YDLExtractInfo):
         keys = [
-            "timestamp_info",
             "uploader_info",
             "channel_info",
             "metrics",

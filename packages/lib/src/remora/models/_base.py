@@ -12,6 +12,8 @@ from pydantic import (
 
 from remora._internal.ydl.types import YDLExtractInfo
 
+T = TypeVar("T")
+
 
 class RemoraBaseModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
@@ -25,18 +27,12 @@ class YDLSerializable(RemoraBaseModel):
     @classmethod
     def _validate_ydl(cls, data):
         if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
-            # Remove conflictive keys
-            data.pop("timestamp", None)
-
             return cls._transform_ydl_dict(data)
         return data
 
     @classmethod
     def _transform_ydl_dict(cls, info: YDLExtractInfo) -> YDLExtractInfo:
         return info
-
-
-T = TypeVar("T")
 
 
 class BaseList(RootModel[list[T]], Generic[T]):

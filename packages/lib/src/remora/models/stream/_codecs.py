@@ -39,7 +39,7 @@ def get_codec_rank(
 
 
 def stream_sort(stream: Stream):
-    filesize = stream.filesize or 0
+    size = stream.size or 0
 
     if isinstance(stream, VideoStream):
         is_video = 1
@@ -56,7 +56,7 @@ def stream_sort(stream: Stream):
             fps,
             vcodec,
             acodec,
-            filesize,
+            size,
         )
 
     elif isinstance(stream, AudioStream):
@@ -68,6 +68,6 @@ def stream_sort(stream: Stream):
         return (
             is_video,
             acodec,
-            filesize,
+            size,
             bitrate,
         )

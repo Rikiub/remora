@@ -28,13 +28,13 @@ class LazyMedia(LazyExtractID):
         BeforeValidator(_validate_type),
         TypeField,
     ] = "media"
-    title: str = ""
+    title: Annotated[str | None, EnsureNone] = None
     description: Annotated[str | None, EnsureNone] = None
     live_status: LiveStatus = "not_live"
 
     # Metadata
-    duration: float = 0
-    heatmap: list[Heatmap] = []
+    duration: float | None = None
+    heatmap: Annotated[list[Heatmap], EnsureList] = []
     music: Annotated[MusicMetadata | None, EnsureNone] = None
 
     categories: Annotated[list[str], EnsureList] = []

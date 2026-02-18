@@ -73,7 +73,7 @@ class Remora:
 
             async for event in DownloadPipeline(
                 extracted,
-                format_config=self.config,
+                config=self.config,
                 extractor=self.extractor,
             ).download():
                 yield event
@@ -90,7 +90,7 @@ class Remora:
 
         async for event in DownloadBatch(
             extracted,
-            format_config=self.config,
+            config=self.config,
             extractor=self.extractor,
         ).download():
             yield event

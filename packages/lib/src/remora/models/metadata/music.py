@@ -13,9 +13,12 @@ def _validate_artists(value: list[str]) -> list[str]:
     return value
 
 
+ValidateArtists = BeforeValidator(_validate_artists)
+
+
 class MusicMetadata(Metadata, YDLSerializable):
     track: str | None = None
-    artists: Annotated[list[str], BeforeValidator(_validate_artists)] = []
+    artists: Annotated[list[str], ValidateArtists] = []
     album: str | None = None
-    album_artists: list[str] = []
+    album_artists: Annotated[list[str], ValidateArtists] = []
     genres: list[str] = []

@@ -22,15 +22,15 @@ from remora.models.media.types import AnyExtractResult
 class DownloadBatch:
     def __init__(
         self,
-        data: AnyExtractResult,
-        format_config: DownloadOptions | None = None,
+        item: AnyExtractResult,
+        config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = format_config or DownloadOptions()
+        self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
-        self._item = data
+        self._item = item
 
         # Fields
         self.id: str
