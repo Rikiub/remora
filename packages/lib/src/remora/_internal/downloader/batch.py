@@ -160,7 +160,7 @@ class DownloadBatch:
             self.id = playlist.id
 
             template = format_template(
-                self.config.template,
+                self.config.output_template,
                 playlist=playlist,
             )
             self.config = self.config.model_copy(update={"template": template})

@@ -12,11 +12,11 @@ class BaseStreamDownloader(ABC):
 
     def __init__(
         self,
-        filepath: StrPath,
+        output_path: StrPath,
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
     ) -> None:
-        self.filepath = Path(filepath)
+        self.file_path = Path(output_path)
         self.stream = stream
         self.retries = retries
 

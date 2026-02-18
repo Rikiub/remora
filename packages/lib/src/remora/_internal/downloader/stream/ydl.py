@@ -22,11 +22,11 @@ class YDLStreamDownloader(BaseStreamDownloader):
 
     def __init__(
         self,
-        filepath: StrPath,
+        output_path: StrPath,
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
     ):
-        super().__init__(filepath, stream, retries=retries)
+        super().__init__(output_path, stream, retries=retries)
         self._event = DownloadingStream()
 
     @override
@@ -43,7 +43,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 async for event in receive_stream:
                     yield event
 
-                yield FinishedStream(filepath=pathlib.Path(self.filepath))
+                yield FinishedStream(file_path=pathlib.Path(self.file_path))
 
     async def _producer(self):
         from remora._internal.ydl.downloader import download_format
@@ -51,12 +51,12 @@ class YDLStreamDownloader(BaseStreamDownloader):
         async with self._send_stream:
             path = await run_sync(
                 download_format,
-                self.filepath,
+                self.file_path,
                 self.stream.to_ydl_dict(),
                 self._ydl_progress,
                 self.retries,
             )
-            self.filepath = Path(path)
+            self.file_path = Path(path)
 
     def _ydl_progress(self, data: dict) -> None:
         """`YT-DLP` progress hook, but stable and without issues."""

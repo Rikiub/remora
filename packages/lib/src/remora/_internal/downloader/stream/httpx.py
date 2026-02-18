@@ -29,13 +29,13 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
     def __init__(
         self,
-        filepath: StrPath,
+        output_path: StrPath,
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
         duration: float | None = None,
     ):
-        super().__init__(filepath, stream, retries)
+        super().__init__(output_path, stream, retries)
         self.duration = duration
 
         # Calculate file size
@@ -77,7 +77,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 async for event in receive_stream:
                     yield event
 
-                yield FinishedStream(filepath=pathlib.Path(self.filepath))
+                yield FinishedStream(file_path=pathlib.Path(self.file_path))
 
     async def _execute_download(self):
         async with self._send_stream:
@@ -101,7 +101,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 raise DownloadError(str(error), status_code=status_code) from error
 
             path = await self._fix_extension(path)
-            self.filepath = path
+            self.file_path = path
 
     async def _download_multi_part(self) -> Path:
         # Check if the server explicitly supports ranges
@@ -121,7 +121,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         chunk_size = self.file_size // workers
 
         # PRE-ALLOCATE
-        async with await self.filepath.open("wb") as f:
+        async with await self.file_path.open("wb") as f:
             await f.truncate(self.file_size)
 
         async with anyio.create_task_group() as tg:
@@ -133,14 +133,14 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
                 tg.start_soon(
                     self._save_range,
-                    self.filepath,
+                    self.file_path,
                     str(self.stream.url),
                     start,
                     end,
                     True,
                 )
 
-        return self.filepath
+        return self.file_path
 
     async def _download_fragments(self) -> Path:
         response = await self.client.get(str(self.stream.url))
@@ -222,13 +222,13 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                     await anyio.sleep(2**attempt)
 
     async def _build_parts(self, parts: list[Path]) -> Path:
-        async with await self.filepath.open("wb") as final_file:
+        async with await self.file_path.open("wb") as final_file:
             for part in parts:
                 async with await part.open("rb") as pf:
                     data = await pf.read()
                     await final_file.write(data)
                 await part.unlink()
-        return self.filepath
+        return self.file_path
 
     async def _fix_extension(self, path: Path) -> Path:
         new_file = path.with_suffix(f".{self.stream.extension}")
@@ -282,4 +282,4 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         return cookie_dict
 
     def _gen_part_file(self, index) -> Path:
-        return Path(f"{self.filepath}.part{index}")
+        return Path(f"{self.file_path}.part{index}")

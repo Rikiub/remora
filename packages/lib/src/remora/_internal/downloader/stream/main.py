@@ -14,14 +14,14 @@ from remora.types import DEFAULT_RETRIES, StrPath
 class StreamDownloader(BaseStreamDownloader):
     def __init__(
         self,
-        filepath: StrPath,
+        output_path: StrPath,
         stream: Stream,
         duration: float | None = None,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
     ):
         super().__init__(
-            filepath,
+            output_path,
             stream,
             retries=retries,
         )
@@ -35,7 +35,7 @@ class StreamDownloader(BaseStreamDownloader):
         # Main Downloader
         try:
             async with HttpxStreamDownloader(
-                self.filepath,
+                self.file_path,
                 self.stream,
                 retries=self.retries,
                 max_workers=self.max_workers,
@@ -64,7 +64,7 @@ class StreamDownloader(BaseStreamDownloader):
         from remora._internal.downloader.stream.ydl import YDLStreamDownloader
 
         downloader = YDLStreamDownloader(
-            self.filepath,
+            self.file_path,
             self.stream,
             self.retries,
         )

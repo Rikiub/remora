@@ -95,7 +95,7 @@ class DownloadPipeline:
 
                 # Calculate Path & Check Existence
                 output = format_template(
-                    self.config.template,
+                    self.config.output_template,
                     stream=stream,
                     media=media,
                     default_missing="NA",
@@ -130,7 +130,7 @@ class DownloadPipeline:
                             Finished(
                                 id=self.id,
                                 media=self.media,
-                                filepath=Path(),
+                                file_path=Path(),
                                 result="failed",
                             )
                         )
@@ -140,8 +140,8 @@ class DownloadPipeline:
                     if media.thumbnails:
                         try:
                             results.thumbnail = await download_thumbnail(
-                                get_tempfile(),
                                 media.thumbnails[-1],
+                                get_tempfile(),
                             )
                         except MetadataDownloadError as e:
                             await self._stream.send(
@@ -156,8 +156,8 @@ class DownloadPipeline:
                     if media.subtitles:
                         try:
                             results.subtitles = await download_subtitles(
-                                get_tempfile(),
                                 media.subtitles,
+                                get_tempfile(),
                             )
                         except MetadataDownloadError as e:
                             await self._stream.send(
@@ -213,7 +213,7 @@ class DownloadPipeline:
                         Finished(
                             id=self.id,
                             media=self.media,
-                            filepath=path,
+                            file_path=path,
                             result="skipped",
                         )
                     )
@@ -263,14 +263,14 @@ class DownloadPipeline:
                     )
                 case "finished":
                     if is_video:
-                        video_file = event.filepath
+                        video_file = event.file_path
                     else:
-                        audio_file = event.filepath
+                        audio_file = event.file_path
 
         async def download_video():
             if video_stream:
                 downloader = StreamDownloader(
-                    filepath=get_tempfile(),
+                    output_path=get_tempfile(),
                     stream=video_stream,
                     duration=duration,
                 )
@@ -280,7 +280,7 @@ class DownloadPipeline:
         async def download_audio():
             if audio_stream:
                 downloader = StreamDownloader(
-                    filepath=get_tempfile(),
+                    output_path=get_tempfile(),
                     stream=audio_stream,
                     duration=duration,
                 )
@@ -307,20 +307,20 @@ class DownloadPipeline:
             and (audio_file and audio_stream)
         ):
             extension = self.config.convert or "mp4"
-            filepath = Path(f"{get_tempfile()}.{extension}")
-            filepath.touch()
+            file_path = Path(f"{get_tempfile()}.{extension}")
+            file_path.touch()
 
             merging = MergeProcessing(
                 id=self.id,
                 media=self.media,
-                filepath=filepath,
+                file_path=file_path,
                 step="started",
                 video_stream=video_stream,
                 audio_stream=audio_stream,
             )
             await self._stream.send(merging)
 
-            prc = MediaProcessor(filepath, self.ffmpeg_path)
+            prc = MediaProcessor(file_path, self.ffmpeg_path)
             prc = await prc.merge_streams(
                 streams=[(video_stream, video_file), (audio_stream, audio_file)]
             )
@@ -328,7 +328,7 @@ class DownloadPipeline:
             merging.step = "completed"
             await self._stream.send(merging)
 
-            return Path(prc.filepath)
+            return Path(prc.file_path)
         elif video_file:
             return video_file
         elif audio_file:
@@ -338,19 +338,19 @@ class DownloadPipeline:
 
     async def process(
         self,
-        filepath: Path,
+        file_path: Path,
         stream: Stream | None = None,
         thumbnail: Path | None = None,
         subtitles: list[Path] | None = None,
     ) -> Path:
-        prc = MediaProcessor(filepath, self.ffmpeg_path)
+        prc = MediaProcessor(file_path, self.ffmpeg_path)
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
             event = Processing(
                 id=self.id,
                 media=self.media,
-                filepath=prc.filepath,
+                file_path=prc.file_path,
                 step="started",
                 task=task,
             )
@@ -359,7 +359,7 @@ class DownloadPipeline:
             try:
                 yield
 
-                event.filepath = prc.filepath
+                event.file_path = prc.file_path
                 event.step = "completed"
 
                 await self._stream.send(event)
@@ -397,11 +397,11 @@ class DownloadPipeline:
                 await prc.embed_metadata(self.media)
 
         if thumbnail:
-            if prc.filepath.suffix[1:] in SupportedExtensions.THUMBNAIL:
+            if prc.file_path.suffix[1:] in SupportedExtensions.THUMBNAIL:
                 async with track_prc("embed_thumbnail"):
                     await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
-        return Path(prc.filepath)
+        return Path(prc.file_path)
 
     async def move_to_final(self, src: StrPath, dest: StrPath) -> Path:
         _src, _dest = anyio.Path(src), anyio.Path(dest)
@@ -416,7 +416,7 @@ class DownloadPipeline:
             Finished(
                 id=self.id,
                 media=self.media,
-                filepath=Path(final_path),
+                file_path=Path(final_path),
                 result="incomplete" if self.incomplete else "success",
             )
         )

@@ -22,8 +22,8 @@ def download(tmp_path: Path):
                 if event.result == "failed":
                     raise AssertionError("Download failed")
 
-                if not event.filepath.is_file():
-                    raise FileNotFoundError(event.filepath)
+                if not event.file_path.is_file():
+                    raise FileNotFoundError(event.file_path)
 
     return wrap
 

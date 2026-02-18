@@ -51,21 +51,21 @@ class _TemplateFormatter(string.Formatter):
 
 
 def format_template(
-    template: StrPath,
+    output_template: StrPath,
     stream: Stream | None = None,
     media: Media | None = None,
     playlist: Playlist | None = None,
     default_missing: str | None = None,
 ) -> str:
-    template_path = Path(template)
+    template_path = Path(output_template)
 
     # Set default if template is directory
-    if str(template).endswith("/"):
-        template = f"{template}{DEFAULT_TEMPLATE}"
+    if str(output_template).endswith("/"):
+        output_template = f"{output_template}{DEFAULT_TEMPLATE}"
     elif template_path.is_dir():
-        template = template_path / DEFAULT_TEMPLATE
+        output_template = template_path / DEFAULT_TEMPLATE
 
-    validate_template(template)
+    validate_template(output_template)
 
     # Dump metadata
     data = {}
@@ -79,10 +79,10 @@ def format_template(
 
     # Format with metadata
     formatter = _TemplateFormatter(replace=default_missing)
-    template = formatter.format(str(template), **data)
+    output_template = formatter.format(str(output_template), **data)
 
     # Remove invalid characters and limit length
-    path = sanitize_filepath(template, max_len=250)
+    path = sanitize_filepath(output_template, max_len=250)
     return path
 
 

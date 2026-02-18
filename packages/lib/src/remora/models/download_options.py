@@ -33,7 +33,7 @@ class DownloadOptions(RemoraBaseModel):
 
     format: StreamTarget = "video"
     quality: StreamQuality | int | None = None
-    template: Annotated[
+    output_template: Annotated[
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE

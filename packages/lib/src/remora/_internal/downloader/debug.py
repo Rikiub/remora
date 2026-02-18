@@ -26,7 +26,7 @@ async def event_debug(event: MediaEvent):
             case Finished():
                 logger.debug(
                     'Final file saved in: "{file}"',
-                    file=event.filepath,
+                    file=event.file_path,
                 )
 
 

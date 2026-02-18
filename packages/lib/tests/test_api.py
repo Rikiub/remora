@@ -19,7 +19,7 @@ async def test_single(tmp_path: Path):
 
     async for event in api.download(URL):
         if event.status == "finished":
-            assert event.filepath.is_file()
+            assert event.file_path.is_file()
 
 
 async def test_list(tmp_path: Path):
@@ -30,7 +30,7 @@ async def test_list(tmp_path: Path):
 
     async for event in api.download_batch(PLAYLIST):
         if event.type == "media" and event.status == "finished":
-            assert event.filepath.is_file()
+            assert event.file_path.is_file()
 
 
 @pytest.fixture(scope="session")

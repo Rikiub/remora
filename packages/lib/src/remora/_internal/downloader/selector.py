@@ -9,13 +9,13 @@ T = TypeVar("T", bound=Stream)
 
 
 class StreamSelector:
-    """Responsible for selecting the best video/audio formats based on config."""
+    """Responsible for selecting the best video/audio streams based on config."""
 
     def __init__(self, config: DownloadOptions):
         self._config = config
 
     def resolve(self, media: Media) -> tuple[VideoStream | None, AudioStream | None]:
-        """Resolves the final pair of formats to be downloaded."""
+        """Resolves the final pair of streams to be downloaded."""
         audio = self.extract_best(media.streams, AudioStream)
 
         if audio and (media.music or self._config.type == "audio"):

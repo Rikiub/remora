@@ -23,8 +23,8 @@ class BasePlaylistEvent(BaseEventID):
 
 
 class FileEvent(BaseEvent):
-    filepath: Path
+    file_path: Path
 
     @property
     def extension(self) -> str:
-        return self.filepath.suffix.lstrip(".")
+        return self.file_path.suffix.lstrip(".")

@@ -98,13 +98,13 @@ class Remora:
     async def download_stream(
         self,
         item: Stream,
-        path: StrPath,
+        output_path: StrPath,
         retries: int | None = None,
     ) -> AsyncIterable[StreamEvent]:
         from remora._internal.downloader.stream.main import StreamDownloader
 
         downloader = StreamDownloader(
-            path,
+            output_path,
             item,
             retries=retries or self.config.retries,
         )
@@ -131,10 +131,10 @@ class Remora:
             case Thumbnail():
                 from remora._internal.downloader.metadata import download_thumbnail
 
-                output_path = await download_thumbnail(output_path, item)
+                output_path = await download_thumbnail(item, output_path)
                 return output_path
             case list() | SubtitleList() | ExternalSubtitle():
                 from remora._internal.downloader.metadata import download_subtitles
 
-                paths = await download_subtitles(output_path, item)
+                paths = await download_subtitles(item, output_path)
                 return paths

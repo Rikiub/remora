@@ -14,8 +14,8 @@ from remora.types import AudioExtension, StreamExtension, StrPath
 
 
 class MediaProcessor:
-    def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None):
-        self.filepath = Path(filepath)
+    def __init__(self, file_path: StrPath, ffmpeg_path: StrPath | None = None):
+        self.file_path = Path(file_path)
 
         # Validate FFmpeg
         try:
@@ -23,16 +23,16 @@ class MediaProcessor:
         except FileNotFoundError as e:
             raise FFmpegNotFoundError(str(e)) from e
 
-        if not self.filepath.is_file():
-            raise FileNotFoundError(f'"{self.filepath.name}" not is a file.')
+        if not self.file_path.is_file():
+            raise FileNotFoundError(f'"{self.file_path.name}" not is a file.')
 
         # Set ffmpeg
         self.ffmpeg_path = Path(ffmpeg_path)
-        self._prc = YDLProcessor(self.filepath, self.ffmpeg_path)
+        self._prc = YDLProcessor(self.file_path, self.ffmpeg_path)
 
     @property
     def extension(self) -> str:
-        return self.filepath.suffix[1:]
+        return self.file_path.suffix[1:]
 
     async def change_container(self, format: str | StreamExtension):
         result = await run_sync(self._prc.video_remuxer, format)
@@ -84,7 +84,7 @@ class MediaProcessor:
         return self
 
     def _update_file(self, processor: YDLProcessor):
-        self.filepath = Path(processor.filepath)
+        self.file_path = Path(processor.file_path)
 
 
 def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:

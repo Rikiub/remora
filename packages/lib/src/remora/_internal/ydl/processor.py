@@ -35,19 +35,19 @@ class RequestedFormat(TypedDict):
 
 
 class YDLProcessor:
-    def __init__(self, filepath: StrPath, ffmpeg_path: StrPath | None = None) -> None:
-        self.filepath = Path(filepath)
+    def __init__(self, file_path: StrPath, ffmpeg_path: StrPath | None = None) -> None:
+        self.file_path = Path(file_path)
         self.ffmpeg_path = ffmpeg_path
 
         if not self.ffmpeg_path:
             raise FFmpegNotFoundError("FFmpeg is needed for use processors.")
 
         if not self.extension:
-            raise ValueError(f'"{self.filepath}" must have a file extension')
+            raise ValueError(f'"{self.file_path}" must have a file extension')
 
     @property
     def extension(self) -> str:
-        return self.filepath.suffix[1:]
+        return self.file_path.suffix[1:]
 
     @catch
     def video_remuxer(self, format: str) -> Self:
@@ -147,7 +147,7 @@ class YDLProcessor:
     @property
     def _params(self):
         info = {
-            "filepath": str(self.filepath),
+            "filepath": str(self.file_path),
             "ext": self.extension,
         }
 
@@ -157,4 +157,4 @@ class YDLProcessor:
         return info
 
     def _update_filepath(self, data: YDLExtractInfo) -> None:
-        self.filepath = Path(data["filepath"])
+        self.file_path = Path(data["filepath"])
