@@ -161,6 +161,7 @@ async def extract(
             data = result.model_dump(
                 include=sel_include or None,
                 exclude=sel_exclude or None,
+                exclude_none=True,
                 mode="json",
             )
 
