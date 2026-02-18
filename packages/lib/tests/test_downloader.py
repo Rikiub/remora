@@ -10,8 +10,8 @@ def download(tmp_path: Path):
     async def wrap(url: str):
         api = Remora(
             download_config=DownloadOptions(
+                output_template=tmp_path,
                 quality=1,
-                template=tmp_path,
             ),
             extractor=MediaExtractor(use_cache=False),
         )

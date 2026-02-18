@@ -13,7 +13,11 @@ PLAYLIST = (
 
 async def test_single(tmp_path: Path):
     api = Remora(
-        download_config=DownloadOptions(format="audio", quality=1, template=tmp_path),
+        download_config=DownloadOptions(
+            output_template=tmp_path,
+            format="audio",
+            quality=1,
+        ),
         extractor=MediaExtractor(use_cache=False),
     )
 
@@ -24,7 +28,11 @@ async def test_single(tmp_path: Path):
 
 async def test_list(tmp_path: Path):
     api = Remora(
-        download_config=DownloadOptions(format="audio", quality=1, template=tmp_path),
+        download_config=DownloadOptions(
+            output_template=tmp_path,
+            format="audio",
+            quality=1,
+        ),
         extractor=MediaExtractor(use_cache=False),
     )
 

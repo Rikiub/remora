@@ -24,19 +24,19 @@ class DownloadOptions(RemoraBaseModel):
     If FFmpeg is not installed, options marked with (FFmpeg) will not be available.
 
     Args:
+        output_template: Directory where to save files.
         format: Target file format to search or convert if is a extension.
         quality: Target quality to try filter.
-        template: Directory where to save files.
         ffmpeg_path: Path to FFmpeg executable. By default, it will get the global installed FFmpeg.
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
     """
 
-    format: StreamTarget = "video"
-    quality: StreamQuality | int | None = None
     output_template: Annotated[
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
+    format: StreamTarget = "video"
+    quality: StreamQuality | int | None = None
 
     ffmpeg_path: Annotated[
         StrPath | None,
