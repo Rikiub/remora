@@ -7,7 +7,7 @@ from typer import Argument, BadParameter, Option, Typer
 from remora_cli.completions import complete_query, complete_template_key
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async, remove_missing
-from remora_cli.ui.rich import Console, Status, smart_print
+from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
 DEFAULT_EXCLUDE = {
     "streams",
@@ -117,7 +117,7 @@ async def extract(
     """Extract metadata from [green]URL[/] or search [green]SERVICE[/]."""
 
     # Lazy startup
-    with Status("Starting[blink]...[/]"):
+    with CONSOLE.status("Starting[blink]...[/]"):
         from rich.json import JSON
 
         from remora import MediaExtractor

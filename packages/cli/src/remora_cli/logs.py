@@ -26,6 +26,7 @@ def setup_logging(level: logs.LoggingLevels):
         level=level,
         format=get_format,
         backtrace=False,
+        enqueue=True,
     )
 
     # Structured Logs

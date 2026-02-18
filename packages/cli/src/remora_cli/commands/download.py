@@ -9,7 +9,7 @@ from remora.types import DEFAULT_TEMPLATE, StreamTarget
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
-from remora_cli.ui.rich import Status
+from remora_cli.ui.rich import CONSOLE
 
 
 class HelpPanel(str, Enum):
@@ -102,7 +102,7 @@ What format you want request?
     """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
 
     # Lazy startup
-    with Status("Starting[blink]...[/]"):
+    with CONSOLE.status("Starting[blink]...[/]"):
         from remora import DownloadOptions, MediaExtractor, Remora
         from remora.exceptions import OutputTemplateError
         from remora_cli.ui.extractor import extract_queries

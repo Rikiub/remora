@@ -11,7 +11,7 @@ from remora.exceptions import RemoraError
 from remora.models.media.list import SearchList
 from remora.models.media.types import ExtractResult
 from remora_cli.completions import parse_queries
-from remora_cli.ui.rich import CONSOLE, Status
+from remora_cli.ui.rich import CONSOLE
 
 
 async def extract_queries(
@@ -22,7 +22,7 @@ async def extract_queries(
         target, entry = value
 
         try:
-            with Status("Searching[blink]...[/]"):
+            with CONSOLE.status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
                     result = await extractor.extract(entry)
@@ -47,6 +47,8 @@ async def extract_queries(
                     if not result.medias:
                         logger.warning("No results found")
                         raise Exit()
+
+                await logger.complete()
             yield result
         except RemoraError as error:
             logger.error("{message}", message=str(error))
