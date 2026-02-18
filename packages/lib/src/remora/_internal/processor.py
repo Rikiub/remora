@@ -91,22 +91,24 @@ def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
     meta = {}
 
     # Track
-    meta |= {"meta_track": music.track or media.title}
+    title = music.track or media.title
+    if title:
+        meta |= {"meta_track": title}
 
     # Artist
-    if media.uploader:
-        meta |= {"meta_artist": media.uploader.name}
     if music.artists:
         meta |= {"meta_artist": ", ".join(music.artists)}
+    elif media.uploader:
+        meta |= {"meta_artist": media.uploader.name}
 
     # Album Artist
-    if media.uploader:
-        meta |= {"meta_album_artist": media.uploader.name}
     if music.album_artists:
         meta |= {"meta_album_artist": ", ".join(music.album_artists)}
+    elif media.uploader:
+        meta |= {"meta_album_artist": media.uploader.name}
 
     # Year
-    if uploaded := media.upload_date:
-        meta |= {"meta_date": str(uploaded.year)}
+    if media.upload_date:
+        meta |= {"meta_date": str(media.upload_date.year)}
 
     return meta
