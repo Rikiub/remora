@@ -112,27 +112,29 @@ class Remora:
             yield event
 
     @overload
-    async def download_resource(self, item: Thumbnail, path) -> Path: ...
+    async def download_resource(self, item: Thumbnail, output_path) -> Path: ...
 
     @overload
-    async def download_resource(self, item: ExternalSubtitle, path) -> Path: ...
+    async def download_resource(self, item: ExternalSubtitle, output_path) -> Path: ...
 
     @overload
-    async def download_resource(self, item: SubtitleList, path) -> list[Path]: ...
+    async def download_resource(
+        self, item: SubtitleList | list[ExternalSubtitle], output_path
+    ) -> list[Path]: ...
 
     async def download_resource(
         self,
-        item: Thumbnail | ExternalSubtitle | SubtitleList,
-        path: StrPath,
+        item: Thumbnail | ExternalSubtitle | SubtitleList | list[ExternalSubtitle],
+        output_path: StrPath,
     ) -> Path | list[Path]:
         match item:
             case Thumbnail():
                 from remora._internal.downloader.metadata import download_thumbnail
 
-                path = await download_thumbnail(path, item)
-                return path
-            case SubtitleList() | ExternalSubtitle():
+                output_path = await download_thumbnail(output_path, item)
+                return output_path
+            case list() | SubtitleList() | ExternalSubtitle():
                 from remora._internal.downloader.metadata import download_subtitles
 
-                paths = await download_subtitles(path, item)
+                paths = await download_subtitles(output_path, item)
                 return paths

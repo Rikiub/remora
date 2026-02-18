@@ -20,15 +20,24 @@ async def download_subtitles(filepath, subtitles: ExternalSubtitle) -> Path: ...
 
 
 @overload
-async def download_subtitles(filepath, subtitles: SubtitleList) -> list[Path]: ...
+async def download_subtitles(
+    filepath, subtitles: SubtitleList | list[ExternalSubtitle]
+) -> list[Path]: ...
 
 
 async def download_subtitles(
-    filepath: StrPath, subtitles: SubtitleList | ExternalSubtitle
+    filepath: StrPath,
+    subtitles: SubtitleList | ExternalSubtitle | list[ExternalSubtitle],
 ) -> Path | list[Path]:
     from remora._internal.ydl.downloader import download_subtitles as ydl
 
-    paths = await run_sync(ydl, filepath, subtitles.to_ydl_dict())
+    if isinstance(subtitles, list):
+        info = SubtitleList(subtitles)
+        info = info.to_ydl_dict()
+    else:
+        info = subtitles.to_ydl_dict()
+
+    paths = await run_sync(ydl, filepath, info)
 
     if isinstance(subtitles, SubtitleList):
         return paths
