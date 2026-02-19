@@ -31,18 +31,9 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
     logger.add(
         sys.stderr,
         level=level,
-        format=_get_format,
+        format="<cyan>{time:HH:mm:ss}</cyan> | <level>{level: <8}</level> | <level>{message}</level>",
+        enqueue=True,
     )
-
-
-def _get_format(record) -> str:
-    # Extract variables
-    extra = record.get("extra", {})
-    media_id: str = extra.get("media_id", "")
-    status: str = extra.get("status", "")
-
-    # Format
-    return f"[{media_id}] {status.upper()} | {{message}}"
 
 
 disable()

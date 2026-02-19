@@ -24,9 +24,10 @@ def setup_logging(level: logs.LoggingLevels):
     logger.add(
         rich_handler,
         level=level,
-        format=get_format,
         backtrace=False,
         enqueue=True,
+        format=get_format,
+        filter=filter_remora,
     )
 
     # Structured Logs
@@ -66,3 +67,13 @@ def get_format(record) -> str:
 
     # Format
     return f"{icon} {status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
+
+
+def filter_remora(record):
+    is_remora = record["name"].startswith("remora.")
+    is_debug = record["level"].name == "DEBUG"
+
+    if is_remora and not is_debug:
+        return False
+
+    return True

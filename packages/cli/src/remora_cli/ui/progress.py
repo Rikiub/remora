@@ -30,7 +30,7 @@ class ProgressCallback:
                     if event.result == "success":
                         logger.success("Download completed")
                     elif event.result == "incomplete":
-                        logger.warning("Completed with errors")
+                        logger.warning("Download completed with errors")
                     elif event.result == "cancelled":
                         logger.warning("Download cancelled")
 
@@ -63,22 +63,23 @@ class ProgressCallback:
                     case "warning":
                         logger.warning("Warning: {message}", message=event.message)
                     case "finished":
-                        if event.result == "success":
-                            logger.success("Completed")
-                            self.progress.update(event.id, status="Completed")
-                        elif event.result == "incomplete":
-                            logger.warning("Completed with errors")
-                            self.progress.update(event.id, status="Completed")
-                        elif event.result == "skipped":
-                            logger.success(
-                                'Skipped (Exists as "{extension}")',
-                                extension=event.extension,
-                                icon="🔄",
-                            )
-                            self.progress.update(event.id, status="Skipped")
-                        elif event.result == "failed":
-                            logger.warning("Download failed")
-                            self.progress.update(event.id, status="Error")
+                        match event.result:
+                            case "success":
+                                logger.success("Completed")
+                                self.progress.update(event.id, status="Completed")
+                            case "incomplete":
+                                logger.warning("Completed with errors")
+                                self.progress.update(event.id, status="Completed")
+                            case "skipped":
+                                logger.success(
+                                    'Skipped (Exists as "{extension}")',
+                                    extension=event.extension,
+                                    icon="🔄",
+                                )
+                                self.progress.update(event.id, status="Skipped")
+                            case "failed":
+                                logger.warning("Download failed")
+                                self.progress.update(event.id, status="Error")
 
                         if self._tg:
                             self._tg.start_soon(self._finish_item, event)

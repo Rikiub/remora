@@ -9,7 +9,7 @@ import anyio
 from anyio.to_thread import run_sync
 from loguru import logger
 
-from remora._internal.downloader.debug import event_debug
+from remora._internal.downloader.logs import log_event_media
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
 from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
@@ -71,13 +71,13 @@ class DownloadPipeline:
                 tg.start_soon(self._producer)
 
                 async for event in receive_stream:
-                    await event_debug(event)
+                    await log_event_media(event)
                     yield event
 
     async def _producer(self):
         with logger.contextualize(media_id=self.id):
             async with self._stream:
-                # Resolve Data
+                # Resolve Media
                 media = await self.resolve_media()
 
                 with logger.contextualize(media_title=media.title):

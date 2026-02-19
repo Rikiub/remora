@@ -3,6 +3,7 @@ from collections.abc import AsyncIterable
 import anyio
 from loguru import logger
 
+from remora._internal.downloader.logs import log_event_playlist
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
@@ -45,9 +46,6 @@ class DownloadBatch:
 
         self.result: FinishedPlaylistResult
 
-        # Log
-        logger.debug(self.config)
-
     async def download(self) -> AsyncIterable[BatchEvent]:
         self._stream, receive_stream = anyio.create_memory_object_stream[BatchEvent](30)
 
@@ -57,6 +55,7 @@ class DownloadBatch:
                     tg.start_soon(self._producer)
 
                     async for event in receive_stream:
+                        await log_event_playlist(event)
                         yield event
             except anyio.get_cancelled_exc_class():
                 yield await receive_stream.receive()
@@ -75,9 +74,9 @@ class DownloadBatch:
             )
 
             with logger.contextualize(
-                playlist_id=self.id,
-                playlist_title=self.playlist.title if self.playlist else None,
-                playlist_total=len(self.medias),
+                list_id=self.id,
+                list_title=self.playlist.title if self.playlist else None,
+                list_total=len(self.medias),
             ):
                 try:
                     # Tasks
@@ -163,7 +162,7 @@ class DownloadBatch:
                 self.config.output_template,
                 playlist=playlist,
             )
-            self.config = self.config.model_copy(update={"template": template})
+            self.config = self.config.model_copy(update={"output_template": template})
         else:
             import secrets
 

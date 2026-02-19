@@ -36,31 +36,31 @@ class MediaExtractor:
     ) -> Media | Playlist:
         """Extract media from URL or update item."""
 
-        url: str
-        if isinstance(item, StrUrl):
-            url = str(item)
-        else:
-            url = str(item.url)
+        url = str(item) if isinstance(item, StrUrl) else str(item.url)
 
-        logger.bind(status="extracting").debug("Extract URL: {url}", url=url)
+        with logger.contextualize(status="extracting", url=url):
+            logger.info("Extracting URL: {url}", url=url)
 
-        # Load from cache
-        if model := await self._extract_from_cache(url, ExtractAdapter.validate_json):
-            if isinstance(model, BaseExtract):
-                model.is_cache = True
-            return model
+            # Load from cache
+            if model := await self._extract_from_cache(
+                url, ExtractAdapter.validate_json
+            ):
+                if isinstance(model, BaseExtract):
+                    model.is_cache = True
+                return model
 
-        # Extract info
-        from remora._internal.ydl.extractor import extract_info
+            # Extract info
+            from remora._internal.ydl.extractor import extract_info
 
-        info = await run_sync(extract_info, url)
-        result = ExtractAdapter.validate_python(info, by_alias=True)
+            info = await run_sync(extract_info, url)
+            result = ExtractAdapter.validate_python(info, by_alias=True)
 
-        # Save to cache
-        if self.use_cache:
-            await save_info(url, result.model_dump_json())
+            logger.success("Extraction successful")
 
-        return result
+            # Save to cache
+            await self._save_to_cache(url, result)
+
+            return result
 
     async def extract_search(
         self,
@@ -70,27 +70,34 @@ class MediaExtractor:
     ) -> SearchList:
         """Extract media from search service."""
 
-        from remora._internal.ydl.extractor import extract_query
+        with logger.contextualize(status="extracting", service=service, query=query):
+            logger.info(
+                'Searching from "{service}": "{query}"',
+                service=service,
+                query=query,
+            )
 
-        logger.bind(status="extracting").debug(
-            'Search from "{service}": "{query}"',
-            service=service,
-            query=query,
-        )
+            # Load from cache
+            if model := await self._extract_from_cache(
+                query, SearchList.model_validate_json
+            ):
+                return model
 
-        # Load from cache
-        if model := await self._extract_from_cache(query, SearchList.model_validate):
-            return model
+            # Extract info
+            from remora._internal.ydl.extractor import extract_query
 
-        # Extract info
-        info = await run_sync(extract_query, query, service, limit)
-        result = SearchList(query=query, service=service, **info)
+            info = await run_sync(extract_query, query, service, limit)
+            result = SearchList.model_validate(
+                {"query": query, "service": service, **info},
+                by_alias=True,
+            )
 
-        # Save to cache
-        if self.use_cache:
-            await save_info(result.query, result.model_dump_json())
+            logger.success("Search successful")
 
-        return result
+            # Save to cache
+            await self._save_to_cache(result.query, result)
+
+            return result
 
     async def _extract_from_cache(
         self,
@@ -99,9 +106,16 @@ class MediaExtractor:
     ) -> T | None:
         try:
             if self.use_cache and (cached_data := await load_info(string)):
-                return validator(cached_data)
+                model = validator(cached_data)
+                logger.success("Data extracted from cache")
+                return model
         except ValidationError:
-            logger.opt(exception=True).debug("Cache is corrupted, deleting")
+            logger.opt(exception=True).debug("Cache is corrupted, trying again")
             await remove_info(string)
 
         return None
+
+    async def _save_to_cache(self, query: str, model: BaseExtract):
+        if self.use_cache:
+            logger.debug("Data saved to cache")
+            await save_info(query, model.model_dump_json())

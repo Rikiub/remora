@@ -144,9 +144,9 @@ async def extract(
     # Extract queries
     async for result in extract_queries(query, extractor):
         if result.is_cache:
-            logger.info("Data extracted from cache.")
+            logger.info("Data extracted from cache")
         else:
-            logger.info("Successful extraction.")
+            logger.info("Successful extraction")
 
         # Show
         if sel_format == "json":
