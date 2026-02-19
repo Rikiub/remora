@@ -60,7 +60,7 @@ def main(
         ),
     ] = True,
 ):
-    """Download any video/audio you want from a simple URL ✨"""
+    """Fishy data extractor/downloader ✨"""
 
     CONFIG.verbose = verbose
     CONFIG.quiet = quiet
