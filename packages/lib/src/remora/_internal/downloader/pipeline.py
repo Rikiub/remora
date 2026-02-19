@@ -26,7 +26,6 @@ from remora.models.event.media import (
     Extracting,
     Failed,
     MediaEvent,
-    Preparing,
     Warning,
 )
 from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
@@ -140,8 +139,6 @@ class DownloadPipeline:
         media = cast(LazyMedia | Media, self.media)
         if not isinstance(media, Media):
             self.media = await self.extractor.extract(media)
-
-        await self._stream.send(Preparing(id=self.id, media=self.media))
 
         return self.media
 

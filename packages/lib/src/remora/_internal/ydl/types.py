@@ -33,6 +33,30 @@ AudioExtension = CommonAudioExtension | ExtraAudioExtension
 # Video and Audio
 FormatExtension = VideoExtension | AudioExtension
 
+Protocols = Literal[
+    "rtmp",
+    "rtmpe",
+    "rtmp_ffmpeg",
+    "m3u8_native",
+    "m3u8",
+    "mms",
+    "rtsp",
+    "f4m",
+    "http",
+    "https",
+    "http_dash_segments",
+    "http_dash_segments_generator",
+    "ism",
+    "mhtml",
+    "niconico_live",
+    "fc2_live",
+    "websocket_frag",
+    "youtube_live_chat",
+    "youtube_live_chat_replay",
+    "bunnycdn",
+]
+PROTOCOLS: Final = literal_to_set(Protocols)
+
 
 class YDLExtensions:
     """Sets of format extensions supported by YT-DLP."""
@@ -56,29 +80,6 @@ class YDLExtensions:
         }
     )
 
-
-YDL_PROTOCOLS: Final = frozenset(
-    {
-        "rtmp",
-        "rtmpe",
-        "rtmp_ffmpeg",
-        "m3u8_native",
-        "m3u8",
-        "mms",
-        "rtsp",
-        "f4m",
-        "http_dash_segments",
-        "http_dash_segments_generator",
-        "ism",
-        "mhtml",
-        "niconico_live",
-        "fc2_live",
-        "websocket_frag",
-        "youtube_live_chat",
-        "youtube_live_chat_replay",
-        "bunnycdn",
-    }
-)
 
 YDLDict = dict[str, Any]
 YDLExtractInfo = dict[str, Any]

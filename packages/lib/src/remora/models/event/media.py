@@ -10,16 +10,12 @@ from remora.models.event.process import (
     Processing,  # noqa: F401
 )
 from remora.models.event.stream import DownloadingStream
-from remora.models.media.item import LazyMedia
+from remora.models.media.item import LazyMedia, Media
 
 
 class Extracting(BaseMediaEvent):
     status: Literal["extracting"] = "extracting"
     media: LazyMedia  # type: ignore
-
-
-class Preparing(BaseMediaEvent):
-    status: Literal["preparing"] = "preparing"
 
 
 class Downloading(DownloadingStream, BaseMediaEvent): ...
@@ -42,16 +38,10 @@ class Failed(BaseMediaEvent):
 
 class Cancelled(BaseMediaEvent):
     status: Literal["cancelled"] = "cancelled"
+    media: LazyMedia | Media  # type: ignore
 
 
 MediaEvent = Annotated[
-    Extracting
-    | Preparing
-    | Downloading
-    | ProcessEvent
-    | Warning
-    | Completed
-    | Failed
-    | Cancelled,
+    Extracting | Downloading | ProcessEvent | Warning | Completed | Failed | Cancelled,
     Field(discriminator="status"),
 ]

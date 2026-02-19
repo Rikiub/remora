@@ -7,7 +7,7 @@ from anyio.to_thread import run_sync
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora._internal.ydl.types import YDL_PROTOCOLS
+from remora._internal.ydl.types import PROTOCOLS
 from remora.models.event.stream import (
     CompletedStream,
     DownloadingStream,
@@ -18,7 +18,7 @@ from remora.types import DEFAULT_RETRIES, StrPath
 
 
 class YDLStreamDownloader(BaseStreamDownloader):
-    SUPPORTED_PROTOCOLS = YDL_PROTOCOLS
+    SUPPORTED_PROTOCOLS = PROTOCOLS
 
     def __init__(
         self,

@@ -60,10 +60,4 @@ def extract_info(query: str) -> YDLExtractInfo:
         status_code = extract_status_code(str(error))
         raise ExtractError(msg, status_code=status_code or 0)
 
-    # Some extractors need redirect to "real URL" (Example: Pinterest)
-    # In this case, we need do another request.
-    if info.get("extractor_key") == "Generic" and info.get("url") != query:
-        if url := info.get("url"):
-            return extract_info(url)
-
     return cast(YDLExtractInfo, info)

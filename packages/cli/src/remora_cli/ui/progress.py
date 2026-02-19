@@ -46,15 +46,10 @@ class ProgressCallback:
                             description=name or "Extracting[blink]...[/]",
                             status="Extracting[blink]...[/]",
                         )
-                    case "preparing":
-                        self.progress.update(
-                            event.id,
-                            description=name,
-                            status="Preparing[blink]...[/]",
-                        )
                     case "downloading":
                         self.progress.update(
                             event.id,
+                            description=name,
                             status="Downloading",
                             completed=event.downloaded,
                             total=event.total,
@@ -64,7 +59,7 @@ class ProgressCallback:
                     case "warning":
                         logger.warning("Warning: {message}", message=event.message)
                     case "failed":
-                        logger.warning("Download failed")
+                        logger.error("Download failed")
                         self.progress.update(event.id, status="Error")
                     case "completed":
                         match event.result:

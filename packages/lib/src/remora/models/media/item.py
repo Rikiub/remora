@@ -93,5 +93,5 @@ class Media(LazyMedia):
     streams: Annotated[
         StreamList,
         AfterValidator(lambda list: list.sort_by("best")),
-        Field(alias="formats", min_length=1),
+        Field(alias="formats"),
     ]

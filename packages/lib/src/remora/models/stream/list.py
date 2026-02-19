@@ -2,27 +2,43 @@ from __future__ import annotations
 
 import bisect
 from functools import cached_property
-from typing import Generic, Literal
+from typing import Annotated, Generic, Literal
 
-from pydantic import OnErrorOmit
+from loguru import logger
+from pydantic import ValidationError, ValidatorFunctionWrapHandler, WrapValidator
+from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
+from remora._internal.ydl.types import Protocols
 from remora.models._base import BaseList
 from remora.models.stream._codecs import get_codec_rank, stream_sort
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import StreamType
+from remora.types import StreamExtension, StreamQuality, StreamType
+
+
+def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
+    try:
+        return handler(v)
+    except ValidationError:
+        logger.opt(exception=True).debug(
+            'Omiting invalid stream "{}"',
+            v.get("format_id") or v.get("id") or "unkdown",
+        )
+        raise PydanticOmit
+
 
 T = TypeVar("T", default=Stream, bound=Stream)
+_LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
 
 
-class StreamList(BaseList[OnErrorOmit[T]], Generic[T]):
+class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
     """List of streams which can be filtered."""
 
     def filter(
         self,
-        extension: str | None = None,
-        quality: int | None = None,
-        protocol: str | None = None,
+        extension: str | StreamExtension | None = None,
+        quality: int | StreamQuality | None = None,
+        protocol: str | Protocols | None = None,
         video_codec: str | None = None,
         audio_codec: str | None = None,
     ) -> Self:

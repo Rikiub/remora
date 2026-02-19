@@ -2,6 +2,7 @@ from enum import Enum, StrEnum
 from pathlib import Path
 from typing import Annotated
 
+from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
 from remora._internal.helpers import literal_to_set
@@ -105,6 +106,7 @@ What format you want request?
     with CONSOLE.status("Starting[blink]...[/]"):
         from remora import DownloadOptions, MediaExtractor, Remora
         from remora.exceptions import OutputTemplateError
+        from remora.models.media.list import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
 
@@ -124,7 +126,11 @@ What format you want request?
             extractor=MediaExtractor(use_cache=CONFIG.cache),
         )
 
-    async for result in extract_queries(query, remora.extractor):
+    async for target, result in extract_queries(query, remora.extractor):
+        if isinstance(result, (Playlist, SearchList)):
+            if not result.medias:
+                logger.error("'{}' don't have streams to download", target)
+
         async with ProgressCallback(CONFIG.quiet) as progress:
             async for event in remora.download_batch(result):
                 await progress.playlist_callback(event)

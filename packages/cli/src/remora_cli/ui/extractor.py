@@ -10,14 +10,14 @@ from remora import MediaExtractor
 from remora.exceptions import RemoraError
 from remora.models.media.list import SearchList
 from remora.models.media.types import ExtractResult
-from remora_cli.completions import parse_queries
+from remora_cli.completions import SearchTarget, parse_queries
 from remora_cli.ui.rich import CONSOLE
 
 
 async def extract_queries(
     queries: list[str],
     extractor: MediaExtractor,
-) -> AsyncIterable[ExtractResult | SearchList]:
+) -> AsyncIterable[tuple[SearchTarget, ExtractResult | SearchList]]:
     for index, value in enumerate(parse_queries(queries), start=1):
         target, entry = value
 
@@ -49,7 +49,7 @@ async def extract_queries(
                         raise Exit()
 
                 await logger.complete()
-            yield result
+            yield target, result
         except RemoraError as error:
             logger.error("{message}", message=str(error))
         finally:

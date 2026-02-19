@@ -142,11 +142,11 @@ async def extract(
         sel_exclude.discard(key)
 
     # Extract queries
-    async for result in extract_queries(query, extractor):
+    async for _, result in extract_queries(query, extractor):
         if result.is_cache:
-            logger.info("Data extracted from cache")
+            logger.success("Data extracted from cache")
         else:
-            logger.info("Successful extraction")
+            logger.success("Successful extraction")
 
         # Show
         if sel_format == "json":
