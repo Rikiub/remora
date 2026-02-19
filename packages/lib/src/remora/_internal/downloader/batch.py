@@ -46,7 +46,9 @@ class DownloadBatch:
         self.failed: int
 
     async def download(self) -> AsyncIterable[BatchEvent]:
-        self._stream, receive_stream = anyio.create_memory_object_stream[BatchEvent](30)
+        self._stream, receive_stream = anyio.create_memory_object_stream[BatchEvent](
+            100
+        )
 
         async with receive_stream:
             try:

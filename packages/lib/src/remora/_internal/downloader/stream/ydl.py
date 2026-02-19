@@ -9,8 +9,8 @@ from typing_extensions import override
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.ydl.types import YDL_PROTOCOLS
 from remora.models.event.stream import (
+    CompletedStream,
     DownloadingStream,
-    FinishedStream,
     StreamEvent,
 )
 from remora.models.stream.item import Stream
@@ -43,7 +43,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 async for event in receive_stream:
                     yield event
 
-                yield FinishedStream(file_path=pathlib.Path(self.file_path))
+                yield CompletedStream(file_path=pathlib.Path(self.file_path))
 
     async def _producer(self):
         from remora._internal.ydl.downloader import download_format

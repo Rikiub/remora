@@ -15,11 +15,11 @@ class DownloadingStream(BaseEvent):
     elapsed: float = 0
 
 
-class FinishedStream(FileEvent):
-    status: Literal["finished"] = "finished"
+class CompletedStream(FileEvent):
+    status: Literal["completed"] = "completed"
 
 
 StreamEvent = Annotated[
-    DownloadingStream | FinishedStream,
+    DownloadingStream | CompletedStream,
     Field(discriminator="status"),
 ]

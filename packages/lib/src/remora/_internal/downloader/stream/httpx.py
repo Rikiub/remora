@@ -9,7 +9,7 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloadError
-from remora.models.event.stream import DownloadingStream, FinishedStream, StreamEvent
+from remora.models.event.stream import CompletedStream, DownloadingStream, StreamEvent
 from remora.models.stream.item import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
@@ -77,7 +77,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 async for event in receive_stream:
                     yield event
 
-                yield FinishedStream(file_path=pathlib.Path(self.file_path))
+                yield CompletedStream(file_path=pathlib.Path(self.file_path))
 
     async def _execute_download(self):
         async with self._send_stream:
