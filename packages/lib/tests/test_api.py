@@ -12,7 +12,7 @@ PLAYLIST = (
 
 
 async def test_single(tmp_path: Path):
-    api = Remora(
+    remora = Remora(
         download_config=DownloadOptions(
             output_template=tmp_path,
             format="audio",
@@ -21,13 +21,13 @@ async def test_single(tmp_path: Path):
         extractor=MediaExtractor(use_cache=False),
     )
 
-    async for event in api.download(URL):
-        if event.status == "finished":
+    async for event in remora.download(URL):
+        if event.status == "completed":
             assert event.file_path.is_file()
 
 
 async def test_list(tmp_path: Path):
-    api = Remora(
+    remora = Remora(
         download_config=DownloadOptions(
             output_template=tmp_path,
             format="audio",
@@ -36,8 +36,8 @@ async def test_list(tmp_path: Path):
         extractor=MediaExtractor(use_cache=False),
     )
 
-    async for event in api.download_batch(PLAYLIST):
-        if event.type == "media" and event.status == "finished":
+    async for event in remora.download_batch(PLAYLIST):
+        if event.type == "media" and event.status == "completed":
             assert event.file_path.is_file()
 
 

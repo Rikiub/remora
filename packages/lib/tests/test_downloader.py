@@ -18,12 +18,11 @@ def download(tmp_path: Path):
         result = await api.extract(url)
 
         async for event in api.download_batch(result):
-            if event.type == "media" and event.status == "finished":
-                if event.result == "failed":
-                    raise AssertionError("Download failed")
-
-                if not event.file_path.is_file():
+            if event.type == "media":
+                if event.status == "completed" and not event.file_path.is_file():
                     raise FileNotFoundError(event.file_path)
+                elif event.status == "failed":
+                    raise AssertionError("Download failed")
 
     return wrap
 
