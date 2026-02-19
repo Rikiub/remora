@@ -26,13 +26,14 @@ class ProgressCallback:
                     self.progress.counter.reset(total=event.total)
                 case "update":
                     self.progress.counter.update(completed=event.completed)
-                case "finished":
-                    if event.result == "success":
-                        logger.success("Download completed")
-                    elif event.result == "incomplete":
-                        logger.warning("Download completed with errors")
-                    elif event.result == "cancelled":
-                        logger.warning("Download cancelled")
+                case "completed":
+                    match event.result:
+                        case "success":
+                            logger.success("Download completed")
+                        case "partial":
+                            logger.warning("Download completed partially")
+                case "cancelled":
+                    logger.warning("Download cancelled")
 
         elif event.type == "media":
             name = self._media_display_name(event.media)
@@ -62,24 +63,24 @@ class ProgressCallback:
                         self.processor_callback(event)
                     case "warning":
                         logger.warning("Warning: {message}", message=event.message)
-                    case "finished":
+                    case "failed":
+                        logger.warning("Download failed")
+                        self.progress.update(event.id, status="Error")
+                    case "completed":
                         match event.result:
                             case "success":
                                 logger.success("Completed")
                                 self.progress.update(event.id, status="Completed")
-                            case "incomplete":
-                                logger.warning("Completed with errors")
+                            case "partial":
+                                logger.success("Completed (Some data missed)")
                                 self.progress.update(event.id, status="Completed")
-                            case "skipped":
+                            case "duplicate":
                                 logger.success(
                                     'Skipped (Exists as "{file_extension}")',
                                     file_extension=event.file_extension,
                                     icon="🔄",
                                 )
                                 self.progress.update(event.id, status="Skipped")
-                            case "failed":
-                                logger.warning("Download failed")
-                                self.progress.update(event.id, status="Error")
 
                         if self._tg:
                             self._tg.start_soon(self._finish_item, event)

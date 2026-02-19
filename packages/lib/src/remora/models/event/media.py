@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from remora.models.event._base import BaseMediaEvent, FileEvent
+from remora.models.event._base import BaseMediaEvent, CompletedResult, FileEvent
 from remora.models.event.process import (
     ProcessEvent,
     Processing,  # noqa: F401
@@ -30,15 +30,28 @@ class Warning(BaseMediaEvent):
     message: str
 
 
-FinishedResult = Literal["success", "incomplete", "skipped", "failed"]
+class Completed(BaseMediaEvent, FileEvent):
+    status: Literal["completed"] = "completed"
+    result: CompletedResult | Literal["duplicate"]
 
 
-class Finished(BaseMediaEvent, FileEvent):
-    status: Literal["finished"] = "finished"
-    result: FinishedResult
+class Failed(BaseMediaEvent):
+    status: Literal["failed"] = "failed"
+    error: str
+
+
+class Cancelled(BaseMediaEvent):
+    status: Literal["cancelled"] = "cancelled"
 
 
 MediaEvent = Annotated[
-    Resolving | Resolved | Downloading | ProcessEvent | Warning | Finished,
+    Resolving
+    | Resolved
+    | Downloading
+    | ProcessEvent
+    | Warning
+    | Completed
+    | Failed
+    | Cancelled,
     Field(discriminator="status"),
 ]

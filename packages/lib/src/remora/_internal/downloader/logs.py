@@ -18,14 +18,14 @@ async def log_event_playlist(event: BatchEvent):
                     playlist_completed=event.completed,
                     playlist_total=event.total,
                 )
-            case "finished":
+            case "cancelled":
+                logger.warning("Download cancelled")
+            case "completed":
                 match event.result:
                     case "success":
                         logger.success("Download completed")
-                    case "incomplete":
-                        logger.warning("Download completed with errors")
-                    case "cancelled":
-                        logger.warning("Download cancelled")
+                    case "partial":
+                        logger.warning("Download completed partially")
 
 
 async def log_event_media(event: MediaEvent):
@@ -41,7 +41,11 @@ async def log_event_media(event: MediaEvent):
                 await _processor_callback(event)
             case "warning":
                 logger.warning(event.message)
-            case "finished":
+            case "failed":
+                logger.error("Download failed")
+            case "cancelled":
+                logger.info("Download cancelled")
+            case "completed":
                 log = logger.bind(
                     file_path=event.file_path,
                     file_extension=event.file_extension,
@@ -50,16 +54,14 @@ async def log_event_media(event: MediaEvent):
                 match event.result:
                     case "success":
                         log.success("Completed")
-                    case "incomplete":
-                        log.success("Completed with errors")
-                    case "skipped":
+                    case "partial":
+                        log.success("Completed (Some data missed)")
+                    case "duplicate":
                         log.success(
                             'Skipped (Exists as "{file_extension}")',
                             file_extension=event.file_extension,
                             icon="🔄",
                         )
-                    case "failed":
-                        log.error("Download failed")
 
                 log.debug(
                     'Final file: "{file_path}"',

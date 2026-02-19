@@ -20,8 +20,10 @@ from remora._internal.template.output import format_template
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
+    Cancelled,
+    Completed,
     Downloading,
-    Finished,
+    Failed,
     MediaEvent,
     Resolved,
     Resolving,
@@ -55,7 +57,7 @@ class DownloadPipeline:
         self.media: Media = media  # type: ignore
         self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
-        self.incomplete = False
+        self.has_missing_data = False
 
         try:
             self.ffmpeg_path = get_ffmpeg(self.config.ffmpeg_path)
@@ -67,12 +69,16 @@ class DownloadPipeline:
         self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
 
         async with receive_stream:
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(self._producer)
+            try:
+                async with anyio.create_task_group() as tg:
+                    tg.start_soon(self._producer)
 
-                async for event in receive_stream:
-                    await log_event_media(event)
-                    yield event
+                    async for event in receive_stream:
+                        await log_event_media(event)
+                        yield event
+            except anyio.get_cancelled_exc_class():
+                yield Cancelled(id=self.id, media=self.media)
+                raise
 
     async def _producer(self):
         with logger.contextualize(media_id=self.id):
@@ -151,11 +157,11 @@ class DownloadPipeline:
                 ):
                     path = Path(path)
                     await self._stream.send(
-                        Finished(
+                        Completed(
                             id=self.id,
                             media=self.media,
                             file_path=path,
-                            result="skipped",
+                            result="duplicate",
                         )
                     )
                     return path
@@ -194,11 +200,10 @@ class DownloadPipeline:
                     )
                 )
                 await self._stream.send(
-                    Finished(
+                    Failed(
                         id=self.id,
                         media=self.media,
-                        file_path=Path(),
-                        result="failed",
+                        error=str(error),
                     )
                 )
                 raise
@@ -394,7 +399,7 @@ class DownloadPipeline:
                 if raise_exceptions:
                     raise
 
-                self.incomplete = True
+                self.has_missing_data = True
                 await self._stream.send(
                     Warning(
                         id=self.id,
@@ -444,11 +449,11 @@ class DownloadPipeline:
         await run_sync(shutil.move, src, final_path)
 
         await self._stream.send(
-            Finished(
+            Completed(
                 id=self.id,
                 media=self.media,
                 file_path=Path(final_path),
-                result="incomplete" if self.incomplete else "success",
+                result="partial" if self.has_missing_data else "success",
             )
         )
 
