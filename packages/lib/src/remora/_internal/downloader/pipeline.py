@@ -23,10 +23,10 @@ from remora.models.event.media import (
     Cancelled,
     Completed,
     Downloading,
+    Extracting,
     Failed,
     MediaEvent,
-    Resolved,
-    Resolving,
+    Preparing,
     Warning,
 )
 from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
@@ -135,13 +135,14 @@ class DownloadPipeline:
                     results.file = await self.move_to_final(results.file, output)
 
     async def resolve_media(self) -> Media:
-        await self._stream.send(Resolving(id=self.id, media=self.media))
+        await self._stream.send(Extracting(id=self.id, media=self.media))
 
         media = cast(LazyMedia | Media, self.media)
         if not isinstance(media, Media):
             self.media = await self.extractor.extract(media)
 
-        await self._stream.send(Resolved(id=self.id, media=self.media))
+        await self._stream.send(Preparing(id=self.id, media=self.media))
+
         return self.media
 
     async def check_output_duplicate(self, output: StrPath) -> Path | None:

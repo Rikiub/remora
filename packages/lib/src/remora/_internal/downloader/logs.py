@@ -12,7 +12,7 @@ async def log_event_playlist(event: BatchEvent):
                     "Download started with {playlist_total} items",
                     playlist_total=event.total,
                 )
-            case "update":
+            case "in_progress":
                 logger.info(
                     "{playlist_completed} of {playlist_total} items completed",
                     playlist_completed=event.completed,
@@ -35,8 +35,6 @@ async def log_event_media(event: MediaEvent):
         status=event.status,
     ):
         match event.status:
-            case "resolved":
-                logger.info("Media extraction resolved")
             case "processing":
                 await _processor_callback(event)
             case "warning":

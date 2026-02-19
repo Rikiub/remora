@@ -24,7 +24,7 @@ class ProgressCallback:
             match event.status:
                 case "started":
                     self.progress.counter.reset(total=event.total)
-                case "update":
+                case "in_progress":
                     self.progress.counter.update(completed=event.completed)
                 case "completed":
                     match event.result:
@@ -40,13 +40,13 @@ class ProgressCallback:
 
             with logger.contextualize(media_title=name):
                 match event.status:
-                    case "resolving":
+                    case "extracting":
                         self.progress.add_task(
                             event.id,
                             description=name or "Extracting[blink]...[/]",
                             status="Extracting[blink]...[/]",
                         )
-                    case "resolved":
+                    case "preparing":
                         self.progress.update(
                             event.id,
                             description=name,

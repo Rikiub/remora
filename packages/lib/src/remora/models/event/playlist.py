@@ -10,8 +10,8 @@ class PlaylistStarted(BasePlaylistEvent):
     status: Literal["started"] = "started"
 
 
-class PlaylistUpdate(BasePlaylistEvent):
-    status: Literal["update"] = "update"
+class PlaylistInProgress(BasePlaylistEvent):
+    status: Literal["in_progress"] = "in_progress"
 
 
 class PlaylistCompleted(BasePlaylistEvent):
@@ -24,7 +24,7 @@ class PlaylistCancelled(BasePlaylistEvent):
 
 
 PlaylistEvent = Annotated[
-    PlaylistStarted | PlaylistUpdate | PlaylistCompleted | PlaylistCancelled,
+    PlaylistStarted | PlaylistInProgress | PlaylistCompleted | PlaylistCancelled,
     Field(discriminator="status"),
 ]
 

@@ -13,8 +13,8 @@ from remora.models.event.playlist import (
     BatchEvent,
     PlaylistCancelled,
     PlaylistCompleted,
+    PlaylistInProgress,
     PlaylistStarted,
-    PlaylistUpdate,
 )
 from remora.models.media.item import LazyMedia
 from remora.models.media.list import LazyPlaylist, MediaList, Playlist
@@ -112,9 +112,8 @@ class DownloadBatch:
 
             self.completed += 1
             await self._stream.send(
-                PlaylistUpdate(
+                PlaylistInProgress(
                     id=self.id,
-                    status="update",
                     completed=self.completed,
                     total=self.total,
                 )
