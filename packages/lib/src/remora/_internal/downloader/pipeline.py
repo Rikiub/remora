@@ -294,7 +294,7 @@ class DownloadPipeline:
                             elapsed=max(v.elapsed, a.elapsed),
                         )
                     )
-                case "finished":
+                case "completed":
                     if is_video:
                         video_file = event.file_path
                     else:
