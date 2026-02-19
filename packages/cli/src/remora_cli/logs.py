@@ -27,11 +27,24 @@ def setup_logging(level: logs.LoggingLevels):
         backtrace=False,
         enqueue=True,
         format=get_format,
-        filter=filter_remora,
+        filter=remora_only_debug,
     )
 
     # Structured Logs
-    # logger.add("logs/trace.jsonl", level="DEBUG", rotation="10 MB", serialize=True)
+    """
+    logger.add(
+        "logs/trace.jsonl",
+        level="DEBUG",
+        rotation="10 MB",
+        serialize=True,
+        enqueue=True,
+        format="<cyan>{time:HH:mm:ss}</cyan> | <level>{level: <8}</level> | <level>{message}</level>",
+        filter={
+            "remora_cli": "CRITICAL",
+            "remora": "DEBUG",
+        },
+    )
+    """
 
 
 LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
@@ -69,7 +82,7 @@ def get_format(record) -> str:
     return f"{icon} {status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
 
 
-def filter_remora(record):
+def remora_only_debug(record):
     is_remora = record["name"].startswith("remora.")
     is_debug = record["level"].name == "DEBUG"
 
