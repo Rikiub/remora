@@ -104,20 +104,9 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             self.file_path = path
 
     async def _download_multi_part(self) -> Path:
-        # Check if the server explicitly supports ranges
-        async with self.client.stream("GET", str(self.stream.url)) as res:
-            res.raise_for_status()
-            supports_range: bool = res.headers.get("Accept-Ranges") == "bytes"
-            remote_total_size = int(res.headers.get("Content-Length", 0))
-
-        # Fix file size
-        if remote_total_size:
-            self.file_size = remote_total_size
-            self.event.total = remote_total_size
-
         # Determine chunks: Use user preference OR 1 if ranges aren't supported
         # Also use 1 if total_size is unknown (0)
-        workers = self.max_workers if (supports_range and self.file_size) else 1
+        workers = self.max_workers if self.file_size else 1
         chunk_size = self.file_size // workers
 
         # PRE-ALLOCATE
