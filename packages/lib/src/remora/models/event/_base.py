@@ -26,5 +26,5 @@ class FileEvent(BaseEvent):
     file_path: Path
 
     @property
-    def extension(self) -> str:
+    def file_extension(self) -> str:
         return self.file_path.suffix.lstrip(".")

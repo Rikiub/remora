@@ -44,7 +44,7 @@ async def log_event_media(event: MediaEvent):
             case "finished":
                 log = logger.bind(
                     file_path=event.file_path,
-                    file_extension=event.extension,
+                    file_extension=event.file_extension,
                 )
 
                 match event.result:
@@ -55,7 +55,7 @@ async def log_event_media(event: MediaEvent):
                     case "skipped":
                         log.success(
                             'Skipped (Exists as "{file_extension}")',
-                            file_extension=event.extension,
+                            file_extension=event.file_extension,
                             icon="🔄",
                         )
                     case "failed":
@@ -74,12 +74,12 @@ async def _processor_callback(event: ProcessEvent):
                 case "change_container":
                     logger.debug(
                         'File container changed to "{extension}"',
-                        extension=event.extension,
+                        extension=event.file_extension,
                     )
                 case "convert_audio":
                     logger.debug(
                         'File converted to "{extension}"',
-                        extension=event.extension,
+                        extension=event.file_extension,
                     )
                 case "merge_formats":
                     logger.debug(

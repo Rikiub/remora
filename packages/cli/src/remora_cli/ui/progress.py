@@ -72,8 +72,8 @@ class ProgressCallback:
                                 self.progress.update(event.id, status="Completed")
                             case "skipped":
                                 logger.success(
-                                    'Skipped (Exists as "{extension}")',
-                                    extension=event.extension,
+                                    'Skipped (Exists as "{file_extension}")',
+                                    file_extension=event.file_extension,
                                     icon="🔄",
                                 )
                                 self.progress.update(event.id, status="Skipped")
