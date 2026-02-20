@@ -21,11 +21,6 @@ class Extracting(BaseMediaEvent):
 class Downloading(DownloadingStream, BaseMediaEvent): ...
 
 
-class Warning(BaseMediaEvent):
-    status: Literal["warning"] = "warning"
-    message: str
-
-
 class Completed(BaseMediaEvent, FileEvent):
     status: Literal["completed"] = "completed"
     result: CompletedResult | Literal["duplicate"]
@@ -33,7 +28,12 @@ class Completed(BaseMediaEvent, FileEvent):
 
 class Failed(BaseMediaEvent):
     status: Literal["failed"] = "failed"
-    error: str
+    message: str
+
+
+class Warning(BaseMediaEvent):
+    status: Literal["warning"] = "warning"
+    message: str
 
 
 class Cancelled(BaseMediaEvent):

@@ -57,9 +57,9 @@ class ProgressCallback:
                     case "processing":
                         self.processor_callback(event)
                     case "warning":
-                        logger.warning("Warning: {message}", message=event.message)
+                        logger.warning("Warning: {}", event.message)
                     case "failed":
-                        logger.error("Download failed")
+                        logger.error("Download failed: {}", event.message)
                         self.progress.update(event.id, status="Error")
                     case "completed":
                         match event.result:

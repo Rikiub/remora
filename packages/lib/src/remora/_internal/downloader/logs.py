@@ -38,9 +38,9 @@ async def log_event_media(event: MediaEvent):
             case "processing":
                 await _processor_callback(event)
             case "warning":
-                logger.warning(event.message)
+                logger.warning("Warning: {}", event.message)
             case "failed":
-                logger.error("Download failed")
+                logger.error("Download failed: {}", event.message)
             case "cancelled":
                 logger.info("Download cancelled")
             case "completed":

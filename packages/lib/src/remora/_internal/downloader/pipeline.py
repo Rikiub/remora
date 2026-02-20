@@ -191,17 +191,10 @@ class DownloadPipeline:
                 )
 
                 await self._stream.send(
-                    Warning(
-                        id=self.id,
-                        media=self.media,
-                        message=str(error),
-                    )
-                )
-                await self._stream.send(
                     Failed(
                         id=self.id,
                         media=self.media,
-                        error=str(error),
+                        message=str(error),
                     )
                 )
                 raise
