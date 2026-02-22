@@ -6,7 +6,7 @@ from typing_extensions import override
 from remora._internal.types.base import BaseExtension, ExtensionType
 
 
-class AudioExtension(BaseExtension[ExtensionType.AUDIO], StrEnum):
+class AudioExtension(BaseExtension, StrEnum):
     # Common
     AIFF = "aiff"
     ALAC = "alac"
@@ -32,6 +32,10 @@ class AudioExtension(BaseExtension[ExtensionType.AUDIO], StrEnum):
     VORBIS = "vorbis"
     WMA = "wma"
     WEBA = "weba"
+
+    @property
+    def type(self):
+        return ExtensionType.AUDIO
 
     @property
     def is_safe(self) -> bool:

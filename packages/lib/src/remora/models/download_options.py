@@ -50,7 +50,7 @@ class DownloadOptions(RemoraBaseModel):
 
     @property
     def format_type(self) -> ExtensionTypeLike:
-        """Determine type of selected format.
+        """Determines category of the selected format.
 
         Returns:
             "video" or "audio".
@@ -58,27 +58,24 @@ class DownloadOptions(RemoraBaseModel):
 
         try:
             target = ExtensionType(self.format)
+            return target
         except ValueError:
             target = get_extension(self.format)
-
-        if isinstance(target, ExtensionType):
-            return target
-        else:
             return target.type
 
     @property
-    def convert(self) -> StreamExtensionLike | None:
-        """Check if would convert the files.
+    def format_target(self) -> StreamExtensionLike | None:
+        """Determines the specific extension: 'mp4', 'flac', etc.
 
         Returns:
-            If could convert, returns a file extension, else return None.
+            Extension if the format is a valid extension.
+            None if the format is a generic type (e.g., 'video', 'audio').
         """
 
         try:
             extension = get_extension(self.format)
+            if extension.is_safe:
+                return extension
         except ValueError:
             return None
-
-        if extension.is_safe:
-            return extension
         return None

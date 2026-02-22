@@ -37,8 +37,8 @@ class StreamSelector:
             return None
 
         # Filter by extension
-        if self._config.convert:
-            if filtered := candidates.filter(extension=self._config.convert):
+        if self._config.format_target:
+            if filtered := candidates.filter(extension=self._config.format_target):
                 candidates = filtered
 
         if self._config.quality:

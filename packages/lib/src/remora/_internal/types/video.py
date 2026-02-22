@@ -6,7 +6,7 @@ from typing_extensions import override
 from remora._internal.types.base import BaseExtension, ExtensionType
 
 
-class VideoExtension(BaseExtension[ExtensionType.VIDEO], StrEnum):
+class VideoExtension(BaseExtension, StrEnum):
     # Common
     AVI = "avi"
     FLV = "flv"
@@ -25,6 +25,10 @@ class VideoExtension(BaseExtension[ExtensionType.VIDEO], StrEnum):
     OGV = "ogv"
     M4V = "m4v"
     WMV = "wmv"
+
+    @property
+    def type(self):
+        return ExtensionType.VIDEO
 
     @property
     def is_safe(self) -> bool:

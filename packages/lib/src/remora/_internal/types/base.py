@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Generic, Literal, TypeVar
+from typing import Literal
 
 
 class ExtensionType(StrEnum):
@@ -10,10 +10,8 @@ class ExtensionType(StrEnum):
 ExtensionTypeStr = Literal["video", "audio"]
 ExtensionTypeLike = ExtensionType | ExtensionTypeStr
 
-T = TypeVar("T", bound=ExtensionType)
 
-
-class BaseExtension(Generic[T]):
+class BaseExtension:
     @classmethod
     def get_safe_extensions(cls):
         return [e.value for e in cls if e.is_safe]
@@ -27,8 +25,8 @@ class BaseExtension(Generic[T]):
         return False
 
     @property
-    def type(self) -> T:
-        return T
+    def type(self) -> ExtensionType:
+        raise NotImplementedError()
 
     @property
     def supports_thumbnails(self) -> bool:
