@@ -1,5 +1,6 @@
 from typing import TypeVar, cast
 
+from remora._internal.types.base import ExtensionType
 from remora.models.download_options import DownloadOptions
 from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
@@ -18,7 +19,7 @@ class StreamSelector:
         """Resolves the final pair of streams to be downloaded."""
         audio = self.extract_best(media.streams, AudioStream)
 
-        if audio and (media.music or self._config.type == "audio"):
+        if audio and (media.music or self._config.format_type == ExtensionType.AUDIO):
             return None, audio
 
         video = self.extract_best(media.streams, VideoStream)

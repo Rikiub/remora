@@ -15,10 +15,13 @@ from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.batch import BatchStreamDownloader
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.extractor import MediaExtractor
-from remora._internal.helpers import literal_to_set
 from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
+from remora._internal.types.audio import AudioExtension
+from remora._internal.types.base import ExtensionType
+from remora._internal.types.extension import get_extension
+from remora._internal.types.video import VideoExtension
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
@@ -35,7 +38,7 @@ from remora.models.event.process import MergeProcessing, Processing, _BaseTask
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import SafeVideoExtension, StrPath, SupportedExtensions
+from remora.types import StrPath
 
 
 @dataclass(slots=True)
@@ -95,9 +98,9 @@ class DownloadPipeline:
                     )
 
                     if not self.ffmpeg_path:
-                        if self.config.type == "video":
+                        if self.config.format_type == ExtensionType.VIDEO:
                             audio_stream = None
-                        elif self.config.type == "audio":
+                        elif self.config.format_type == ExtensionType.AUDIO:
                             video_stream = None
 
                     stream = video_stream or audio_stream
@@ -152,12 +155,9 @@ class DownloadPipeline:
 
         async for path in output.parent.iterdir():
             if await path.is_file() and path.stem == output.name:
-                path_extension = path.suffix.lstrip(".")
+                extension = get_extension(path.suffix.lstrip("."))
 
-                if (
-                    path_extension in SupportedExtensions.VIDEO
-                    or path_extension in SupportedExtensions.AUDIO
-                ):
+                if isinstance(extension, (VideoExtension, AudioExtension)):
                     path = Path(path)
                     await self._stream.send(
                         MediaCompleted(
@@ -298,9 +298,9 @@ class DownloadPipeline:
         video: tuple[VideoStream, Path],
         audio: tuple[AudioStream, Path],
     ):
-        extension = "mp4"
-        if self.config.convert in literal_to_set(SafeVideoExtension):
-            extension = cast(SafeVideoExtension, self.config.convert)
+        extension = VideoExtension.MP4
+        if isinstance(self.config.convert, VideoExtension):
+            extension = self.config.convert
 
         file_path = Path(f"{get_tempfile()}.{extension}")
         file_path.touch()
@@ -385,10 +385,10 @@ class DownloadPipeline:
                     )
                 )
 
-        # Remuxing
         if isinstance(stream, VideoStream):
-            async with track_prc("change_container"):
-                await prc.change_container(self.config.convert or "mp4")
+            if self.config.convert:
+                async with track_prc("change_container"):
+                    await prc.change_container(self.config.convert)
 
             if subtitles:
                 async with track_prc("embed_subtitles"):
@@ -410,7 +410,9 @@ class DownloadPipeline:
                 await prc.embed_metadata(self.media)
 
         if thumbnail:
-            if prc.file_path.suffix[1:] in SupportedExtensions.THUMBNAIL:
+            extension = get_extension(prc.file_path.suffix.lstrip("."))
+
+            if extension.supports_thumbnails:
                 async with track_prc("embed_thumbnail"):
                     await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 

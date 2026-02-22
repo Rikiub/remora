@@ -9,6 +9,7 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
+from remora._internal.types.protocol import Protocol
 from remora.exceptions import DownloadError
 from remora.models.event.stream import (
     StreamCompleted,
@@ -19,19 +20,16 @@ from remora.models.event.stream import (
 from remora.models.stream.item import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
-_HTTP_PROTOCOLS = {
-    "http",
-    "https",
-}
-_LIST_PROTOCOLS = {
-    "m3u8",
-    "m3u8_native",
-    "http_dash_segments",
-}
-
 
 class HttpxStreamDownloader(BaseStreamDownloader):
-    SUPPORTED_PROTOCOLS = {*_HTTP_PROTOCOLS, *_LIST_PROTOCOLS}
+    SUPPORTED_PROTOCOLS = {
+        Protocol.HTTP,
+        Protocol.HTTPS,
+        Protocol.M3U8,
+        Protocol.M3U8_NATIVE,
+        Protocol.HTTP_DASH_SEGMENTS,
+        Protocol.HTTP_DASH_SEGMENTS_GENERATOR,
+    }
 
     def __init__(
         self,
@@ -84,18 +82,19 @@ class HttpxStreamDownloader(BaseStreamDownloader):
     async def _producer(self):
         async with self._send_stream:
             try:
-                logger.debug('Stream protocol is "{}"', self.stream.protocol)
+                protocol = Protocol(self.stream.protocol)
+                logger.debug('Stream protocol is "{}"', str(protocol))
 
                 async with self.client:
-                    if self.stream.protocol in _HTTP_PROTOCOLS:
+                    if protocol.is_segmented:
+                        logger.debug("Downloading stream segments")
+                        path = await self._download_fragments()
+
+                    elif protocol in (Protocol.HTTP, Protocol.HTTPS):
                         logger.debug("Downloading stream as http")
 
                         self.is_continuous = True
                         path = await self._download_multi_part()
-
-                    elif self.stream.protocol in _LIST_PROTOCOLS:
-                        logger.debug("Downloading stream fragments")
-                        path = await self._download_fragments()
 
                     else:
                         raise TypeError(

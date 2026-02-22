@@ -1,21 +1,21 @@
-from typing import Annotated, cast
+from typing import Annotated
 
 from pydantic import AfterValidator
 
-from remora._internal.helpers import literal_to_set
 from remora._internal.path import validate_ffmpeg
 from remora._internal.template.output import validate_template
+from remora._internal.types.base import ExtensionType, ExtensionTypeLike
+from remora._internal.types.extension import (
+    StreamExtensionLike,
+    StreamTargetLike,
+    get_extension,
+)
 from remora.models._base import RemoraBaseModel
 from remora.types import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
-    AudioExtension,
-    SafeExtension,
     StreamQuality,
-    StreamTarget,
-    StreamType,
     StrPath,
-    VideoExtension,
 )
 
 
@@ -36,7 +36,7 @@ class DownloadOptions(RemoraBaseModel):
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
-    format: StreamTarget = "video"
+    format: StreamTargetLike = "video"
     quality: StreamQuality | int | None = None
 
     ffmpeg_path: Annotated[
@@ -49,35 +49,36 @@ class DownloadOptions(RemoraBaseModel):
     retries: int = DEFAULT_RETRIES
 
     @property
-    def type(self) -> StreamType:
-        """Determine general type.
+    def format_type(self) -> ExtensionTypeLike:
+        """Determine type of selected format.
 
         Returns:
             "video" or "audio".
         """
 
-        if self.format in literal_to_set(StreamType):
-            return cast(StreamType, self.format)
+        try:
+            target = ExtensionType(self.format)
+        except ValueError:
+            target = get_extension(self.format)
 
-        elif self.format in literal_to_set(VideoExtension):
-            return "video"
-
-        elif self.format in literal_to_set(AudioExtension):
-            return "audio"
-
+        if isinstance(target, ExtensionType):
+            return target
         else:
-            raise ValueError(self.format, "is invalid. Should be:", StreamTarget)
+            return target.type
 
     @property
-    def convert(self) -> SafeExtension | None:
+    def convert(self) -> StreamExtensionLike | None:
         """Check if would convert the files.
 
         Returns:
             If could convert, returns a file extension, else return None.
         """
 
-        return (
-            cast(SafeExtension, self.format)
-            if self.format in literal_to_set(SafeExtension)
-            else None
-        )
+        try:
+            extension = get_extension(self.format)
+        except ValueError:
+            return None
+
+        if extension.is_safe:
+            return extension
+        return None

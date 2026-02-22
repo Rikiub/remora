@@ -1,5 +1,5 @@
+from remora._internal.types.base import ExtensionType, ExtensionTypeLike
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import StreamType
 
 VIDEO_CODEC_RANK = {
     "vp9": 10,
@@ -23,12 +23,12 @@ AUDIO_CODEC_RANK = {
 
 def get_codec_rank(
     codec: str | None,
-    type: StreamType,
+    type: ExtensionTypeLike,
 ) -> int:
     if not codec:
         return 0
 
-    dict = VIDEO_CODEC_RANK if type == "video" else AUDIO_CODEC_RANK
+    dict = VIDEO_CODEC_RANK if type == ExtensionType.VIDEO else AUDIO_CODEC_RANK
     codec = codec.lower()
 
     for key, rank in dict.items():
@@ -47,8 +47,8 @@ def stream_sort(stream: Stream):
         height = stream.height
         fps = stream.fps or 0
 
-        vcodec = get_codec_rank(stream.video_codec, "video")
-        acodec = get_codec_rank(stream.audio_codec, "audio")
+        vcodec = get_codec_rank(stream.video_codec, ExtensionType.VIDEO)
+        acodec = get_codec_rank(stream.audio_codec, ExtensionType.AUDIO)
 
         return (
             is_video,
@@ -63,7 +63,7 @@ def stream_sort(stream: Stream):
         is_video = 0
 
         bitrate = stream.bitrate
-        acodec = get_codec_rank(stream.audio_codec, "audio")
+        acodec = get_codec_rank(stream.audio_codec, ExtensionType.AUDIO)
 
         return (
             is_video,

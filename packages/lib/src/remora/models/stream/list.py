@@ -9,11 +9,13 @@ from pydantic import ValidationError, ValidatorFunctionWrapHandler, WrapValidato
 from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
-from remora._internal.ydl.types import Protocols
+from remora._internal.types.base import ExtensionType, ExtensionTypeLike
+from remora._internal.types.extension import StreamExtensionLike
+from remora._internal.types.protocol import ProtocolStr
 from remora.models._base import BaseList
 from remora.models.stream._codecs import get_codec_rank, stream_sort
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import StreamExtension, StreamQuality, StreamType
+from remora.types import StreamQuality
 
 
 def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
@@ -36,9 +38,9 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
 
     def filter(
         self,
-        extension: str | StreamExtension | None = None,
+        extension: str | StreamExtensionLike | None = None,
         quality: int | StreamQuality | None = None,
-        protocol: str | Protocols | None = None,
+        protocol: str | ProtocolStr | None = None,
         video_codec: str | None = None,
         audio_codec: str | None = None,
     ) -> Self:
@@ -78,18 +80,18 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         )
 
     @cached_property
-    def type(self) -> StreamType:
+    def type(self) -> ExtensionTypeLike:
         """
         Determine main stream type.
         It will check if is 'video' or 'audio'.
         """
 
         if self.only_video():
-            return "video"
+            return ExtensionType.VIDEO
         elif self.only_audio():
-            return "audio"
+            return ExtensionType.AUDIO
         else:
-            return "video"
+            return ExtensionType.VIDEO
 
     def sort_by(
         self,

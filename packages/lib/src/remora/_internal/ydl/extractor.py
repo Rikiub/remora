@@ -1,19 +1,17 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import cast
 
 from yt_dlp.networking.exceptions import RequestError
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
+from remora._internal.types.search import SearchService, SearchServiceLike
 from remora._internal.ydl.messages import extract_status_code, format_except_message
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractError
-from remora.types import SearchService
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class SearchQuery:
     service: SearchService
     template: str
@@ -22,27 +20,26 @@ class SearchQuery:
         return self.template.format(limit=limit) + query
 
 
-SEARCH_QUERIES = [
-    SearchQuery("soundcloud", "scsearch{limit}:"),
-    SearchQuery("youtube", "ytsearch{limit}:"),
-    SearchQuery("ytmusic", "https://music.youtube.com/search?q="),
-]
+SEARCH_QUERIES = {
+    SearchQuery(SearchService.SOUNDCLOUD, "scsearch{limit}:"),
+    SearchQuery(SearchService.YOUTUBE, "ytsearch{limit}:"),
+    SearchQuery(SearchService.YTMUSIC, "https://music.youtube.com/search?q="),
+}
 
 
 def extract_query(
     query: str,
-    service: str | SearchService,
+    service: str | SearchServiceLike,
     limit: int = 20,
 ) -> YDLExtractInfo:
     """Extract info from search service."""
 
-    try:
-        result = [item for item in SEARCH_QUERIES if item.service == service]
-        result = result[0]
-    except IndexError:
-        raise ValueError(f"{service} is invalid. Should be: {SearchService}")
+    for item in SEARCH_QUERIES:
+        if item.service == service:
+            result = extract_info(item.build(query, limit))
+            return result
 
-    return extract_info(result.build(query, limit))
+    raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
 
 def extract_info(query: str) -> YDLExtractInfo:

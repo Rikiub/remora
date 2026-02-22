@@ -3,9 +3,10 @@ from typing import Literal, get_args
 
 from typer import BadParameter
 
-from remora.types import SearchService, StreamQuality
+from remora._internal.types.search import SearchServiceStr
+from remora.types import StreamQuality
 
-SearchTarget = Literal["url", SearchService]
+SearchTarget = Literal["url", SearchServiceStr]
 
 
 def complete_query(incomplete: str) -> Generator[str, None, None]:

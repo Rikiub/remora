@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import overload
 
 from remora._internal.extractor import MediaExtractor
+from remora._internal.types.search import SearchServiceLike
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
@@ -13,7 +14,7 @@ from remora.models.media.types import AnyExtractResult
 from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail
 from remora.models.stream.item import Stream
-from remora.types import SearchService, StrPath, StrUrl
+from remora.types import StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
 
 
@@ -44,7 +45,7 @@ class Remora:
     async def extract_search(
         self,
         query: str,
-        service: SearchService,
+        service: SearchServiceLike,
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""

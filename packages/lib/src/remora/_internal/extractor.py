@@ -8,12 +8,13 @@ from loguru import logger
 from pydantic import ValidationError
 
 from remora._internal.cache import load_info, remove_info, save_info
+from remora._internal.types.search import SearchServiceLike
 from remora.models._base import YDLSerializable
 from remora.models.media._base import BaseExtract
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
 from remora.models.media.types import ExtractAdapter
-from remora.types import SearchService, StrUrl
+from remora.types import StrUrl
 
 T = TypeVar("T", bound=YDLSerializable)
 
@@ -65,12 +66,16 @@ class MediaExtractor:
     async def extract_search(
         self,
         query: str,
-        service: SearchService,
+        service: SearchServiceLike,
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""
 
-        with logger.contextualize(status="extracting", service=service, query=query):
+        with logger.contextualize(
+            status="extracting",
+            service=str(service),
+            query=query,
+        ):
             logger.info(
                 'Searching from "{service}": "{query}"',
                 service=service,

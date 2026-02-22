@@ -1,24 +1,32 @@
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, get_args
 
+from click import Choice
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
-from remora._internal.helpers import literal_to_set
-from remora.types import DEFAULT_TEMPLATE, StreamTarget
+from remora._internal.types.audio import SafeAudioExtensionStr
+from remora._internal.types.base import ExtensionTypeStr
+from remora._internal.types.video import SafeVideoExtensionStr
+from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async
 from remora_cli.ui.rich import CONSOLE
 
 
-class HelpPanel(str, Enum):
+class HelpPanel(StrEnum):
     file = "File"
     downloader = "Downloader"
 
 
-FormatEnum = StrEnum("FormatEnum", {v.upper(): v for v in literal_to_set(StreamTarget)})
+FORMAT_CHOICES = [
+    s
+    for lit in (ExtensionTypeStr, SafeVideoExtensionStr, SafeAudioExtensionStr)
+    for s in get_args(lit)
+]
+
 app = Typer()
 
 
@@ -39,7 +47,7 @@ async def download(
         ),
     ],
     format: Annotated[
-        FormatEnum,  # type: ignore
+        str,
         Option(
             "--format",
             "-f",
@@ -58,6 +66,7 @@ What format you want request?
             prompt_required=False,
             show_default=False,
             rich_help_panel=HelpPanel.file,
+            click_type=Choice(FORMAT_CHOICES),
         ),
     ] = "video",
     quality: Annotated[
@@ -113,7 +122,7 @@ What format you want request?
         try:
             config = DownloadOptions(
                 output_template=output,
-                format=format,
+                format=format,  # type: ignore
                 quality=quality,
                 ffmpeg_path=ffmpeg_path,
                 max_workers=max_workers,

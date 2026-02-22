@@ -4,13 +4,16 @@ from pathlib import Path
 from anyio.to_thread import run_sync
 
 from remora._internal.path import get_ffmpeg
+from remora._internal.types.audio import AudioExtensionLike
+from remora._internal.types.extension import StreamExtensionLike
+from remora._internal.types.video import VideoExtensionLike
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
 from remora.models.media.item import Media
 from remora.models.metadata.music import MusicMetadata
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import AudioExtension, SafeVideoExtension, StreamExtension, StrPath
+from remora.types import StrPath
 
 
 class MediaProcessor:
@@ -34,17 +37,17 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, format: str | StreamExtension):
-        result = await run_sync(self._prc.video_remuxer, format)
+    async def change_container(self, format: str | StreamExtensionLike):
+        result = await run_sync(self._prc.video_remuxer, str(format))
         self._update_file(result)
         return self
 
     async def convert_audio(
         self,
-        format: str | AudioExtension | None = None,
+        format: str | AudioExtensionLike | None = None,
         quality: int | None = None,
     ):
-        result = await run_sync(self._prc.extract_audio, format, quality)
+        result = await run_sync(self._prc.extract_audio, str(format), quality)
         self._update_file(result)
         return self
 
@@ -71,7 +74,7 @@ class MediaProcessor:
         self,
         video: tuple[VideoStream, Path],
         audio: tuple[AudioStream, Path],
-        merge_format: SafeVideoExtension,
+        merge_format: VideoExtensionLike,
     ):
         real_streams: list[RequestedFormat] = []
 
@@ -85,7 +88,9 @@ class MediaProcessor:
                 fmt = {"filepath": str(path)} | stream.to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
-        result = await run_sync(self._prc.merge_formats, merge_format, real_streams)
+        result = await run_sync(
+            self._prc.merge_formats, str(merge_format), real_streams
+        )
 
         self._update_file(result)
         return self

@@ -4,12 +4,15 @@ from typing import Annotated, Generic, Literal, TypeVar
 from pydantic import AfterValidator, AliasChoices, BaseModel, Field, HttpUrl
 from typing_extensions import override
 
-from remora._internal.ydl.types import Protocols
+from remora._internal.types.audio import AudioExtension
+from remora._internal.types.base import ExtensionTypeLike
+from remora._internal.types.extension import StreamExtensionLike
+from remora._internal.types.protocol import ProtocolLike
+from remora._internal.types.video import VideoExtension
 from remora.models._base import YDLSerializable
-from remora.types import AudioExtension, StreamExtension, StreamType, VideoExtension
 
-T_Type = TypeVar("T_Type", bound=StreamType)
-T_Ext = TypeVar("T_Ext", bound=StreamExtension)
+T_Type = TypeVar("T_Type", bound=ExtensionTypeLike)
+T_Ext = TypeVar("T_Ext", bound=StreamExtensionLike)
 
 _Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 _AudioCodecField = Field(alias="acodec")
@@ -28,7 +31,7 @@ class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
 
     type: T_Type
     url: HttpUrl
-    protocol: Protocols
+    protocol: ProtocolLike
     id: Annotated[str, Field(alias="format_id")]
     extension: Annotated[T_Ext, Field(alias="ext")]
 
