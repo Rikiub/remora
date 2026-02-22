@@ -2,12 +2,11 @@ from rich.console import Group, RenderableType
 from rich.live import Live
 from rich.progress import (
     BarColumn,
-    FileSizeColumn,
+    DownloadColumn,
     MofNCompleteColumn,
     Progress,
     TaskID,
     TextColumn,
-    TotalFileSizeColumn,
 )
 from rich.table import Column
 
@@ -82,12 +81,10 @@ class DownloadProgress:
                 table_column=Column(ratio=2, no_wrap=True),
             ),
             BarColumn(table_column=Column(justify="full", ratio=4)),
-            FileSizeColumn(),
-            TextColumn("/"),
-            TotalFileSizeColumn(),
+            DownloadColumn(),
+            disable=disable,
             transient=True,
             expand=True,
-            disable=disable,
             console=CONSOLE,
         )
         self._live = Live(
@@ -97,7 +94,7 @@ class DownloadProgress:
         self.tasks: dict[str, TaskID] = {}
 
     def add_task(self, id: str, description: str, status: str):
-        task_id = self._progress.add_task(description, status=status)
+        task_id = self._progress.add_task(description, status=status, total=None)
         self.tasks[id] = task_id
 
     def remove_task(self, id: str):

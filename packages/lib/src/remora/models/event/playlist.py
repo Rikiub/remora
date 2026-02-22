@@ -2,8 +2,15 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from remora.models.event._base import BasePlaylistEvent, CompletedResult
+from remora.models.event._base import BaseEventID, CompletedResult
 from remora.models.event.media import MediaEvent
+
+
+class BasePlaylistEvent(BaseEventID):
+    type: Literal["playlist"] = "playlist"
+
+    completed: int
+    total: int
 
 
 class PlaylistStarted(BasePlaylistEvent):

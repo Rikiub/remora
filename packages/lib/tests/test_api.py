@@ -24,6 +24,8 @@ async def test_single(tmp_path: Path):
     async for event in remora.download(URL):
         if event.status == "completed":
             assert event.file_path.is_file()
+        elif event.status == "failed":
+            raise AssertionError(f"Download failed: {event.message}")
 
 
 async def test_list(tmp_path: Path):
@@ -39,6 +41,8 @@ async def test_list(tmp_path: Path):
     async for event in remora.download_batch(PLAYLIST):
         if event.type == "media" and event.status == "completed":
             assert event.file_path.is_file()
+        elif event.status == "failed":
+            raise AssertionError(f"Download failed: {event.message}")
 
 
 @pytest.fixture(scope="session")

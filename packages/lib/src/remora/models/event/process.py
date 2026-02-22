@@ -2,23 +2,22 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from remora.models.event._base import BaseMediaEvent
 from remora.models.event.media import FileEvent
 from remora.models.stream.item import AudioStream, VideoStream
 
-ProcessorTask = Literal[
+_BaseTask = Literal[
     "change_container",
     "convert_audio",
     "embed_metadata",
     "embed_thumbnail",
     "embed_subtitles",
 ]
+ProcessorTask = Literal[_BaseTask, "merge_formats"]
 
 
-class Processing(BaseMediaEvent, FileEvent):
-    status: Literal["processing"] = "processing"
-    step: Literal["started", "completed"]
-    task: ProcessorTask
+class Processing(FileEvent):
+    status: Literal["started", "completed"]
+    task: _BaseTask
 
 
 class MergeProcessing(Processing):

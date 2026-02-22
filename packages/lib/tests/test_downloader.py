@@ -8,21 +8,21 @@ from remora import DownloadOptions, MediaExtractor, Remora
 @pytest.fixture
 def download(tmp_path: Path):
     async def wrap(url: str):
-        api = Remora(
+        remora = Remora(
             download_config=DownloadOptions(
                 output_template=tmp_path,
                 quality=1,
             ),
             extractor=MediaExtractor(use_cache=False),
         )
-        result = await api.extract(url)
+        result = await remora.extract(url)
 
-        async for event in api.download_batch(result):
+        async for event in remora.download_batch(result):
             if event.type == "media":
                 if event.status == "completed" and not event.file_path.is_file():
                     raise FileNotFoundError(event.file_path)
                 elif event.status == "failed":
-                    raise AssertionError("Download failed")
+                    raise AssertionError(f"Download failed: {event.message}")
 
     return wrap
 

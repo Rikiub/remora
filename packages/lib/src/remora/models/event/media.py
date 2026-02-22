@@ -4,44 +4,63 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from remora.models.event._base import BaseMediaEvent, CompletedResult, FileEvent
-from remora.models.event.process import (
-    ProcessEvent,
-    Processing,  # noqa: F401
+from remora.models.event._base import (
+    BaseEventID,
+    CompletedResult,
+    FileEvent,
 )
-from remora.models.event.stream import DownloadingStream
+from remora.models.event.process import ProcessEvent
+from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 
 
-class Extracting(BaseMediaEvent):
+class BaseMediaEvent(BaseEventID):
+    type: Literal["media"] = "media"
+    media: Media
+
+
+class MediaExtracting(BaseMediaEvent):
     status: Literal["extracting"] = "extracting"
     media: LazyMedia  # type: ignore
 
 
-class Downloading(DownloadingStream, BaseMediaEvent): ...
+class MediaDownloading(BaseMediaEvent):
+    status: Literal["downloading"] = "downloading"
+    progress: BatchStreamDownloading
 
 
-class Completed(BaseMediaEvent, FileEvent):
+class MediaProcessing(BaseMediaEvent):
+    status: Literal["processing"] = "processing"
+    progress: ProcessEvent
+
+
+class MediaCompleted(BaseMediaEvent, FileEvent):
     status: Literal["completed"] = "completed"
     result: CompletedResult | Literal["duplicate"]
 
 
-class Failed(BaseMediaEvent):
+class MediaFailed(BaseMediaEvent):
     status: Literal["failed"] = "failed"
     message: str
 
 
-class Warning(BaseMediaEvent):
+class MediaWarning(BaseMediaEvent):
     status: Literal["warning"] = "warning"
     message: str
 
 
-class Cancelled(BaseMediaEvent):
+class MediaCancelled(BaseMediaEvent):
     status: Literal["cancelled"] = "cancelled"
     media: LazyMedia | Media  # type: ignore
 
 
 MediaEvent = Annotated[
-    Extracting | Downloading | ProcessEvent | Warning | Completed | Failed | Cancelled,
+    MediaExtracting
+    | MediaDownloading
+    | MediaProcessing
+    | MediaCompleted
+    | MediaFailed
+    | MediaWarning
+    | MediaCancelled,
     Field(discriminator="status"),
 ]

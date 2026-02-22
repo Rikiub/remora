@@ -14,6 +14,8 @@ T_Ext = TypeVar("T_Ext", bound=StreamExtension)
 _Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 _AudioCodecField = Field(alias="acodec")
 
+SizeType = Literal["exact", "estimated", "unknown"]
+
 
 class YDLArgs(BaseModel):
     downloader_options: dict = {}
@@ -24,19 +26,21 @@ class YDLArgs(BaseModel):
 class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
     """Base Stream"""
 
+    type: T_Type
     url: HttpUrl
     protocol: Protocols
     id: Annotated[str, Field(alias="format_id")]
-    type: T_Type
     extension: Annotated[T_Ext, Field(alias="ext")]
 
-    size: Annotated[
+    size_type: SizeType = "unknown"
+    size_bytes: Annotated[
         int | None,
         Field(
             alias="filesize",
             validation_alias=AliasChoices("filesize", "filesize_approx"),
         ),
     ] = None
+
     bitrate: Annotated[float | None, Field(alias="tbr")] = None
     audio_codec: Annotated[_Codec | None, _AudioCodecField] = None
 
@@ -61,14 +65,27 @@ class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
 
         return info
 
+    @classmethod
+    def _transform_ydl_dict(cls, info):
+        filesize = info.get("filesize")
+        filesize_approx = info.get("filesize_approx")
+
+        size_type: SizeType = "unknown"
+        if filesize:
+            size_type = "exact"
+        elif filesize_approx:
+            size_type = "estimated"
+
+        info["size_type"] = size_type
+        return info
+
 
 class AudioStream(BaseStream[Literal["audio"], AudioExtension]):
     type: Literal["audio"] = "audio"
-
-    language: str | None = None
     audio_codec: Annotated[  # type: ignore
         _Codec, _AudioCodecField
     ]
+    language: str | None = None
 
     @property
     @override

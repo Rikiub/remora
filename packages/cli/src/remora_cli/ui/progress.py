@@ -51,11 +51,11 @@ class ProgressCallback:
                             event.id,
                             description=name,
                             status="Downloading",
-                            completed=event.downloaded,
-                            total=event.total,
+                            completed=event.progress.downloaded_bytes,
+                            total=event.progress.total_bytes,
                         )
                     case "processing":
-                        self.processor_callback(event)
+                        self.processor_callback(event.id, event.progress)
                     case "warning":
                         logger.warning("Warning: {}", event.message)
                     case "failed":
@@ -84,25 +84,15 @@ class ProgressCallback:
         await anyio.sleep(1.0)
         self.progress.remove_task(event.id)
 
-    def processor_callback(self, event: ProcessEvent):
-        match event.task:
-            case "convert_audio":
-                if event.step == "started":
-                    self.progress.update(
-                        event.id,
-                        status="Converting[blink]...[/]",
-                    )
-            case "merge_formats":
-                if event.step == "started":
-                    self.progress.update(
-                        event.id,
-                        status="Merging[blink]...[/]",
-                    )
-            case _:
-                self.progress.update(
-                    event.id,
-                    status="Processing[blink]...[/]",
-                )
+    def processor_callback(self, id: str, event: ProcessEvent):
+        self.progress.update(id, status="Processing[blink]...[/]")
+
+        if event.status == "started":
+            match event.task:
+                case "convert_audio":
+                    self.progress.update(id, status="Converting[blink]...[/]")
+                case "merge_formats":
+                    self.progress.update(id, status="Merging[blink]...[/]")
 
     def _media_display_name(self, media: LazyMedia) -> str:
         """Get pretty representation of media name."""

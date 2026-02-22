@@ -39,7 +39,7 @@ def get_codec_rank(
 
 
 def stream_sort(stream: Stream):
-    size = stream.size or 0
+    size = stream.size_bytes or 0
 
     if isinstance(stream, VideoStream):
         is_video = 1

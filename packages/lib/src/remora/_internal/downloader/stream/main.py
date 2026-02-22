@@ -16,7 +16,6 @@ class StreamDownloader(BaseStreamDownloader):
         self,
         output_path: StrPath,
         stream: Stream,
-        duration: float | None = None,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
     ):
@@ -25,7 +24,6 @@ class StreamDownloader(BaseStreamDownloader):
             stream,
             retries=retries,
         )
-        self.duration = duration
         self.max_workers = max_workers
 
     @override
@@ -44,7 +42,6 @@ class StreamDownloader(BaseStreamDownloader):
                     self.stream,
                     retries=self.retries,
                     max_workers=self.max_workers,
-                    duration=self.duration,
                 ) as client:
                     async for event in client.download():
                         yield event

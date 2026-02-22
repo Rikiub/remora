@@ -26,7 +26,9 @@ class YDLSerializable(RemoraBaseModel):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl(cls, data):
-        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
+        if isinstance(data, dict) and (
+            data.get("extractor_key") or data.get("ie_key") or data.get("format_id")
+        ):
             return cls._transform_ydl_dict(data)
         return data
 

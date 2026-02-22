@@ -36,7 +36,7 @@ async def log_event_media(event: MediaEvent):
     ):
         match event.status:
             case "processing":
-                await _processor_callback(event)
+                await _processor_callback(event.progress)
             case "warning":
                 logger.warning("Warning: {}", event.message)
             case "failed":
@@ -68,8 +68,8 @@ async def log_event_media(event: MediaEvent):
 
 
 async def _processor_callback(event: ProcessEvent):
-    with logger.contextualize(task=event.task, step=event.step):
-        if event.step == "completed":
+    with logger.contextualize(status=event.status, task=event.task):
+        if event.status == "completed":
             match event.task:
                 case "change_container":
                     logger.debug(

@@ -10,8 +10,13 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloadError
-from remora.models.event.stream import CompletedStream, DownloadingStream, StreamEvent
-from remora.models.stream.item import Stream
+from remora.models.event.stream import (
+    StreamCompleted,
+    StreamContinuous,
+    StreamEvent,
+    StreamSegmented,
+)
+from remora.models.stream.item import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 _HTTP_PROTOCOLS = {
@@ -34,23 +39,22 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
-        duration: float | None = None,
     ):
         super().__init__(output_path, stream, retries)
-        self.duration = duration
-
-        # Calculate file size
-        total = self.stream.size or 0
-
-        if not total and self.stream.bitrate and self.duration:
-            total = int((self.stream.bitrate * 1000 * self.duration) / 8)
-
-        self.file_size = total
-        self.event = DownloadingStream(total=total)
 
         # Workers
         self.max_workers = max_workers
         self.limiter = anyio.CapacityLimiter(max_workers)
+
+        # Progress
+        self.is_continuous = False
+
+        self.downloaded_bytes = 0
+        self.total_bytes = self.stream.size_bytes
+        self.size_type: SizeType = self.stream.size_type
+
+        self.current_segment = 0
+        self.total_segments = 0
 
     async def __aenter__(self):
         self.client = httpx.AsyncClient(
@@ -70,17 +74,12 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             StreamEvent
         ](20)
 
-        if self.file_size:
-            await self._send_stream.send(self.event)
-
         async with receive_stream:
             async with anyio.create_task_group() as tg:
                 tg.start_soon(self._producer)
 
                 async for event in receive_stream:
                     yield event
-
-                yield CompletedStream(file_path=pathlib.Path(self.file_path))
 
     async def _producer(self):
         async with self._send_stream:
@@ -90,6 +89,8 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 async with self.client:
                     if self.stream.protocol in _HTTP_PROTOCOLS:
                         logger.debug("Downloading stream as http")
+
+                        self.is_continuous = True
                         path = await self._download_multi_part()
 
                     elif self.stream.protocol in _LIST_PROTOCOLS:
@@ -112,6 +113,10 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             path = await self._fix_extension(path)
             self.file_path = path
 
+            await self._send_stream.send(
+                StreamCompleted(file_path=pathlib.Path(self.file_path))
+            )
+
     async def _download_multi_part(self) -> Path:
         async with self.client.stream(
             "GET",
@@ -124,35 +129,59 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 logger.debug("Server supports range; downloading in parallel")
 
                 content_range = res.headers.get("Content-Range")
+                size = int(content_range.split("/")[-1])
 
-                self.file_size = int(content_range.split("/")[-1])
-                self.event.total = self.file_size
+                self.total_bytes = size
+                self.size_type = "exact"
+
+                # Pre-allocate
+                async with await self.file_path.open("wb") as f:
+                    await f.truncate(self.total_bytes)
             else:
                 logger.debug("Server don't supports range; downloading single file")
 
-            # Pre-allocate
-            async with await self.file_path.open("wb") as f:
-                await f.truncate(self.file_size)
+                content_length = res.headers.get("Content-Length")
+                self.total_bytes = int(content_length) if content_length else None
+                self.size_type = "estimated" if self.total_bytes else "unknown"
 
-            workers = self.max_workers if (supports_range and self.file_size) else 1
-            chunk_size = self.file_size // workers
+            logger.debug(
+                "Total file size: {file_size} ({size_type})",
+                file_size=self.total_bytes,
+                size_type=self.size_type,
+            )
+
+            workers = self.max_workers if (supports_range and self.total_bytes) else 1
 
             async with anyio.create_task_group() as tg:
-                for i in range(workers):
-                    start = i * chunk_size
-                    end = (
-                        (i + 1) * chunk_size - 1
-                        if i < workers - 1
-                        else self.file_size - 1
-                    )
+                if supports_range and self.total_bytes:
+                    # Multi-part parallel download
+                    chunk_size = self.total_bytes // workers
 
+                    for i in range(workers):
+                        start = i * chunk_size
+                        end = (
+                            (i + 1) * chunk_size - 1
+                            if i < workers - 1
+                            else self.total_bytes - 1
+                        )
+
+                        tg.start_soon(
+                            self._save_range,
+                            self.file_path,
+                            str(self.stream.url),
+                            start,
+                            end,
+                            True,
+                        )
+                else:
+                    # Single-stream download
                     tg.start_soon(
                         self._save_range,
                         self.file_path,
                         str(self.stream.url),
-                        start,
-                        end,
-                        True,
+                        0,
+                        None,
+                        False,
                     )
 
         return self.file_path
@@ -167,7 +196,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
         part_files: list[Path] = []
         logger.debug(
-            "{stream_fragments} fragments will be downloaded in parallel",
+            "{fragments_total} fragments will be downloaded in parallel",
             fragments_total=len(urls),
         )
 
@@ -182,7 +211,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                     part,
                     url,
                     0,
-                    0,
+                    None,
                     False,
                 )
 
@@ -194,8 +223,8 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         path: Path,
         url: str,
         start: int = 0,
-        end: int = 0,
-        is_parallel: bool = False,
+        end: int | None = None,
+        is_continuous: bool = False,
     ):
         """Downloads a specific byte range to a file with resume support."""
 
@@ -210,11 +239,11 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             downloaded = 0
 
             # 'r+b' for shared files, 'ab' for part files
-            mode = "r+b" if is_parallel else "ab"
+            mode = "r+b" if is_continuous else "ab"
 
             async with await path.open(mode) as f:
                 for attempt in range(self.retries):
-                    if is_parallel:
+                    if is_continuous:
                         current_start = start + downloaded
                     else:
                         stats = await path.stat()
@@ -230,14 +259,16 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                         ) as res:
                             res.raise_for_status()
 
-                            if is_parallel:
+                            if is_continuous:
                                 await f.seek(current_start)
 
                             async for chunk in res.aiter_bytes():
                                 await f.write(chunk)
 
                                 downloaded += len(chunk)
-                                await self._update_progress(len(chunk))
+                                self.downloaded_bytes += len(chunk)
+
+                                await self._update_progress()
 
                             if end:
                                 logger.debug(
@@ -265,15 +296,25 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         new_file = path.with_suffix(f".{self.stream.extension}")
         return await path.rename(new_file)
 
-    async def _update_progress(self, size: int):
-        event = self.event
-        event.downloaded += size
-
-        if event.downloaded > event.total:
-            event.total = event.downloaded
+    async def _update_progress(self):
+        if self.total_bytes and (self.downloaded_bytes > self.total_bytes):
+            self.total_bytes = self.downloaded_bytes
 
         # Send event to top function
-        await self._send_stream.send(event)
+        if self.is_continuous:
+            await self._send_stream.send(
+                StreamContinuous(
+                    downloaded_bytes=self.downloaded_bytes,
+                    total_bytes=self.total_bytes,
+                )
+            )
+        else:
+            await self._send_stream.send(
+                StreamSegmented(
+                    current_segment=self.current_segment,
+                    total_segments=self.total_segments,
+                )
+            )
 
     def _get_headers(self) -> dict[str, str]:
         headers = self.stream.http_headers

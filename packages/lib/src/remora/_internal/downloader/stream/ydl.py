@@ -9,9 +9,10 @@ from typing_extensions import override
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.ydl.types import PROTOCOLS
 from remora.models.event.stream import (
-    CompletedStream,
-    DownloadingStream,
+    StreamCompleted,
+    StreamContinuous,
     StreamEvent,
+    StreamSegmented,
 )
 from remora.models.stream.item import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
@@ -27,7 +28,12 @@ class YDLStreamDownloader(BaseStreamDownloader):
         retries: int = DEFAULT_RETRIES,
     ):
         super().__init__(output_path, stream, retries=retries)
-        self._event = DownloadingStream()
+
+        self.downloaded_bytes = 0
+        self.total_bytes = 0
+
+        self.current_segment = 0
+        self.total_segments = 0
 
     @override
     async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
@@ -43,8 +49,6 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 async for event in receive_stream:
                     yield event
 
-                yield CompletedStream(file_path=pathlib.Path(self.file_path))
-
     async def _producer(self):
         from remora._internal.ydl.downloader import download_format
 
@@ -56,31 +60,61 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 self._ydl_progress,
                 self.retries,
             )
+
             self.file_path = Path(path)
+            await self._send_stream.send(
+                StreamCompleted(file_path=pathlib.Path(self.file_path))
+            )
 
     def _ydl_progress(self, data: dict) -> None:
         """`YT-DLP` progress hook, but stable and without issues."""
 
         d = data
-        event = self._event
+
+        speed = 0
+        elapsed = 0
 
         match d["status"]:
             case "downloading":
                 downloaded_bytes = d.get("downloaded_bytes") or 0
-                total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                total_bytes = (
+                    d.get("total_bytes") or d.get("total_bytes_estimate") or None
+                )
 
-                if downloaded_bytes > event.downloaded:
-                    event.downloaded = downloaded_bytes
+                self.current_segment = d.get("fragment_index")
+                self.total_segments = d.get("fragment_count")
 
-                if total_bytes > event.total:
-                    event.total = total_bytes
+                if total_bytes:
+                    if downloaded_bytes > self.downloaded_bytes:
+                        self.downloaded_bytes = downloaded_bytes
 
-                event.speed = d.get("speed") or 0
-                event.elapsed = d.get("elapsed") or 0
+                    if total_bytes > self.total_bytes:
+                        self.total_bytes = total_bytes
+
+                speed = d.get("speed") or 0
+                elapsed = d.get("elapsed") or 0
             case "finished":
-                event.downloaded = event.total
+                self.downloaded_bytes = self.total_bytes
 
         try:
-            self._send_stream.send_nowait(event)
+            if self.current_segment:
+                self._send_stream.send_nowait(
+                    StreamSegmented(
+                        current_segment=self.current_segment,
+                        total_segments=self.total_segments,
+                        downloaded_bytes=self.downloaded_bytes,
+                        speed=speed,
+                        elapsed=elapsed,
+                    )
+                )
+            else:
+                self._send_stream.send_nowait(
+                    StreamContinuous(
+                        downloaded_bytes=self.downloaded_bytes,
+                        total_bytes=self.total_bytes or None,
+                        speed=speed,
+                        elapsed=elapsed,
+                    )
+                )
         except anyio.WouldBlock:
             pass
