@@ -7,11 +7,19 @@ from remora._internal.ydl.types import AudioExtension as _YDLAudioExtension
 from remora._internal.ydl.types import VideoExtension as _YDLVideoExtension
 from remora._internal.ydl.types import YDLExtensions as _YDLExtensions
 
-# Extension
+# Stream Extension
 VideoExtension = _YDLVideoExtension
 AudioExtension = _YDLAudioExtension
 StreamExtension = VideoExtension | AudioExtension
-"""Common lossy compression containers formats with thumbnail and metadata support."""
+
+# Safe Extension
+SafeVideoExtension = Literal["mp4", "mkv"]
+"""Common containers compatibles with: merging, remuxing, thumbnails, subtitles and metadata embedding."""
+
+SafeAudioExtension = Literal["m4a", "mp3", "mka", "flac"]
+"""Common containers compatibles with: merging, remuxing, thumbnails and metadata embedding."""
+
+SafeExtension = SafeVideoExtension | SafeAudioExtension
 
 
 class SupportedExtensions:
@@ -27,7 +35,7 @@ class SupportedExtensions:
 # Target
 SearchService = Literal["soundcloud", "youtube", "ytmusic"]
 StreamType = Literal["video", "audio"]
-StreamTarget = StreamType | StreamExtension
+StreamTarget = StreamType | SafeExtension
 
 # Quality
 AudioQuality = Literal[128, 256, 360]

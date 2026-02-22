@@ -14,6 +14,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 )
 
 from remora._internal.ydl.types import YDLExtractInfo
+from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import FFmpegNotFoundError, ProcessingError
 from remora.types import StrPath
 
@@ -132,15 +133,35 @@ class YDLProcessor:
         return self
 
     @catch
-    def merge_formats(self, formats: list[RequestedFormat]) -> Self:
-        pp = FFmpegMergerPP()
-        _, data = pp.run(
-            self._params
-            | {
-                "requested_formats": formats,
-                "__files_to_merge": [item["filepath"] for item in formats],
-            },
+    def merge_formats(
+        self,
+        merge_format: str,
+        formats: list[RequestedFormat],
+    ) -> Self:
+        pp = FFmpegMergerPP(
+            YDL(
+                {"merge_output_format": merge_format},
+            )
         )
+        extensions = []
+
+        for fmt in formats:
+            ext = Path(fmt["filepath"]).suffix.lstrip(".")
+            extensions.append(ext)
+
+        try:
+            _, data = pp.run(
+                self._params
+                | {
+                    "requested_formats": formats,
+                    "__files_to_merge": [f["filepath"] for f in formats],
+                },
+            )
+        except FFmpegPostProcessorError:
+            raise ProcessingError(
+                f"Files with extensions {', '.join(extensions)} are incompatibles and can't be merged"
+            )
+
         self._update_filepath(data)
         return self
 

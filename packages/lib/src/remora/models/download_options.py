@@ -1,7 +1,8 @@
-from typing import Annotated, cast, get_args
+from typing import Annotated, cast
 
 from pydantic import AfterValidator
 
+from remora._internal.helpers import literal_to_set
 from remora._internal.path import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
@@ -9,7 +10,7 @@ from remora.types import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
     AudioExtension,
-    StreamExtension,
+    SafeExtension,
     StreamQuality,
     StreamTarget,
     StreamType,
@@ -55,28 +56,28 @@ class DownloadOptions(RemoraBaseModel):
             "video" or "audio".
         """
 
-        if self.format in get_args(StreamType):
+        if self.format in literal_to_set(StreamType):
             return cast(StreamType, self.format)
 
-        elif self.format in get_args(VideoExtension):
+        elif self.format in literal_to_set(VideoExtension):
             return "video"
 
-        elif self.format in get_args(AudioExtension):
+        elif self.format in literal_to_set(AudioExtension):
             return "audio"
 
         else:
             raise ValueError(self.format, "is invalid. Should be:", StreamTarget)
 
     @property
-    def convert(self) -> StreamExtension | None:
+    def convert(self) -> SafeExtension | None:
         """Check if would convert the files.
 
         Returns:
-            If could convert, returns a file `EXTENSION`, else return `None`.
+            If could convert, returns a file extension, else return None.
         """
 
         return (
-            cast(StreamExtension, self.format)
-            if self.format in get_args(StreamExtension)
+            cast(SafeExtension, self.format)
+            if self.format in literal_to_set(SafeExtension)
             else None
         )

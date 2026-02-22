@@ -9,8 +9,8 @@ from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
 from remora.models.media.item import Media
 from remora.models.metadata.music import MusicMetadata
-from remora.models.stream.item import Stream
-from remora.types import AudioExtension, StreamExtension, StrPath
+from remora.models.stream.item import AudioStream, Stream, VideoStream
+from remora.types import AudioExtension, SafeVideoExtension, StreamExtension, StrPath
 
 
 class MediaProcessor:
@@ -67,19 +67,26 @@ class MediaProcessor:
         self._update_file(result)
         return self
 
-    async def merge_streams(self, streams: list[tuple[Stream, Path]]):
+    async def merge_streams(
+        self,
+        video: tuple[VideoStream, Path],
+        audio: tuple[AudioStream, Path],
+        merge_format: SafeVideoExtension,
+    ):
         real_streams: list[RequestedFormat] = []
 
-        for fmt in streams:
+        for fmt in (video, audio):
             if isinstance(fmt, tuple):
                 stream, path = fmt
+
                 stream: Stream
                 path: Path
 
                 fmt = {"filepath": str(path)} | stream.to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
-        result = await run_sync(self._prc.merge_formats, real_streams)
+        result = await run_sync(self._prc.merge_formats, merge_format, real_streams)
+
         self._update_file(result)
         return self
 

@@ -53,6 +53,22 @@ async def streams():
     return result.streams
 
 
+class TestDownloadOptions:
+    def test_output_template(self):
+        with pytest.raises(ValueError):
+            DownloadOptions(output_template="{wrong_key}")
+
+    def test_ffmpeg(self):
+        with pytest.raises(ValueError):
+            DownloadOptions(ffmpeg_path="{wrong_key}")
+
+    def test_format(self):
+        DownloadOptions(format="mp3")
+        DownloadOptions(format="mka")
+        DownloadOptions(format="ogg")
+        DownloadOptions(format="webm")
+
+
 class TestStreamList:
     async def test_video_type(self, streams: StreamList):
         fmt = streams.only_video()

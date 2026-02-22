@@ -1,6 +1,8 @@
+from functools import cache
 from typing import Any, get_args
 
 
+@cache
 def literal_to_set(tp: Any) -> frozenset[str]:
     """Flattens nested Literals/Unions into a single set of strings."""
 

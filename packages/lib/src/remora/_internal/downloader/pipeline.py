@@ -15,6 +15,7 @@ from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.batch import BatchStreamDownloader
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.extractor import MediaExtractor
+from remora._internal.helpers import literal_to_set
 from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
@@ -34,7 +35,7 @@ from remora.models.event.process import MergeProcessing, Processing, _BaseTask
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.types import StrPath, SupportedExtensions
+from remora.types import SafeVideoExtension, StrPath, SupportedExtensions
 
 
 @dataclass(slots=True)
@@ -182,6 +183,8 @@ class DownloadPipeline:
 
             try:
                 if video_stream and audio_stream:
+                    completed_event = None
+
                     async for event in BatchStreamDownloader(
                         video=(video_stream, get_tempfile()),
                         audio=(audio_stream, get_tempfile()),
@@ -195,22 +198,27 @@ class DownloadPipeline:
                                 )
                             )
                         elif event.status == "completed":
-                            if self.ffmpeg_path:
-                                results.file_path = await self.process_merge(
-                                    video=(video_stream, event.video_path),
-                                    audio=(audio_stream, event.audio_path),
-                                )
-                            elif p := event.video_path:
-                                results.file_path = p
-                            elif p := event.audio_path:
-                                results.file_path = p
-                            else:
-                                raise DownloadError("Streams not founded")
+                            completed_event = event
 
-                            logger.debug(
-                                'Stream downloaded: "{file}"',
-                                file=results.file_path,
-                            )
+                    if not completed_event:
+                        raise ValueError()
+
+                    if self.ffmpeg_path:
+                        results.file_path = await self.process_merge(
+                            video=(video_stream, completed_event.video_path),
+                            audio=(audio_stream, completed_event.audio_path),
+                        )
+                    elif p := completed_event.video_path:
+                        results.file_path = p
+                    elif p := completed_event.audio_path:
+                        results.file_path = p
+                    else:
+                        raise DownloadError("Streams not founded")
+
+                    logger.debug(
+                        'Stream downloaded: "{file}"',
+                        file=results.file_path,
+                    )
                 else:
                     async for event in StreamDownloader(
                         output_path=get_tempfile(),
@@ -226,7 +234,7 @@ class DownloadPipeline:
                             )
                         elif event.status == "completed":
                             results.file_path = event.file_path
-            except* DownloadError as eg:
+            except* (DownloadError, ProcessingError) as eg:
                 error = eg.exceptions[0]
                 logger.debug(
                     "Unable to download streams: {error}",
@@ -240,12 +248,12 @@ class DownloadPipeline:
                         message=str(error),
                     )
                 )
-                raise
+                raise error
 
         async def thumbnail():
             if media.thumbnails:
                 try:
-                    logger.debug("MediaDownloading thumbnail")
+                    logger.debug("Downloading thumbnail")
                     results.thumbnail = await download_thumbnail(
                         media.thumbnails[-1],
                         get_tempfile(),
@@ -263,7 +271,7 @@ class DownloadPipeline:
         async def subtitles():
             if media.subtitles:
                 try:
-                    logger.debug("MediaDownloading subtitles")
+                    logger.debug("Downloading subtitles")
                     results.subtitles = await download_subtitles(
                         media.subtitles,
                         get_tempfile(),
@@ -290,7 +298,10 @@ class DownloadPipeline:
         video: tuple[VideoStream, Path],
         audio: tuple[AudioStream, Path],
     ):
-        extension = self.config.convert or "mp4"
+        extension = "mp4"
+        if self.config.convert in literal_to_set(SafeVideoExtension):
+            extension = cast(SafeVideoExtension, self.config.convert)
+
         file_path = Path(f"{get_tempfile()}.{extension}")
         file_path.touch()
 
@@ -307,7 +318,25 @@ class DownloadPipeline:
         await self._stream.send(merging)
 
         prc = MediaProcessor(file_path, self.ffmpeg_path)
-        prc = await prc.merge_streams(streams=[video, audio])
+
+        try:
+            prc = await prc.merge_streams(
+                video=video,
+                audio=audio,
+                merge_format=extension,
+            )
+        except ProcessingError:
+            logger.debug(
+                "{} and {} don't supports merging as {}, fallback to mkv",
+                video[0].extension,
+                audio[0].extension,
+                extension,
+            )
+            prc = await prc.merge_streams(
+                video=video,
+                audio=audio,
+                merge_format="mkv",
+            )
 
         merging.progress.status = "completed"
         await self._stream.send(merging)
