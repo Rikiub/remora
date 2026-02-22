@@ -1,7 +1,20 @@
+# ruff: noqa: F401
+
 from os import PathLike
 from typing import Literal
 
 from pydantic import HttpUrl
+
+from remora._internal.types.extension import (
+    AudioExtension,
+    AudioExtensionLike,
+    ExtensionType,
+    ExtensionTypeLike,
+    StreamExtension,
+    StreamExtensionLike,
+    VideoExtension,
+    VideoExtensionLike,
+)
 
 # Quality
 AudioQuality = Literal[128, 256, 360]
