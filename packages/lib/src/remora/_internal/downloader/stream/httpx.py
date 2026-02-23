@@ -186,10 +186,12 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         return self.file_path
 
     async def _download_fragments(self) -> Path:
-        response = await self.client.get(str(self.stream.url))
+        res = await self.client.get(str(self.stream.url))
+        res.raise_for_status()
+
         urls = [
             urljoin(str(self.stream.url), line.strip())
-            for line in response.text.splitlines()
+            for line in res.text.splitlines()
             if line.strip() and not line.startswith("#")
         ]
 
