@@ -13,7 +13,7 @@ from remora._internal.types.base import ExtensionType, ExtensionTypeLike
 from remora._internal.types.extension import StreamExtensionLike
 from remora._internal.types.protocol import ProtocolStr
 from remora.models._base import BaseList
-from remora.models.stream._codecs import get_codec_rank, stream_sort
+from remora.models.stream._sort import get_codec_rank, stream_sort
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StreamQuality
 
