@@ -58,7 +58,7 @@ def main(
             help="Process using cache.",
             rich_help_panel=HelpPanel.EXTRACTION,
         ),
-    ] = True,
+    ] = False,
 ):
     """Fishy data extractor/downloader ✨"""
 

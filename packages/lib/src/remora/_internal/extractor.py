@@ -20,7 +20,7 @@ T = TypeVar("T", bound=YDLSerializable)
 
 
 class MediaExtractor:
-    def __init__(self, use_cache: bool = True) -> None:
+    def __init__(self, use_cache: bool = False) -> None:
         self.use_cache = use_cache
 
     @overload
