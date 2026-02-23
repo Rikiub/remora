@@ -9,7 +9,7 @@ StreamTarget = ExtensionType | StreamExtension
 StreamTargetLike = ExtensionTypeLike | StreamExtensionLike
 
 
-def get_extension(extension: str) -> VideoExtension | AudioExtension:
+def get_extension(extension: StreamExtensionLike) -> VideoExtension | AudioExtension:
     try:
         return VideoExtension(extension)
     except ValueError:

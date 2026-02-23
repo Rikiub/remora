@@ -18,7 +18,6 @@ def show_version(show: bool) -> None:
 
 class HelpPanel(StrEnum):
     DISPLAY = "Display"
-    EXTRACTION = "Extraction"
 
 
 app = Typer()
@@ -52,19 +51,11 @@ def main(
             is_eager=True,
         ),
     ] = False,
-    cache: Annotated[
-        bool,
-        Option(
-            help="Process using cache.",
-            rich_help_panel=HelpPanel.EXTRACTION,
-        ),
-    ] = False,
 ):
     """Fishy data extractor/downloader ✨"""
 
     CONFIG.verbose = verbose
     CONFIG.quiet = quiet
-    CONFIG.cache = cache
 
     # Setup logger
     from remora_cli.logs import setup_logging

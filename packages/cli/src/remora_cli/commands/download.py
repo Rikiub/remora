@@ -113,7 +113,7 @@ What format you want request?
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import DownloadOptions, MediaExtractor, Remora
+        from remora import DownloadOptions, Remora
         from remora.exceptions import OutputTemplateError
         from remora.models.media.list import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
@@ -130,12 +130,9 @@ What format you want request?
         except OutputTemplateError as error:
             raise BadParameter(str(error))
 
-        remora = Remora(
-            download_config=config,
-            extractor=MediaExtractor(use_cache=CONFIG.cache),
-        )
+        remora = Remora(download_options=config)
 
-    async for target, result in extract_queries(query, remora.extractor):
+    async for target, result in extract_queries(query, remora._extractor):
         if isinstance(result, (Playlist, SearchList)):
             if not result.medias:
                 logger.error("'{}' don't have streams to download", target)

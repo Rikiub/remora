@@ -14,7 +14,7 @@ ExtensionTypeLike = ExtensionType | ExtensionTypeStr
 class BaseExtension:
     @classmethod
     def get_safe_extensions(cls):
-        return [e.value for e in cls if e.is_safe]
+        return [e.value for e in cls if e.is_safe]  # type: ignore
 
     @property
     def is_safe(self) -> bool:

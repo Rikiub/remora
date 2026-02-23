@@ -19,13 +19,9 @@ from remora_cli.ui.extractor import SearchList
 
 
 class Remora:
-    def __init__(
-        self,
-        download_config: DownloadOptions | None = None,
-        extractor: MediaExtractor | None = None,
-    ):
-        self.config = download_config or DownloadOptions()
-        self.extractor = extractor or MediaExtractor()
+    def __init__(self, download_options: DownloadOptions | None = None):
+        self.download_options = download_options or DownloadOptions()
+        self._extractor = MediaExtractor()
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -40,7 +36,7 @@ class Remora:
         self, item: StrUrl | LazyMedia | LazyPlaylist
     ) -> Media | Playlist:
         """Extract media from URL or update item."""
-        return await self.extractor.extract(item)
+        return await self._extractor.extract(item)
 
     async def extract_search(
         self,
@@ -49,7 +45,7 @@ class Remora:
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""
-        return await self.extractor.extract_search(query, service, limit)
+        return await self._extractor.extract_search(query, service, limit)
 
     @overload
     def download(self, item: StrUrl | LazyMedia) -> AsyncIterable[MediaEvent]: ...
@@ -74,8 +70,8 @@ class Remora:
 
             async for event in DownloadPipeline(
                 extracted,
-                config=self.config,
-                extractor=self.extractor,
+                config=self.download_options,
+                extractor=self._extractor,
             ).download():
                 yield event
 
@@ -91,8 +87,8 @@ class Remora:
 
         async for event in DownloadBatch(
             extracted,
-            config=self.config,
-            extractor=self.extractor,
+            config=self.download_options,
+            extractor=self._extractor,
         ).download():
             yield event
 
@@ -107,7 +103,7 @@ class Remora:
         downloader = StreamDownloader(
             output_path,
             item,
-            retries=retries or self.config.retries,
+            retries=retries or self.download_options.retries,
         )
         async for event in downloader.download():
             yield event

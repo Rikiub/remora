@@ -5,7 +5,6 @@ from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
 from remora_cli.completions import complete_query, complete_template_key
-from remora_cli.config import CONFIG
 from remora_cli.helpers import make_async, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
@@ -124,7 +123,7 @@ async def extract(
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
-        extractor = MediaExtractor(use_cache=CONFIG.cache)
+        extractor = MediaExtractor()
 
     # Determine user intent
     sel_format = format
@@ -143,10 +142,7 @@ async def extract(
 
     # Extract queries
     async for _, result in extract_queries(query, extractor):
-        if result.is_cache:
-            logger.success("Data extracted from cache")
-        else:
-            logger.success("Successful extraction")
+        logger.success("Successful extraction")
 
         # Show
         if sel_format == "json":

@@ -66,12 +66,6 @@ class VideoExtension(BaseExtension, StrEnum):
         """Checks if the container supports internal subtitles."""
         return self in {VideoExtension.MKV, VideoExtension.MP4, VideoExtension.WEBM}
 
-    @property
-    def can_merge(self) -> bool:
-        """Checks if FFmpeg can safely merge audio/video streams into this."""
-        # FLV and AVI are legacy and often fail with modern codecs like VP9/Opus.
-        return self not in {VideoExtension.AVI, VideoExtension.FLV}
-
 
 SafeVideoExtensionStr = Literal["mp4", "mkv"]
 VideoExtensionStr = Literal[

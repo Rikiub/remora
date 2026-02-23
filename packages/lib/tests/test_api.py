@@ -13,12 +13,11 @@ PLAYLIST = (
 
 async def test_single(tmp_path: Path):
     remora = Remora(
-        download_config=DownloadOptions(
+        download_options=DownloadOptions(
             output_template=tmp_path,
             format="audio",
             quality=1,
         ),
-        extractor=MediaExtractor(use_cache=False),
     )
 
     async for event in remora.download(URL):
@@ -30,12 +29,11 @@ async def test_single(tmp_path: Path):
 
 async def test_list(tmp_path: Path):
     remora = Remora(
-        download_config=DownloadOptions(
+        download_options=DownloadOptions(
             output_template=tmp_path,
             format="audio",
             quality=1,
         ),
-        extractor=MediaExtractor(use_cache=False),
     )
 
     async for event in remora.download_batch(PLAYLIST):

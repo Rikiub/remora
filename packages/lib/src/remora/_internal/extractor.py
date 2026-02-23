@@ -1,16 +1,12 @@
 """Raw info extractor."""
 
-from collections.abc import Callable
 from typing import TypeVar, overload
 
 from anyio.to_thread import run_sync
 from loguru import logger
-from pydantic import ValidationError
 
-from remora._internal.cache import load_info, remove_info, save_info
 from remora._internal.types.search import SearchServiceLike
 from remora.models._base import YDLSerializable
-from remora.models.media._base import BaseExtract
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
 from remora.models.media.types import ExtractAdapter
@@ -20,9 +16,6 @@ T = TypeVar("T", bound=YDLSerializable)
 
 
 class MediaExtractor:
-    def __init__(self, use_cache: bool = False) -> None:
-        self.use_cache = use_cache
-
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
 
@@ -42,14 +35,6 @@ class MediaExtractor:
         with logger.contextualize(status="extracting", url=url):
             logger.info("Extracting URL: {url}", url=url)
 
-            # Load from cache
-            if model := await self._extract_from_cache(
-                url, ExtractAdapter.validate_json
-            ):
-                if isinstance(model, BaseExtract):
-                    model.is_cache = True
-                return model
-
             # Extract info
             from remora._internal.ydl.extractor import extract_info
 
@@ -57,9 +42,6 @@ class MediaExtractor:
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
-
-            # Save to cache
-            await self._save_to_cache(url, result)
 
             return result
 
@@ -82,12 +64,6 @@ class MediaExtractor:
                 query=query,
             )
 
-            # Load from cache
-            if model := await self._extract_from_cache(
-                query, SearchList.model_validate_json
-            ):
-                return model
-
             # Extract info
             from remora._internal.ydl.extractor import extract_query
 
@@ -99,28 +75,4 @@ class MediaExtractor:
 
             logger.success("Search successful")
 
-            # Save to cache
-            await self._save_to_cache(result.query, result)
-
             return result
-
-    async def _extract_from_cache(
-        self,
-        string: str,
-        validator: Callable[[str], T],
-    ) -> T | None:
-        try:
-            if self.use_cache and (cached_data := await load_info(string)):
-                model = validator(cached_data)
-                logger.success("Data extracted from cache")
-                return model
-        except ValidationError:
-            logger.opt(exception=True).debug("Cache is corrupted, trying again")
-            await remove_info(string)
-
-        return None
-
-    async def _save_to_cache(self, query: str, model: BaseExtract):
-        if self.use_cache:
-            logger.debug("Data saved to cache")
-            await save_info(query, model.model_dump_json())
