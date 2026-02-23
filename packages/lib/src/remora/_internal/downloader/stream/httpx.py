@@ -88,7 +88,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 async with self.client:
                     if protocol.is_segmented:
                         logger.debug("Downloading stream segments")
-                        path = await self._download_fragments()
+                        path = await self._download_segments()
 
                     elif protocol in (Protocol.HTTP, Protocol.HTTPS):
                         logger.debug("Downloading stream as http")
@@ -185,7 +185,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
         return self.file_path
 
-    async def _download_fragments(self) -> Path:
+    async def _download_segments(self) -> Path:
         res = await self.client.get(str(self.stream.url))
         res.raise_for_status()
 
@@ -312,6 +312,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         else:
             await self._send_stream.send(
                 StreamSegmented(
+                    downloaded_bytes=self.downloaded_bytes,
                     current_segment=self.current_segment,
                     total_segments=self.total_segments,
                 )

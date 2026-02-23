@@ -7,6 +7,7 @@ from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
 from yt_dlp.postprocessor.ffmpeg import (
     FFmpegEmbedSubtitlePP,
     FFmpegExtractAudioPP,
+    FFmpegFixupM4aPP,
     FFmpegMergerPP,
     FFmpegMetadataPP,
     FFmpegPostProcessorError,
@@ -16,6 +17,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import FFmpegNotFoundError, ProcessingError
+from remora.models.stream.item import AudioExtension
 from remora.types import StrPath
 
 
@@ -43,11 +45,11 @@ class YDLProcessor:
         if not self.ffmpeg_path:
             raise FFmpegNotFoundError("FFmpeg is needed for use processors.")
 
-        if not self.extension:
+        if not self.file_extension:
             raise ValueError(f'"{self.file_path}" must have a file extension')
 
     @property
-    def extension(self) -> str:
+    def file_extension(self) -> str:
         return self.file_path.suffix[1:]
 
     @catch
@@ -108,7 +110,11 @@ class YDLProcessor:
                 }
             }
 
-        pp.run(info)
+        try:
+            pp.run(info)
+        except KeyError:
+            raise ProcessingError("Unable to embed thumbnail")
+
         return self
 
     @catch
@@ -149,6 +155,9 @@ class YDLProcessor:
             ext = Path(fmt["filepath"]).suffix.lstrip(".")
             extensions.append(ext)
 
+            if ext == "m4a":
+                fmt = self.fix_m4a(fmt)  # type: ignore
+
         try:
             _, data = pp.run(
                 self._params
@@ -165,11 +174,19 @@ class YDLProcessor:
         self._update_filepath(data)
         return self
 
+    @catch
+    def fix_m4a(self):
+        if self.file_extension == AudioExtension.M4A:
+            pp_fix = FFmpegFixupM4aPP()
+            _, data = pp_fix.run(self._params | {"container": "m4a_dash"})
+            self._update_filepath(data)
+        return self
+
     @property
     def _params(self):
         info = {
             "filepath": str(self.file_path),
-            "ext": self.extension,
+            "ext": self.file_extension,
         }
 
         if self.ffmpeg_path:

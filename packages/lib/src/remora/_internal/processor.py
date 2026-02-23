@@ -95,6 +95,10 @@ class MediaProcessor:
         self._update_file(result)
         return self
 
+    async def fix_m4a(self):
+        await run_sync(self._prc.fix_m4a)
+        return self
+
     def _update_file(self, processor: YDLProcessor):
         self.file_path = Path(processor.file_path)
 
