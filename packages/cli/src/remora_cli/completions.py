@@ -3,7 +3,7 @@ from typing import Literal, get_args
 
 from typer import BadParameter
 
-from remora._internal.types.search import SearchServiceStr
+from remora.models.search import SearchServiceStr
 from remora.types import StreamQuality
 
 SearchTarget = Literal["url", SearchServiceStr]

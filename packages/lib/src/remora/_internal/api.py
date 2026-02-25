@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import overload
 
 from remora._internal.extractor import MediaExtractor
-from remora._internal.types.search import SearchServiceLike
 from remora.models.download_options import DownloadOptions
+from remora.models.event.enum import EventType
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
 from remora.models.event.stream import StreamEvent
@@ -13,6 +13,7 @@ from remora.models.media.list import LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
 from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail
+from remora.models.search import SearchServiceLike
 from remora.models.stream.item import Stream
 from remora.types import StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
@@ -63,7 +64,7 @@ class Remora:
 
         if isinstance(extracted, LazyPlaylist):
             async for event in self.download_batch(extracted):
-                if event.type == "media":
+                if event.type == EventType.MEDIA:
                     yield event
         else:
             from remora._internal.downloader.pipeline import DownloadPipeline

@@ -4,19 +4,14 @@ from pydantic import AfterValidator
 
 from remora._internal.path import validate_ffmpeg
 from remora._internal.template.output import validate_template
-from remora._internal.types.base import ExtensionType, ExtensionTypeLike
-from remora._internal.types.extension import (
-    StreamExtensionLike,
-    StreamTargetLike,
+from remora.models._base import RemoraBaseModel
+from remora.models.format.extension import (
+    FormatTargetStr,
+    ExtensionType,
     get_extension,
 )
-from remora.models._base import RemoraBaseModel
-from remora.types import (
-    DEFAULT_RETRIES,
-    DEFAULT_TEMPLATE,
-    StreamQuality,
-    StrPath,
-)
+from remora.models.format.type import FormatKind, FormatType
+from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
 
 class DownloadOptions(RemoraBaseModel):
@@ -36,7 +31,7 @@ class DownloadOptions(RemoraBaseModel):
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
-    format: StreamTargetLike = "video"
+    format: FormatTargetStr = "video"
     quality: StreamQuality | int | None = None
 
     ffmpeg_path: Annotated[
@@ -49,7 +44,7 @@ class DownloadOptions(RemoraBaseModel):
     retries: int = DEFAULT_RETRIES
 
     @property
-    def format_type(self) -> ExtensionTypeLike:
+    def format_type(self) -> FormatType:
         """Determines category of the selected format.
 
         Returns:
@@ -57,14 +52,14 @@ class DownloadOptions(RemoraBaseModel):
         """
 
         try:
-            target = ExtensionType(self.format)
+            target = FormatKind(self.format)
             return target
         except ValueError:
             target = get_extension(self.format)
             return target.type
 
     @property
-    def format_target(self) -> StreamExtensionLike | None:
+    def format_target(self) -> ExtensionType | None:
         """Determines the specific extension: 'mp4', 'flac', etc.
 
         Returns:
@@ -73,9 +68,6 @@ class DownloadOptions(RemoraBaseModel):
         """
 
         try:
-            extension = get_extension(self.format)
-            if extension.is_safe:
-                return extension
+            return get_extension(self.format)
         except ValueError:
             return None
-        return None

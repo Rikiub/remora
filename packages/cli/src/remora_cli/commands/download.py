@@ -6,9 +6,9 @@ from click import Choice
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
-from remora._internal.types.audio import SafeAudioExtensionStr
-from remora._internal.types.base import ExtensionTypeStr
-from remora._internal.types.video import SafeVideoExtensionStr
+from remora.models.format.audio import SafeAudioExtensionStr
+from remora.models.format.type import FormatKindStr
+from remora.models.format.video import SafeVideoExtensionStr
 from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
@@ -23,7 +23,7 @@ class HelpPanel(StrEnum):
 
 FORMAT_CHOICES = [
     s
-    for lit in (ExtensionTypeStr, SafeVideoExtensionStr, SafeAudioExtensionStr)
+    for lit in (FormatKindStr, SafeVideoExtensionStr, SafeAudioExtensionStr)
     for s in get_args(lit)
 ]
 

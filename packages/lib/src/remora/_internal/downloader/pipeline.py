@@ -18,12 +18,9 @@ from remora._internal.extractor import MediaExtractor
 from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
-from remora._internal.types.audio import AudioExtension
-from remora._internal.types.base import ExtensionType
-from remora._internal.types.extension import get_extension
-from remora._internal.types.video import VideoExtension
 from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
 from remora.models.download_options import DownloadOptions
+from remora.models.event.enum import CompletedResult, EventStatus
 from remora.models.event.media import (
     MediaCancelled,
     MediaCompleted,
@@ -34,8 +31,12 @@ from remora.models.event.media import (
     MediaProcessing,
     MediaWarning,
 )
-from remora.models.event.process import MergeProcessing, Processing, _BaseTask
+from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
 from remora.models.event.stream import BatchStreamDownloading
+from remora.models.format.audio import AudioExtension
+from remora.models.format.extension import get_extension
+from remora.models.format.type import FormatKind
+from remora.models.format.video import VideoExtension
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StrPath
@@ -98,9 +99,9 @@ class DownloadPipeline:
                     )
 
                     if not self.ffmpeg_path:
-                        if self.config.format_type == ExtensionType.VIDEO:
+                        if self.config.format_type == FormatKind.VIDEO:
                             audio_stream = None
-                        elif self.config.format_type == ExtensionType.AUDIO:
+                        elif self.config.format_type == FormatKind.AUDIO:
                             video_stream = None
 
                     stream = video_stream or audio_stream
@@ -120,7 +121,7 @@ class DownloadPipeline:
                     if await self.check_output_duplicate(output):
                         return
 
-                    with logger.contextualize(status="downloading"):
+                    with logger.contextualize(status=EventStatus.DOWNLOADING):
                         results = await self.download_resources(
                             media,
                             video_stream,
@@ -128,7 +129,7 @@ class DownloadPipeline:
                         )
 
                     if self.ffmpeg_path:
-                        with logger.contextualize(status="processing"):
+                        with logger.contextualize(status=EventStatus.PROCESSING):
                             results.file_path = await self.process(
                                 results.file_path,
                                 stream,
@@ -164,7 +165,7 @@ class DownloadPipeline:
                             id=self.id,
                             media=self.media,
                             file_path=path,
-                            result="duplicate",
+                            result=CompletedResult.DUPLICATE,
                         )
                     )
                     return path
@@ -189,7 +190,7 @@ class DownloadPipeline:
                         video=(video_stream, get_tempfile()),
                         audio=(audio_stream, get_tempfile()),
                     ).download():
-                        if event.status == "downloading":
+                        if event.status == EventStatus.DOWNLOADING:
                             await self._stream.send(
                                 MediaDownloading(
                                     id=self.id,
@@ -197,7 +198,7 @@ class DownloadPipeline:
                                     progress=event,
                                 )
                             )
-                        elif event.status == "completed":
+                        elif event.status == EventStatus.COMPLETED:
                             completed_event = event
 
                     if not completed_event:
@@ -224,7 +225,7 @@ class DownloadPipeline:
                         output_path=get_tempfile(),
                         stream=video_stream or audio_stream,  # type: ignore
                     ).download():
-                        if event.status == "downloading":
+                        if event.status == EventStatus.DOWNLOADING:
                             await self._stream.send(
                                 MediaDownloading(
                                     id=self.id,
@@ -232,7 +233,7 @@ class DownloadPipeline:
                                     progress=BatchStreamDownloading(streams=[event]),
                                 )
                             )
-                        elif event.status == "completed":
+                        elif event.status == EventStatus.COMPLETED:
                             results.file_path = event.file_path
             except* (DownloadError, ProcessingError) as eg:
                 error = eg.exceptions[0]
@@ -309,7 +310,7 @@ class DownloadPipeline:
             id=self.id,
             media=self.media,
             progress=MergeProcessing(
-                status="started",
+                status=EventStatus.STARTED,
                 file_path=file_path,
                 video_stream=video[0],
                 audio_stream=audio[0],
@@ -335,10 +336,10 @@ class DownloadPipeline:
             prc = await prc.merge_streams(
                 video=video,
                 audio=audio,
-                merge_format="mkv",
+                merge_format=VideoExtension.MKV,
             )
 
-        merging.progress.status = "completed"
+        merging.progress.status = EventStatus.COMPLETED
         await self._stream.send(merging)
 
         return Path(prc.file_path)
@@ -353,13 +354,13 @@ class DownloadPipeline:
         prc = MediaProcessor(file_path, self.ffmpeg_path)
 
         @asynccontextmanager
-        async def track_prc(task: _BaseTask, raise_exceptions: bool = False):
+        async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
             event = MediaProcessing(
                 id=self.id,
                 media=self.media,
                 progress=Processing(
-                    status="started",
-                    task=task,
+                    status=EventStatus.STARTED,
+                    task=task,  # type: ignore
                     file_path=prc.file_path,
                 ),
             )
@@ -369,7 +370,7 @@ class DownloadPipeline:
                 yield
 
                 event.progress.file_path = prc.file_path
-                event.progress.status = "completed"
+                event.progress.status = EventStatus.COMPLETED
 
                 await self._stream.send(event)
             except ProcessingError as error:
@@ -387,11 +388,11 @@ class DownloadPipeline:
 
         if isinstance(stream, VideoStream):
             if self.config.format_target:
-                async with track_prc("change_container"):
+                async with track_prc(ProcessorTask.CHANGE_CONTAINER):
                     await prc.change_container(self.config.format_target)
 
             if subtitles:
-                async with track_prc("embed_subtitles"):
+                async with track_prc(ProcessorTask.EMBED_SUBTITLES):
                     await prc.embed_subtitles(subtitles)
 
         elif isinstance(stream, AudioStream):
@@ -400,23 +401,23 @@ class DownloadPipeline:
                 and self.config.format_target != stream.extension
             ):
                 try:
-                    async with track_prc("change_container", True):
+                    async with track_prc(ProcessorTask.CHANGE_CONTAINER, True):
                         await prc.change_container(self.config.format_target)
                 except ProcessingError:
-                    async with track_prc("convert_audio"):
+                    async with track_prc(ProcessorTask.CONVERT_AUDIO):
                         await prc.convert_audio(self.config.format_target)
 
         # Metadata
         # Must run before embed the thumbnail.
         if self.config.embed_metadata:
-            async with track_prc("embed_metadata"):
+            async with track_prc(ProcessorTask.EMBED_METADATA):
                 await prc.embed_metadata(self.media)
 
         if thumbnail:
             extension = get_extension(prc.file_path.suffix.lstrip("."))
 
             if extension.supports_thumbnails:
-                async with track_prc("embed_thumbnail"):
+                async with track_prc(ProcessorTask.EMBED_THUMBNAIL):
                     await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
         return Path(prc.file_path)
@@ -435,7 +436,9 @@ class DownloadPipeline:
                 id=self.id,
                 media=self.media,
                 file_path=Path(final_path),
-                result="partial" if self.has_missing_data else "success",
+                result=CompletedResult.PARTIAL
+                if self.has_missing_data
+                else CompletedResult.SUCCESS,
             )
         )
 

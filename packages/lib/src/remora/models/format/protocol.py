@@ -56,4 +56,4 @@ ProtocolStr = Literal[
     "youtube_live_chat_replay",
     "bunnycdn",
 ]
-ProtocolLike = Protocol | ProtocolStr
+ProtocolType = Protocol | ProtocolStr

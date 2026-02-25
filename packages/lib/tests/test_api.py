@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from remora import AudioStream, DownloadOptions, MediaExtractor, Remora, VideoStream
+from remora.models.format.type import FormatKind
 from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
@@ -63,8 +64,9 @@ class TestDownloadOptions:
     def test_format(self):
         DownloadOptions(format="mp3")
         DownloadOptions(format="mka")
-        DownloadOptions(format="ogg")
-        DownloadOptions(format="webm")
+
+        with pytest.raises(ValueError):
+            DownloadOptions(format="webm")
 
 
 class TestStreamList:

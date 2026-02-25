@@ -2,8 +2,9 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
+from remora.models.event.enum import CompletedResult, EventStatus, EventType
 from remora.models.event.playlist import BatchEvent
-from remora.models.event.process import ProcessEvent
+from remora.models.event.process import ProcessEvent, ProcessorTask
 from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
 
@@ -20,33 +21,33 @@ class ProgressCallback:
         if self.disable:
             return
 
-        if event.type == "playlist":
+        if event.type == EventType.PLAYLIST:
             match event.status:
-                case "started":
+                case EventStatus.STARTED:
                     self.progress.counter.reset(total=event.total)
-                case "in_progress":
+                case EventStatus.IN_PROGRESS:
                     self.progress.counter.update(completed=event.completed)
-                case "completed":
+                case EventStatus.COMPLETED:
                     match event.result:
-                        case "success":
+                        case CompletedResult.SUCCESS:
                             logger.success("Download completed")
-                        case "partial":
-                            logger.warning("Download completed partially")
-                case "cancelled":
+                        case CompletedResult.PARTIAL:
+                            logger.success("Download completed (Some items failed)")
+                case EventStatus.CANCELLED:
                     logger.warning("Download cancelled")
 
-        elif event.type == "media":
+        elif event.type == EventType.MEDIA:
             name = self._media_display_name(event.media)
 
             with logger.contextualize(media_title=name):
                 match event.status:
-                    case "extracting":
+                    case EventStatus.EXTRACTING:
                         self.progress.add_task(
                             event.id,
                             description=name or "Extracting[blink]...[/]",
                             status="Extracting[blink]...[/]",
                         )
-                    case "downloading":
+                    case EventStatus.DOWNLOADING:
                         self.progress.update(
                             event.id,
                             description=name,
@@ -54,22 +55,22 @@ class ProgressCallback:
                             completed=event.progress.downloaded_bytes,
                             total=event.progress.total_bytes,
                         )
-                    case "processing":
+                    case EventStatus.PROCESSING:
                         self.processor_callback(event.id, event.progress)
-                    case "warning":
+                    case EventStatus.WARNING:
                         logger.warning("Warning: {}", event.message)
-                    case "failed":
+                    case EventStatus.FAILED:
                         logger.error("Download failed: {}", event.message)
                         self.progress.update(event.id, status="Error")
-                    case "completed":
+                    case EventStatus.COMPLETED:
                         match event.result:
-                            case "success":
+                            case CompletedResult.SUCCESS:
                                 logger.success("Completed")
                                 self.progress.update(event.id, status="Completed")
-                            case "partial":
+                            case CompletedResult.PARTIAL:
                                 logger.success("Completed (Some data missed)")
                                 self.progress.update(event.id, status="Completed")
-                            case "duplicate":
+                            case CompletedResult.DUPLICATE:
                                 logger.success(
                                     'Skipped (Exists as "{file_extension}")',
                                     file_extension=event.file_extension,
@@ -87,11 +88,11 @@ class ProgressCallback:
     def processor_callback(self, id: str, event: ProcessEvent):
         self.progress.update(id, status="Processing[blink]...[/]")
 
-        if event.status == "started":
+        if event.status == EventStatus.STARTED:
             match event.task:
-                case "convert_audio":
+                case ProcessorTask.CONVERT_AUDIO:
                     self.progress.update(id, status="Converting[blink]...[/]")
-                case "merge_formats":
+                case ProcessorTask.MERGE_STREAMS:
                     self.progress.update(id, status="Merging[blink]...[/]")
 
     def _media_display_name(self, media: LazyMedia) -> str:

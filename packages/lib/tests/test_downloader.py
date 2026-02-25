@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from remora import DownloadOptions, Remora
+from remora import DownloadOptions, EventStatus, EventType, Remora
 
 
 @pytest.fixture
@@ -17,10 +17,13 @@ def download(tmp_path: Path):
         result = await remora.extract(url)
 
         async for event in remora.download_batch(result):
-            if event.type == "media":
-                if event.status == "completed" and not event.file_path.is_file():
+            if event.type == EventType.MEDIA:
+                if (
+                    event.status == EventStatus.COMPLETED
+                    and not event.file_path.is_file()
+                ):
                     raise FileNotFoundError(event.file_path)
-                elif event.status == "failed":
+                elif event.status == EventStatus.FAILED:
                     raise AssertionError(f"Download failed: {event.message}")
 
     return wrap

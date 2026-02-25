@@ -5,11 +5,11 @@ from typing import TypeVar, overload
 from anyio.to_thread import run_sync
 from loguru import logger
 
-from remora._internal.types.search import SearchServiceLike
 from remora.models._base import YDLSerializable
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
 from remora.models.media.types import ExtractAdapter
+from remora.models.search import SearchServiceLike
 from remora.types import StrUrl
 
 T = TypeVar("T", bound=YDLSerializable)

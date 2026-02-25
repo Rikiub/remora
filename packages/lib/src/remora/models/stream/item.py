@@ -1,18 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Annotated, Generic, Literal, TypeVar
+from typing import Annotated, Any, Generic, Literal, TypeVar
 
 from pydantic import AfterValidator, AliasChoices, BaseModel, Field, HttpUrl
 from typing_extensions import override
 
-from remora._internal.types.audio import AudioExtension
-from remora._internal.types.base import ExtensionTypeLike
-from remora._internal.types.extension import StreamExtensionLike
-from remora._internal.types.protocol import ProtocolLike
-from remora._internal.types.video import VideoExtension
 from remora.models._base import YDLSerializable
+from remora.models.format.audio import AudioExtension
+from remora.models.format.extension import ExtensionType
+from remora.models.format.protocol import Protocol
+from remora.models.format.type import FormatKind
+from remora.models.format.video import VideoExtension
 
-T_Type = TypeVar("T_Type", bound=ExtensionTypeLike)
-T_Ext = TypeVar("T_Ext", bound=StreamExtensionLike)
+T_Ext = TypeVar("T_Ext", bound=ExtensionType)
 
 _Codec = Annotated[str, AfterValidator(lambda v: None if v == "none" else v)]
 _AudioCodecField = Field(alias="acodec")
@@ -26,12 +25,12 @@ class YDLArgs(BaseModel):
     cookies: str | None = None
 
 
-class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
+class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Ext]):
     """Base Stream"""
 
-    type: T_Type
+    type: Any
     url: HttpUrl
-    protocol: ProtocolLike
+    protocol: Protocol
     id: Annotated[str, Field(alias="format_id")]
     extension: Annotated[T_Ext, Field(alias="ext")]
 
@@ -83,8 +82,8 @@ class BaseStream(ABC, YDLArgs, YDLSerializable, Generic[T_Type, T_Ext]):
         return info
 
 
-class AudioStream(BaseStream[Literal["audio"], AudioExtension]):
-    type: Literal["audio"] = "audio"
+class AudioStream(BaseStream[AudioExtension]):
+    type: Literal[FormatKind.AUDIO] = FormatKind.AUDIO
     audio_codec: Annotated[  # type: ignore
         _Codec, _AudioCodecField
     ]
@@ -107,8 +106,8 @@ class AudioStream(BaseStream[Literal["audio"], AudioExtension]):
         return info
 
 
-class VideoStream(BaseStream[Literal["video"], VideoExtension]):
-    type: Literal["video"] = "video"
+class VideoStream(BaseStream[VideoExtension]):
+    type: Literal[FormatKind.VIDEO] = FormatKind.VIDEO
 
     video_codec: Annotated[_Codec, Field(alias="vcodec")]
     width: int = 0

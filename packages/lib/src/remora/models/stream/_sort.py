@@ -1,4 +1,4 @@
-from remora._internal.types.base import ExtensionType, ExtensionTypeLike
+from remora.models.format.type import FormatKind, FormatType
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 
 VIDEO_PRIORITY = [
@@ -54,11 +54,11 @@ def normalize_codec(codec: str) -> str:
     return codec.lower().split(".")[0].split("-")[0].strip()
 
 
-def get_codec_rank(codec: str | None, type: ExtensionTypeLike) -> int:
+def get_codec_rank(codec: str | None, type: FormatType) -> int:
     if not codec:
         return -1
 
-    priority = AUDIO_PRIORITY if type == ExtensionType.AUDIO else VIDEO_PRIORITY
+    priority = AUDIO_PRIORITY if type == FormatKind.AUDIO else VIDEO_PRIORITY
     codec = normalize_codec(codec)
 
     try:
@@ -86,8 +86,8 @@ def stream_sort(stream: Stream):
 
     if isinstance(stream, VideoStream):
         is_video = 1
-        vcodec = get_codec_rank(stream.video_codec, ExtensionType.VIDEO)
-        acodec = get_codec_rank(stream.audio_codec, ExtensionType.AUDIO)
+        vcodec = get_codec_rank(stream.video_codec, FormatKind.VIDEO)
+        acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
 
         return (
             is_video,
@@ -101,7 +101,7 @@ def stream_sort(stream: Stream):
 
     elif isinstance(stream, AudioStream):
         is_video = 0
-        acodec = get_codec_rank(stream.audio_codec, ExtensionType.AUDIO)
+        acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
 
         return (
             is_video,

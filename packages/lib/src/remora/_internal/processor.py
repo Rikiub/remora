@@ -4,12 +4,12 @@ from pathlib import Path
 from anyio.to_thread import run_sync
 
 from remora._internal.path import get_ffmpeg
-from remora._internal.types.audio import AudioExtensionLike
-from remora._internal.types.extension import StreamExtensionLike
-from remora._internal.types.video import VideoExtensionLike
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
+from remora.models.format.audio import AudioExtensionType
+from remora.models.format.extension import ExtensionType
+from remora.models.format.video import VideoExtensionType
 from remora.models.media.item import Media
 from remora.models.metadata.music import MusicMetadata
 from remora.models.stream.item import AudioStream, Stream, VideoStream
@@ -37,14 +37,14 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, format: str | StreamExtensionLike):
+    async def change_container(self, format: str | ExtensionType):
         result = await run_sync(self._prc.video_remuxer, str(format))
         self._update_file(result)
         return self
 
     async def convert_audio(
         self,
-        format: str | AudioExtensionLike | None = None,
+        format: str | AudioExtensionType | None = None,
         quality: int | None = None,
     ):
         result = await run_sync(self._prc.extract_audio, str(format), quality)
@@ -74,7 +74,7 @@ class MediaProcessor:
         self,
         video: tuple[VideoStream, Path],
         audio: tuple[AudioStream, Path],
-        merge_format: VideoExtensionLike,
+        merge_format: VideoExtensionType,
     ):
         real_streams: list[RequestedFormat] = []
 

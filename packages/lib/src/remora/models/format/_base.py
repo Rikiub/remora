@@ -1,14 +1,4 @@
-from enum import StrEnum
-from typing import Literal
-
-
-class ExtensionType(StrEnum):
-    VIDEO = "video"
-    AUDIO = "audio"
-
-
-ExtensionTypeStr = Literal["video", "audio"]
-ExtensionTypeLike = ExtensionType | ExtensionTypeStr
+from remora.models.format.type import FormatKind
 
 
 class BaseExtension:
@@ -25,7 +15,7 @@ class BaseExtension:
         return False
 
     @property
-    def type(self) -> ExtensionType:
+    def type(self) -> FormatKind:
         raise NotImplementedError()
 
     @property

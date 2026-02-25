@@ -1,30 +1,32 @@
 from loguru import logger
 
+from remora.models.event.enum import CompletedResult, EventStatus, EventType
 from remora.models.event.media import MediaEvent, ProcessEvent
 from remora.models.event.playlist import BatchEvent
+from remora.models.event.process import ProcessorTask
 
 
 async def log_event_playlist(event: BatchEvent):
-    if event.type == "playlist":
+    if event.type == EventType.PLAYLIST:
         match event.status:
-            case "started":
+            case EventStatus.STARTED:
                 logger.info(
                     "Download started with {playlist_total} items",
                     playlist_total=event.total,
                 )
-            case "in_progress":
+            case EventStatus.IN_PROGRESS:
                 logger.info(
                     "{playlist_completed} of {playlist_total} items completed",
                     playlist_completed=event.completed,
                     playlist_total=event.total,
                 )
-            case "cancelled":
+            case EventStatus.CANCELLED:
                 logger.warning("Download cancelled")
-            case "completed":
+            case EventStatus.COMPLETED:
                 match event.result:
-                    case "success":
+                    case CompletedResult.SUCCESS:
                         logger.success("Download completed")
-                    case "partial":
+                    case CompletedResult.PARTIAL:
                         logger.warning("Download completed partially")
 
 
@@ -35,26 +37,26 @@ async def log_event_media(event: MediaEvent):
         status=event.status,
     ):
         match event.status:
-            case "processing":
+            case EventStatus.PROCESSING:
                 await _processor_callback(event.progress)
-            case "warning":
+            case EventStatus.WARNING:
                 logger.warning("Warning: {}", event.message)
-            case "failed":
+            case EventStatus.FAILED:
                 logger.error("Download failed: {}", event.message)
-            case "cancelled":
+            case EventStatus.CANCELLED:
                 logger.info("Download cancelled")
-            case "completed":
+            case EventStatus.COMPLETED:
                 log = logger.bind(
                     file_path=event.file_path,
                     file_extension=event.file_extension,
                 )
 
                 match event.result:
-                    case "success":
+                    case CompletedResult.SUCCESS:
                         log.success("Completed")
-                    case "partial":
+                    case CompletedResult.PARTIAL:
                         log.success("Completed (Some data missed)")
-                    case "duplicate":
+                    case CompletedResult.DUPLICATE:
                         log.success(
                             'Skipped (Exists as "{file_extension}")',
                             file_extension=event.file_extension,
@@ -69,27 +71,27 @@ async def log_event_media(event: MediaEvent):
 
 async def _processor_callback(event: ProcessEvent):
     with logger.contextualize(status=event.status, task=event.task):
-        if event.status == "completed":
+        if event.status == EventStatus.COMPLETED:
             match event.task:
-                case "change_container":
+                case ProcessorTask.CHANGE_CONTAINER:
                     logger.debug(
                         'File container changed to "{extension}"',
                         extension=event.file_extension,
                     )
-                case "convert_audio":
+                case ProcessorTask.CONVERT_AUDIO:
                     logger.debug(
                         'File converted to "{extension}"',
                         extension=event.file_extension,
                     )
-                case "merge_formats":
+                case ProcessorTask.MERGE_STREAMS:
                     logger.debug(
                         'Merged video "{video}" and audio "{audio}" formats',
                         video=event.video_stream.extension,
                         audio=event.audio_stream.extension,
                     )
-                case "embed_subtitles":
+                case ProcessorTask.EMBED_SUBTITLES:
                     logger.debug("Subtitles embedded")
-                case "embed_thumbnail":
+                case ProcessorTask.EMBED_THUMBNAIL:
                     logger.debug("Thumbnail embedded")
-                case "embed_metadata":
+                case ProcessorTask.EMBED_METADATA:
                     logger.debug("Metadata embedded")

@@ -9,7 +9,6 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora._internal.types.protocol import Protocol
 from remora.exceptions import DownloadError
 from remora.models.event.stream import (
     StreamCompleted,
@@ -17,6 +16,7 @@ from remora.models.event.stream import (
     StreamEvent,
     StreamSegmented,
 )
+from remora.models.format.protocol import Protocol
 from remora.models.stream.item import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 

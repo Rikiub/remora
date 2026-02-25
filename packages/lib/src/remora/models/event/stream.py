@@ -1,14 +1,21 @@
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field
 
 from remora.models.event._base import BaseEvent, FileEvent
+from remora.models.event.enum import EventStatus
+
+
+class StreamProgress(StrEnum):
+    CONTINUOUS = "continuous"
+    SEGMENTED = "segmented"
 
 
 # Progress Types
 class BaseStreamProgress(BaseEvent):
-    status: Literal["downloading"] = "downloading"
+    status: Literal[EventStatus.DOWNLOADING, "downloading"] = EventStatus.DOWNLOADING
     speed: float = 0
     elapsed: float = 0
     downloaded_bytes: float = 0
@@ -16,7 +23,7 @@ class BaseStreamProgress(BaseEvent):
 
 class StreamContinuous(BaseStreamProgress):
     total_bytes: float | None
-    type: Literal["continuous"] = "continuous"
+    type: Literal[StreamProgress.CONTINUOUS, "continuous"] = StreamProgress.CONTINUOUS
 
     @property
     def fraction(self) -> float | None:
@@ -28,7 +35,7 @@ class StreamContinuous(BaseStreamProgress):
 class StreamSegmented(BaseStreamProgress):
     current_segment: int = 0
     total_segments: int | None = None
-    type: Literal["segmented"] = "segmented"
+    type: Literal[StreamProgress.SEGMENTED, "segmented"] = StreamProgress.SEGMENTED
 
     @property
     def fraction(self) -> float | None:
@@ -45,7 +52,7 @@ StreamProgressEvent = Annotated[
 
 
 class StreamCompleted(FileEvent):
-    status: Literal["completed"] = "completed"
+    status: Literal[EventStatus.COMPLETED, "completed"] = EventStatus.COMPLETED
 
 
 StreamEvent = Annotated[
@@ -56,7 +63,7 @@ StreamEvent = Annotated[
 
 # Multiple streams
 class BatchStreamDownloading(BaseEvent):
-    status: Literal["downloading"] = "downloading"
+    status: Literal[EventStatus.DOWNLOADING, "downloading"] = EventStatus.DOWNLOADING
     streams: list[StreamProgressEvent]
 
     @property
@@ -102,7 +109,7 @@ class BatchStreamDownloading(BaseEvent):
 
 
 class BatchStreamCompleted(BaseEvent):
-    status: Literal["completed"] = "completed"
+    status: Literal[EventStatus.COMPLETED, "completed"] = EventStatus.COMPLETED
     video_path: Path
     audio_path: Path
 

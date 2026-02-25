@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel
 
@@ -17,6 +16,3 @@ class FileEvent(BaseEvent):
     @property
     def file_extension(self) -> str:
         return self.file_path.suffix.lstrip(".")
-
-
-CompletedResult = Literal["success", "partial"]
