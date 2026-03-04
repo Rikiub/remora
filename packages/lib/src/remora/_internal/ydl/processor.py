@@ -175,7 +175,7 @@ class YDLProcessor:
         return self
 
     @catch
-    def fix_m4a(self):
+    def fix_m4a(self, _format=None):
         if self.file_extension == AudioExtension.M4A:
             pp_fix = FFmpegFixupM4aPP()
             _, data = pp_fix.run(self._params | {"container": "m4a_dash"})
