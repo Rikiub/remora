@@ -2,11 +2,11 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl
+from typing_extensions import override
 
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models._base import EnsureNone, YDLSerializable
 from remora.models.metadata.social import Channel, Metrics, Uploader
-from remora.models.stream.item import override
 
 # Types
 PLAYLIST_EXTRACTORS = ["YoutubeTab"]

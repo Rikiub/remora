@@ -23,7 +23,10 @@ from remora.models.metadata.thumbnail import Thumbnail
 
 
 class MediaList(ABC, BaseExtract):
-    entries: _Entries = []
+    entries: Annotated[
+        list[LazyMedia | LazyPlaylist], Field(alias="entries", repr=False)
+    ] = []
+    extractor: ExtractorField
 
     @computed_field
     @property
@@ -66,18 +69,10 @@ class LazyPlaylist(MediaList, ExtractID):
 
 class Playlist(LazyPlaylist):
     type: Annotated[Literal["playlist"], TypeField] = "playlist"
-    entries: _EntriesField
 
 
 class SearchList(MediaList):
     type: Literal["search"] = "search"
-    extractor: ExtractorField
 
-    query: str
     service: str
-
-    entries: _EntriesField
-
-
-_Entries = list[LazyMedia | LazyPlaylist]
-_EntriesField = Annotated[_Entries, Field(alias="entries", min_length=1, repr=False)]
+    query: str
