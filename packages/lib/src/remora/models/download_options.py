@@ -6,8 +6,8 @@ from remora._internal.path import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
 from remora.models.format.extension import (
-    FormatTargetStr,
     ExtensionType,
+    FormatTargetStr,
     get_extension,
 )
 from remora.models.format.type import FormatKind, FormatType
