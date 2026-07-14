@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AliasChoices, Field, HttpUrl, PrivateAttr
+from pydantic import AliasChoices, Field, HttpUrl
 
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models._base import EnsureNone, YDLSerializable
@@ -24,11 +24,16 @@ ExtractorField = Annotated[
 
 
 # Base
-class BaseExtract(YDLSerializable):
-    is_cache: Annotated[bool, PrivateAttr()] = False
+class BaseExtract(YDLSerializable): ...
 
 
-class ExtractMetadata(BaseExtract):
+class ExtractID(BaseExtract):
+    """Base identifier for media objects."""
+
+    url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
+    id: str
+    extractor: ExtractorField
+
     modified_date: Annotated[datetime | None, EnsureNone] = None
     upload_date: Annotated[datetime | None, EnsureNone] = None
     release_date: Annotated[datetime | None, EnsureNone] = None
@@ -60,14 +65,3 @@ class ExtractMetadata(BaseExtract):
                 info[key] = info
 
         return info
-
-
-class ExtractID(ExtractMetadata):
-    """Base identifier for media objects."""
-
-    url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
-    id: str
-    extractor: ExtractorField
-
-
-class LazyExtractID(ExtractID): ...

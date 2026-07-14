@@ -4,7 +4,7 @@ from pydantic import AfterValidator, BeforeValidator, Field, field_validator
 from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
-from remora.models.media._base import PLAYLIST_EXTRACTORS, LazyExtractID, TypeField
+from remora.models.media._base import PLAYLIST_EXTRACTORS, ExtractID, TypeField
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
 from remora.models.metadata.subtitle import SubtitleList
@@ -21,7 +21,7 @@ def _validate_type(value: str):
 LiveStatus = Literal["live", "upcoming", "was_live", "not_live"]
 
 
-class LazyMedia(LazyExtractID):
+class LazyMedia(ExtractID):
     # Identity
     type: Annotated[
         Literal["media"],

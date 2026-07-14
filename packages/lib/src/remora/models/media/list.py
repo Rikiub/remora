@@ -14,8 +14,8 @@ from pydantic import (
 from remora.models.media._base import (
     URL_CHOICES,
     BaseExtract,
+    ExtractID,
     ExtractorField,
-    LazyExtractID,
     TypeField,
 )
 from remora.models.media.item import LazyMedia
@@ -36,7 +36,7 @@ class MediaList(ABC, BaseExtract):
         return [item for item in self.entries if item.type == "playlist"]
 
 
-class LazyPlaylist(MediaList, LazyExtractID):
+class LazyPlaylist(MediaList, ExtractID):
     type: Annotated[Literal["playlist"], SkipValidation] = "playlist"
 
     url: Annotated[
@@ -65,8 +65,8 @@ class LazyPlaylist(MediaList, LazyExtractID):
 
 
 class Playlist(LazyPlaylist):
-    type: Annotated[Literal["playlist"], TypeField] = "playlist"  # type: ignore
-    entries: _EntriesField  # type: ignore
+    type: Annotated[Literal["playlist"], TypeField] = "playlist"
+    entries: _EntriesField
 
 
 class SearchList(MediaList):
@@ -76,7 +76,7 @@ class SearchList(MediaList):
     query: str
     service: str
 
-    entries: _EntriesField  # type: ignore
+    entries: _EntriesField
 
 
 _Entries = list[LazyMedia | LazyPlaylist]
