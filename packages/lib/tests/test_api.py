@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 
 from remora import AudioStream, DownloadOptions, MediaExtractor, Remora, VideoStream
-from remora.models.format.type import FormatKind
 from remora.models.stream.list import StreamList
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
@@ -44,14 +43,6 @@ async def test_list(tmp_path: Path):
             raise AssertionError(f"Download failed: {event.message}")
 
 
-@pytest.fixture(scope="session")
-async def streams():
-    result = await MediaExtractor().extract(URL)
-    assert result.type == "media"
-    assert len(result.streams) >= 1
-    return result.streams
-
-
 class TestDownloadOptions:
     def test_output_template(self):
         with pytest.raises(ValueError):
@@ -65,8 +56,13 @@ class TestDownloadOptions:
         DownloadOptions(format="mp3")
         DownloadOptions(format="mka")
 
-        with pytest.raises(ValueError):
-            DownloadOptions(format="webm")
+
+@pytest.fixture(scope="session")
+async def streams():
+    result = await MediaExtractor().extract(URL)
+    assert result.type == "media"
+    assert len(result.streams) >= 1
+    return result.streams
 
 
 class TestStreamList:

@@ -34,7 +34,7 @@ class ExternalSubtitle(BaseSubtitle):
 
 class EmbeddedSubtitle(BaseSubtitle):
     type: Literal["embedded"] = "embedded"  # type: ignore
-    text: Annotated[str, Field(alias="data")]
+    content: Annotated[str, Field(alias="data")]
 
 
 Subtitle = Annotated[
