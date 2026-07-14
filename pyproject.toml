@@ -6,6 +6,9 @@ dev = ["anyio>=4.12.1", "pytest>=9.0.0", "ruff>=0.15.0"]
 anyio_mode = "auto"
 
 # uv
+[tool.uv.sources]
+remora = { workspace = true }
+
 [tool.uv.workspace]
 members = ["packages/*"]
 
