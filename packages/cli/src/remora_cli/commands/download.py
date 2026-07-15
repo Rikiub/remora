@@ -137,6 +137,9 @@ What format you want request?
             if not result.medias:
                 logger.error("'{}' don't have streams to download", target)
 
+        if isinstance(result, SearchList):
+            result = result.medias[0]
+
         async with ProgressCallback(CONFIG.quiet) as progress:
             async for event in remora.download_batch(result):
                 await progress.playlist_callback(event)
