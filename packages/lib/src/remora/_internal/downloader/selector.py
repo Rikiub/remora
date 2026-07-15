@@ -13,13 +13,13 @@ class StreamSelector:
     """Responsible for selecting the best video/audio streams based on config."""
 
     def __init__(self, config: DownloadOptions):
-        self._config = config
+        self.config = config
 
     def resolve(self, media: Media) -> tuple[VideoStream | None, AudioStream | None]:
         """Resolves the final pair of streams to be downloaded."""
         audio = self.extract_best(media.streams, AudioStream)
 
-        if audio and (media.music or self._config.format_type == FormatKind.AUDIO):
+        if audio and (media.music or self.config.format_type == FormatKind.AUDIO):
             return None, audio
 
         video = self.extract_best(media.streams, VideoStream)
@@ -37,13 +37,13 @@ class StreamSelector:
             return None
 
         # Filter by extension
-        if self._config.format_target:
-            if filtered := candidates.filter(extension=self._config.format_target):
+        if self.config.format_target:
+            if filtered := candidates.filter(extension=self.config.format_target):
                 candidates = filtered
 
-        if self._config.quality:
+        if self.config.quality:
             # Resolve Quality
-            result = candidates.get_closest_quality(self._config.quality)
+            result = candidates.get_closest_quality(self.config.quality)
         else:
             result = candidates[0]
 

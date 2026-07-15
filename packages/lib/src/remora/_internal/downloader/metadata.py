@@ -32,8 +32,7 @@ async def download_subtitles(
     from remora._internal.ydl.downloader import download_subtitles as ydl
 
     if isinstance(subtitles, list):
-        info = SubtitleList(subtitles)
-        info = info.to_ydl_dict()
+        info = SubtitleList(subtitles).to_ydl_dict()
     else:
         info = subtitles.to_ydl_dict()
 
