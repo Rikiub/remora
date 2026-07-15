@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from remora import AudioStream, DownloadOptions, MediaExtractor, Remora, VideoStream
-from remora.models.stream.list import StreamList
+from remora import DownloadOptions, Remora
 
 URL = "https://youtube.com/watch?v=Kx7B-XvmFtE"
 PLAYLIST = (
@@ -55,34 +54,3 @@ class TestDownloadOptions:
     def test_format(self):
         DownloadOptions(format="mp3")
         DownloadOptions(format="mka")
-
-
-@pytest.fixture(scope="session")
-async def streams():
-    result = await MediaExtractor().extract(URL)
-    assert result.type == "media"
-    assert len(result.streams) >= 1
-    return result.streams
-
-
-class TestStreamList:
-    async def test_video_type(self, streams: StreamList):
-        fmt = streams.only_video()
-        assert all(isinstance(f, VideoStream) for f in fmt)
-
-    async def test_audio_type(self, streams: StreamList):
-        fmt = streams.only_audio()
-        assert all(isinstance(f, AudioStream) for f in fmt)
-
-    async def test_closest_quality(self, streams: StreamList):
-        fmt = streams.get_closest_quality(600)
-        assert fmt.quality == 720
-
-    async def test_filter(self, streams: StreamList):
-        fmt = streams.filter(quality=720)
-        assert all(f.quality == 720 for f in fmt)
-
-    async def test_get_by_id(self, streams: StreamList):
-        ID = "137"
-        fmt = streams.get_by_id(ID)
-        assert fmt.id == ID

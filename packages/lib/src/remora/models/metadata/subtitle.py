@@ -78,7 +78,7 @@ class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
         return {s.language for s in self.root if isinstance(s, ExternalSubtitle)}
 
     @property
-    def external(self) -> SubtitleList[ExternalSubtitle]:
+    def externals(self) -> SubtitleList[ExternalSubtitle]:
         """Subtitles hosted on a URL."""
         return SubtitleList[ExternalSubtitle](  # type: ignore
             [item for item in self if isinstance(item, ExternalSubtitle)],
