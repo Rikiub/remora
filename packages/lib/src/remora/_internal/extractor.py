@@ -42,7 +42,6 @@ class MediaExtractor:
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
-
             return result
 
     async def extract_search(
@@ -74,5 +73,4 @@ class MediaExtractor:
             )
 
             logger.success("Search successful")
-
             return result
