@@ -1,6 +1,12 @@
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BeforeValidator, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    BeforeValidator,
+    Field,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
@@ -12,7 +18,7 @@ from remora.models.metadata.thumbnail import Thumbnail
 from remora.models.stream.list import StreamList
 
 
-def _validate_type(value: str):
+def _normalize_type(value: str):
     if value in ("url", "url_transparent", "video"):
         return "media"
     return value
@@ -25,9 +31,10 @@ class LazyMedia(ExtractID):
     # Identity
     type: Annotated[
         Literal["media"],
-        BeforeValidator(_validate_type),
+        BeforeValidator(_normalize_type),
         TypeField,
     ] = "media"
+    type: Literal["media"] = "media"
     title: Annotated[str | None, EnsureNone] = None
     description: Annotated[str | None, EnsureNone] = None
     live_status: LiveStatus = "not_live"
@@ -42,11 +49,6 @@ class LazyMedia(ExtractID):
 
     thumbnails: list[Thumbnail] = []
 
-    def to_ydl_dict(self):
-        info = super().to_ydl_dict()
-        info |= {"_type": "url"}
-        return info
-
     @field_validator("extractor")
     @classmethod
     def _validate_extractor(cls, v: str) -> str:
@@ -54,35 +56,36 @@ class LazyMedia(ExtractID):
             raise ValueError(f"'{v}' extractor is for playlists only.")
         return v
 
+    @model_validator(mode="before")
     @classmethod
     @override
-    def _transform_ydl_dict(cls, info):
-        info = super()._transform_ydl_dict(info)
+    def _validate_ydl_media(cls, data) -> dict:
+        if isinstance(data, dict):
+            # Map live status
+            live_status: LiveStatus = "not_live"
 
-        # Nested fields
-        info["music"] = info
+            is_live = data.get("is_live")
+            was_live = data.get("was_live")
+            is_upcoming = (
+                data.get("live_status") == "is_upcoming"
+                or data.get("availability") == "upcoming"
+            )
 
-        # Prepare live status
-        live_status: LiveStatus = "not_live"
+            if is_live:
+                live_status = "live"
+            elif is_upcoming:
+                live_status = "upcoming"
+            elif was_live:
+                live_status = "was_live"
 
-        is_live = info.get("is_live")
-        was_live = info.get("was_live")
-        is_upcoming = (
-            info.get("live_status") == "is_upcoming"
-            or info.get("availability") == "upcoming"
-        )
+            data["live_status"] = live_status
 
-        if is_live:
-            live_status = "live"
-        elif is_upcoming:
-            live_status = "upcoming"
-        elif was_live:
-            live_status = "was_live"
+            # Map metadata
+            data["music"] = data
 
-        info["live_status"] = live_status
-
-        # End
-        return info
+            # Return normalized data
+            return data
+        return data
 
 
 class Media(LazyMedia):

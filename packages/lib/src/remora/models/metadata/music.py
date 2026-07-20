@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BeforeValidator
+from pydantic import BeforeValidator, Field
 
 from remora.models._base import EnsureList, YDLSerializable
 from remora.models.metadata._base import Metadata
@@ -23,7 +23,17 @@ ValidateArtists = BeforeValidator(_validate_artists)
 
 class MusicMetadata(Metadata, YDLSerializable):
     track: str | None = None
-    artists: Annotated[list[str], EnsureList, ValidateArtists] = []
+    artists: Annotated[
+        list[str],
+        EnsureList,
+        ValidateArtists,
+        Field(alias="artist"),
+    ] = []
     album: str | None = None
-    album_artists: Annotated[list[str], EnsureList, ValidateArtists] = []
+    album_artists: Annotated[
+        list[str],
+        EnsureList,
+        ValidateArtists,
+        Field(alias="album_artist"),
+    ] = []
     genres: list[str] = []

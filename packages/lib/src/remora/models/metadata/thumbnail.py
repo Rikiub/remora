@@ -1,7 +1,6 @@
 from typing import Generic, Literal, Self, TypeVar
 
 from pydantic import model_validator
-from typing_extensions import override
 
 from remora.models._base import BaseList, Resolution, YDLSerializable
 from remora.models.metadata._base import Metadata
@@ -14,19 +13,21 @@ class Thumbnail(Metadata, YDLSerializable):
 
     @model_validator(mode="before")
     @classmethod
-    @override
-    def _validate_ydl(cls, data):
+    def _validate_ydl_thumbnail(cls, data):
         if isinstance(data, dict):
             resolution = data.get("resolution")
             width = data.get("width")
             height = data.get("height")
 
             if isinstance(resolution, str) and width and height:
-                data["resolution"] = {"width": data["width"], "height": data["height"]}
+                data["resolution"] = {
+                    "width": data["width"],
+                    "height": data["height"],
+                }
             else:
                 data["resolution"] = None
 
-            return cls._transform_ydl_dict(data)
+            return data
         return data
 
 

@@ -3,72 +3,60 @@ from __future__ import annotations
 from abc import ABC
 from typing import Annotated, Literal
 
-from pydantic import (
-    AliasChoices,
-    Field,
-    HttpUrl,
-    SkipValidation,
-    computed_field,
-)
+from pydantic import AliasChoices, Field, HttpUrl, computed_field, model_validator
 
 from remora.models.media._base import (
     URL_CHOICES,
     BaseExtract,
     ExtractID,
     ExtractorField,
-    TypeField,
 )
 from remora.models.media.item import LazyMedia
 from remora.models.metadata.thumbnail import Thumbnail
 
 
 class MediaList(ABC, BaseExtract):
-    entries: Annotated[
-        list[LazyMedia | LazyPlaylist], Field(alias="entries", repr=False)
-    ] = []
+    entries: Annotated[list[LazyMedia | LazyPlaylist], Field(repr=False)] = []
     extractor: ExtractorField
 
     @computed_field
     @property
     def medias(self) -> list[LazyMedia]:
-        return [item for item in self.entries if item.type == "media"]
+        return [item for item in self.entries if isinstance(item, LazyMedia)]
 
     @computed_field
     @property
     def playlists(self) -> list[LazyPlaylist]:
-        return [item for item in self.entries if item.type == "playlist"]
+        return [item for item in self.entries if isinstance(item, LazyPlaylist)]
 
 
 class LazyPlaylist(MediaList, ExtractID):
-    type: Annotated[Literal["playlist"], SkipValidation] = "playlist"
+    type: Literal["playlist"] = "playlist"
 
-    url: Annotated[
-        HttpUrl,
-        Field(
-            alias="playlist_url",
-            validation_alias=AliasChoices("playlist_url", *URL_CHOICES),
-        ),
-    ]
     id: Annotated[
         str,
-        Field(
-            alias="playlist_id",
-            validation_alias=AliasChoices("playlist_id", "id"),
-        ),
+        Field(validation_alias=AliasChoices("playlist_id", "id")),
     ]
-    title: Annotated[
-        str,
-        Field(
-            alias="playlist_title",
-            validation_alias=AliasChoices("playlist_title", "title"),
-        ),
-    ] = ""
+    url: Annotated[
+        HttpUrl,
+        Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
+    ]
+    title: Annotated[str, Field(alias="playlist_title")] = ""
 
     thumbnails: list[Thumbnail] = []
 
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_ydl_playlist(cls, data) -> dict:
+        if isinstance(data, dict):
+            _type = data.get("_type")
 
-class Playlist(LazyPlaylist):
-    type: Annotated[Literal["playlist"], TypeField] = "playlist"
+            if not (_type and _type == "playlist" or data.get("entries")):
+                raise ValueError("The data isn't a valid playlist")
+        return data
+
+
+class Playlist(LazyPlaylist): ...
 
 
 class SearchList(MediaList):

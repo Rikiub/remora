@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import Annotated, Generic, Literal
 
 from loguru import logger
-from pydantic import ValidationError, ValidatorFunctionWrapHandler, WrapValidator
+from pydantic import ValidatorFunctionWrapHandler, WrapValidator
 from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
@@ -14,23 +14,26 @@ from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import ProtocolType
 from remora.models.format.type import FormatKind, FormatType
 from remora.models.stream._sort import get_codec_rank, get_stream_rank
-from remora.models.stream.item import AudioStream, Stream, VideoStream
+from remora.models.stream.item import AudioStream, BaseStream, Stream, VideoStream
 from remora.types import StreamQuality
 
 
 def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
     try:
         return handler(v)
-    except ValidationError:
-        logger.opt(exception=True).debug(
-            'Omiting invalid stream "{}"',
-            v.get("format_id") or v.get("id") or "unkdown",
-        )
+    except ValueError:
+        id = "unknown"
+        if isinstance(v, BaseStream):
+            id = v.id
+        elif isinstance(v, dict):
+            id = v.get("format_id") or v.get("id")
+
+        logger.opt(exception=True).debug('Omiting invalid stream "{}"', id)
         raise PydanticOmit
 
 
-T = TypeVar("T", default=Stream, bound=Stream)
 _LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
+T = TypeVar("T", default=Stream, bound=Stream)
 
 
 class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
@@ -56,13 +59,13 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
             items = (
                 s
                 for s in items
-                if isinstance(s, VideoStream) and s.codec.startswith(video_codec)
+                if isinstance(s, VideoStream) and s.video.codec.startswith(video_codec)
             )
         if audio_codec:
             items = (
                 s
                 for s in items
-                if isinstance(s, AudioStream) and s.codec.startswith(audio_codec)
+                if isinstance(s, AudioStream) and s.audio.codec.startswith(audio_codec)
             )
         if protocol:
             items = (s for s in items if s.protocol == protocol)

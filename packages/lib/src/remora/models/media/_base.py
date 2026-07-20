@@ -1,10 +1,8 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AliasChoices, Field, HttpUrl
-from typing_extensions import override
+from pydantic import AliasChoices, Field, HttpUrl, model_validator
 
-from remora._internal.ydl.types import YDLExtractInfo
 from remora.models._base import EnsureNone, YDLSerializable
 from remora.models.metadata.social import Channel, Metrics, Uploader
 
@@ -30,38 +28,34 @@ class BaseExtract(YDLSerializable): ...
 class ExtractID(BaseExtract):
     """Base identifier for media objects."""
 
-    url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
     id: str
     extractor: ExtractorField
+    url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
     modified_date: Annotated[datetime | None, EnsureNone] = None
     upload_date: Annotated[datetime | None, EnsureNone] = None
     release_date: Annotated[datetime | None, EnsureNone] = None
 
-    uploader: Annotated[
-        Uploader | None,
-        EnsureNone,
-        Field(alias="uploader_info"),
-    ] = None
-    channel: Annotated[
-        Channel | None,
-        EnsureNone,
-        Field(alias="channel_info"),
-    ] = None
+    uploader: Annotated[Uploader | None, EnsureNone] = None
+    channel: Annotated[Channel | None, EnsureNone] = None
     metrics: Annotated[Metrics | None, EnsureNone] = None
 
+    @model_validator(mode="before")
     @classmethod
-    @override
-    def _transform_ydl_dict(cls, info: YDLExtractInfo):
-        keys = [
-            "uploader_info",
-            "channel_info",
-            "metrics",
-        ]
+    def _validate_ydl_base(cls, data) -> dict:
+        if isinstance(data, dict):
+            metrics = data
 
-        # Prepare nested data
-        for key in keys:
-            if key not in info:
-                info[key] = info
+            if (uploader := data.get("uploader", None)) and isinstance(uploader, str):
+                uploader = {**data, "uploader": uploader}
 
-        return info
+            if (channel := data.get("channel", None)) and isinstance(channel, str):
+                channel = {**data, "channel": channel}
+
+            return {
+                **data,
+                "metrics": metrics,
+                "uploader": uploader,
+                "channel": channel,
+            }
+        return data

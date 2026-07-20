@@ -10,40 +10,45 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
 
     match stream:
         case MuxedStream():
-            vcodec = get_codec_rank(stream.video_codec, FormatKind.VIDEO)
-            acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
-            is_video = 1
+            video = stream.video
+            audio = stream.audio
+
+            video_codec = get_codec_rank(video.codec, FormatKind.VIDEO)
+            audio_codec = get_codec_rank(audio.codec, FormatKind.AUDIO)
+            has_video = 1
 
             return (
-                is_video,
-                stream.resolution.height if stream.resolution else 0,
-                stream.fps or 0,
-                vcodec,
-                acodec,
+                has_video,
+                video.resolution.height if video.resolution else 0,
+                video.fps or 0,
+                video_codec,
+                audio_codec,
                 stream.size_bytes or 0,
                 protocol,
             )
         case VideoStream():
-            vcodec = get_codec_rank(stream.codec, FormatKind.VIDEO)
-            is_video = 1
+            video = stream.video
+            video_codec = get_codec_rank(video.codec, FormatKind.VIDEO)
+            has_video = 1
 
             return (
-                is_video,
-                stream.resolution.height if stream.resolution else 0,
-                stream.fps or 0,
-                vcodec,
+                has_video,
+                video.resolution.height if video.resolution else 0,
+                video.fps or 0,
+                video_codec,
                 stream.size_bytes or 0,
                 protocol,
             )
         case AudioStream():
-            acodec = get_codec_rank(stream.codec, FormatKind.AUDIO)
-            is_video = 0
+            audio = stream.audio
+            audio_codec = get_codec_rank(audio.codec, FormatKind.AUDIO)
+            has_video = 0
 
             return (
-                is_video,
+                has_video,
                 stream.size_bytes or 0,
-                acodec,
-                stream.bitrate or 0,
+                audio_codec,
+                audio.bitrate or 0,
                 protocol,
             )
         case _:

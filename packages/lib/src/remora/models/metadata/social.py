@@ -5,11 +5,16 @@ from pydantic import AfterValidator, Field, HttpUrl
 from remora.models.metadata._base import Metadata
 
 
+def _clean_uploader_name(v: str) -> str:
+    if not v:
+        return ""
+    return v.split(",")[0].removesuffix(" - Topic")
+
+
 class Uploader(Metadata):
     name: Annotated[
         str,
-        AfterValidator(lambda v: v.split(",")[0] if v else ""),
-        AfterValidator(lambda v: v.removesuffix(" - Topic") if v else ""),
+        AfterValidator(_clean_uploader_name),
         Field(alias="uploader"),
     ]
     id: Annotated[str | None, Field(alias="uploader_id")] = None
