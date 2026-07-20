@@ -32,6 +32,7 @@ class AudioExtension(BaseExtension, StrEnum):
     SPX = "spx"
     VORBIS = "vorbis"
     WMA = "wma"
+    WEBM = "webm"
     WEBA = "weba"
 
     @property

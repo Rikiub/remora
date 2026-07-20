@@ -1,28 +1,55 @@
+from __future__ import annotations
+
 from enum import StrEnum
 from typing import Literal
 
 
 class Protocol(StrEnum):
-    RTMP = "rtmp"
-    RTMPE = "rtmpe"
-    RTMP_FFMPEG = "rtmp_ffmpeg"
-    M3U8_NATIVE = "m3u8_native"
-    M3U8 = "m3u8"
-    MMS = "mms"
-    RTSP = "rtsp"
-    F4M = "f4m"
     HTTP = "http"
     HTTPS = "https"
     HTTP_DASH_SEGMENTS = "http_dash_segments"
     HTTP_DASH_SEGMENTS_GENERATOR = "http_dash_segments_generator"
+
+    FTPS = "ftps"
+    FTP = "ftp"
+
+    M3U8 = "m3u8"
+    M3U8_NATIVE = "m3u8_native"
+
+    RTMP = "rtmp"
+    RTMPE = "rtmpe"
+    RTMP_FFMPEG = "rtmp_ffmpeg"
+    RTSP = "rtsp"
+
+    F4M = "f4m"
+    F4F = "f4f"
+    MMS = "mms"
     ISM = "ism"
-    MHTML = "mhtml"
-    NICONICO_LIVE = "niconico_live"
-    FC2_LIVE = "fc2_live"
-    WEBSOCKET_FRAG = "websocket_frag"
+
     YOUTUBE_LIVE_CHAT = "youtube_live_chat"
     YOUTUBE_LIVE_CHAT_REPLAY = "youtube_live_chat_replay"
+    NICONICO_LIVE = "niconico_live"
+    FC2_LIVE = "fc2_live"
     BUNNYCDN = "bunnycdn"
+    WEBSOCKET_FRAG = "websocket_frag"
+    MHTML = "mhtml"
+
+    @classmethod
+    def by_best(cls) -> list[Protocol]:
+        return [
+            Protocol.HTTPS,
+            Protocol.FTPS,
+            Protocol.HTTP,
+            Protocol.FTP,
+            Protocol.M3U8_NATIVE,
+            Protocol.M3U8,
+            Protocol.HTTP_DASH_SEGMENTS,
+            Protocol.WEBSOCKET_FRAG,
+            Protocol.MMS,
+            Protocol.RTSP,
+            Protocol.F4F,
+            Protocol.F4M,
+        ]
 
     @property
     def is_segmented(self) -> bool:

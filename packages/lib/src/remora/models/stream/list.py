@@ -13,7 +13,7 @@ from remora.models._base import BaseList
 from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import ProtocolType
 from remora.models.format.type import FormatKind, FormatType
-from remora.models.stream._sort import get_codec_rank, stream_sort
+from remora.models.stream._sort import get_codec_rank, get_stream_rank
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StreamQuality
 
@@ -56,13 +56,13 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
             items = (
                 s
                 for s in items
-                if isinstance(s, VideoStream) and s.video_codec.startswith(video_codec)
+                if isinstance(s, VideoStream) and s.codec.startswith(video_codec)
             )
         if audio_codec:
             items = (
                 s
                 for s in items
-                if isinstance(s, AudioStream) and s.audio_codec.startswith(audio_codec)
+                if isinstance(s, AudioStream) and s.codec.startswith(audio_codec)
             )
         if protocol:
             items = (s for s in items if s.protocol == protocol)
@@ -101,7 +101,7 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         """Sort by `Stream` attribute."""
 
         if attribute == "best":
-            filter = stream_sort
+            filter = get_stream_rank
         elif attribute == "codec":
             filter = lambda codec: get_codec_rank(codec, self.type)  # noqa: E731
         else:

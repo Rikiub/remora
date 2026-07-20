@@ -1,65 +1,67 @@
+from remora.models.codec.audio import AudioCodec
+from remora.models.codec.video import VideoCodec
+from remora.models.format.protocol import Protocol
 from remora.models.format.type import FormatKind, FormatType
-from remora.models.stream.item import AudioStream, Stream, VideoStream
-
-VIDEO_PRIORITY = [
-    "theora",
-    "h263",
-    "mp4v",
-    "h264",
-    "avc",
-    "vp8",
-    "h265",
-    "hevc",
-    "vp9",
-    "vp9.2",
-    "av01",
-]
-AUDIO_PRIORITY = [
-    "ac3",
-    "eac3",
-    "dts",
-    "ac4",
-    "mp3",
-    "aac",
-    "mp4a",
-    "vorbis",
-    "opus",
-    "flac",
-    "alac",
-    "wav",
-    "aiff",
-]
-PROTOCOL_PRIORITY = [
-    "f4m",
-    "f4f",
-    "rtsp",
-    "mms",
-    "websocket_frag",
-    "http_dash_segments",
-    "m3u8",
-    "m3u8_native",
-    "ftp",
-    "http",
-    "ftps",
-    "https",
-]
+from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
 
 
-def normalize_codec(codec: str) -> str:
-    """Lowercase and take everything before the first dot/dash
+def get_stream_rank(stream: Stream) -> tuple[float, ...]:
+    protocol = get_protocol_rank(stream.protocol)
 
-    Example: "avc1.640028" -> "avc1"
-    Example: "mp4a.40.2"   -> "mp4a"
-    """
-    return codec.lower().split(".")[0].split("-")[0].strip()
+    match stream:
+        case MuxedStream():
+            vcodec = get_codec_rank(stream.video_codec, FormatKind.VIDEO)
+            acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
+            is_video = 1
+
+            return (
+                is_video,
+                stream.resolution.height if stream.resolution else 0,
+                stream.fps or 0,
+                vcodec,
+                acodec,
+                stream.size_bytes or 0,
+                protocol,
+            )
+        case VideoStream():
+            vcodec = get_codec_rank(stream.codec, FormatKind.VIDEO)
+            is_video = 1
+
+            return (
+                is_video,
+                stream.resolution.height if stream.resolution else 0,
+                stream.fps or 0,
+                vcodec,
+                stream.size_bytes or 0,
+                protocol,
+            )
+        case AudioStream():
+            acodec = get_codec_rank(stream.codec, FormatKind.AUDIO)
+            is_video = 0
+
+            return (
+                is_video,
+                stream.size_bytes or 0,
+                acodec,
+                stream.bitrate or 0,
+                protocol,
+            )
+        case _:
+            raise ValueError("Unable to sort streams. The stream type don't match.")
+
+
+_VIDEO_LIST = VideoCodec.by_best()[::-1]
+_AUDIO_LIST = AudioCodec.by_best()[::-1]
+_PROTOCOL_LIST = Protocol.by_best()[::-1]
 
 
 def get_codec_rank(codec: str | None, type: FormatType) -> int:
     if not codec:
         return -1
 
-    priority = AUDIO_PRIORITY if type == FormatKind.AUDIO else VIDEO_PRIORITY
-    codec = normalize_codec(codec)
+    priority: list[str] = (
+        _AUDIO_LIST if type == FormatKind.AUDIO else _VIDEO_LIST  # type: ignore
+    )
 
     try:
         # Higher index = Better quality
@@ -68,45 +70,12 @@ def get_codec_rank(codec: str | None, type: FormatType) -> int:
         return -1  # Unknown codec is ranked lowest
 
 
-def get_protocol_rank(protocol: str | None) -> int:
+def get_protocol_rank(protocol: Protocol | None) -> int:
     if not protocol:
         return -1
 
-    protocol = protocol.lower()
-
-    for index, name in enumerate(PROTOCOL_PRIORITY):
+    for index, name in enumerate(_PROTOCOL_LIST):
         if name in protocol:
             return index
 
     return -1
-
-
-def stream_sort(stream: Stream):
-    protocol = get_protocol_rank(stream.protocol)
-
-    if isinstance(stream, VideoStream):
-        is_video = 1
-        vcodec = get_codec_rank(stream.video_codec, FormatKind.VIDEO)
-        acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
-
-        return (
-            is_video,
-            stream.height or 0,
-            stream.fps or 0,
-            vcodec,
-            acodec,
-            stream.size_bytes or 0,
-            protocol,
-        )
-
-    elif isinstance(stream, AudioStream):
-        is_video = 0
-        acodec = get_codec_rank(stream.audio_codec, FormatKind.AUDIO)
-
-        return (
-            is_video,
-            stream.size_bytes or 0,
-            acodec,
-            stream.bitrate,
-            protocol,
-        )
