@@ -2,39 +2,93 @@ import pytest
 from utils import get_ydl_fixture
 
 from remora.models.media.item import Media
-from remora.models.stream.item import AudioStream, VideoStream
+from remora.models.stream.item import AudioStream, MuxedStream, VideoStream
 from remora.models.stream.list import StreamList
 
 
 @pytest.fixture(scope="module")
-async def streams():
+async def streams() -> StreamList:
     data = get_ydl_fixture("youtube_video.json")
     media = Media(**data)
     return media.streams
 
 
-# StreamList Tests
-async def test_video_type(streams: StreamList):
-    fmt = streams.only_video()
-    assert all(type(f) is VideoStream for f in fmt)
+# Filters: Video and Audio
+@pytest.mark.parametrize(
+    "method, expected_class",
+    [
+        ("muxed", MuxedStream),
+        ("videos", (VideoStream, MuxedStream)),
+        ("audios", (AudioStream, MuxedStream)),
+    ],
+)
+async def test_stream_type_filters(streams: StreamList, method, expected_class):
+    filtered = getattr(streams, method)()
+    assert len(filtered) > 0, f"No streams returned for .{method}()"
+    assert all(isinstance(s, expected_class) for s in filtered)
 
 
-async def test_audio_type(streams: StreamList):
-    fmt = streams.only_audio()
-    assert all(type(f) is AudioStream for f in fmt)
+@pytest.mark.parametrize(
+    "method, expected_class",
+    [
+        ("video_only", VideoStream),
+        ("audio_only", AudioStream),
+    ],
+)
+async def test_stream_strict_type_filters(streams: StreamList, method, expected_class):
+    filtered = getattr(streams, method)()
+    assert len(filtered) > 0, f"No streams returned for .{method}()"
+    assert all(type(s) is expected_class for s in filtered)
 
 
+# Filters: General
+@pytest.mark.parametrize(
+    "filter_kwargs, attr_name, expected_value",
+    [
+        ({"extension": "mp4"}, "extension", "mp4"),
+        ({"quality": 720}, "quality", 720),
+        ({"protocol": "https"}, "protocol", "https"),
+    ],
+)
+async def test_generic_filters(
+    streams: StreamList, filter_kwargs, attr_name, expected_value
+):
+    filtered = streams.filter(**filter_kwargs)
+    assert len(filtered) > 0, f"Filter {filter_kwargs} yielded no results"
+    assert all(getattr(s, attr_name) == expected_value for s in filtered)
+
+
+async def test_filter_video_codec(streams: StreamList):
+    codec = "vp9"
+    filtered = streams.filter(video_codec=codec)
+    assert len(filtered) > 0
+    assert all(
+        isinstance(s, VideoStream) and s.video.codec.startswith(codec) for s in filtered
+    )
+
+
+async def test_filter_audio_codec(streams: StreamList):
+    codec = "opus"
+    filtered = streams.filter(audio_codec=codec)
+    assert len(filtered) > 0
+    assert all(
+        isinstance(s, AudioStream) and s.audio.codec.startswith(codec) for s in filtered
+    )
+
+
+# Getters
 async def test_closest_quality(streams: StreamList):
-    fmt = streams.get_closest_quality(600)
-    assert fmt.quality == 720
-
-
-async def test_filter(streams: StreamList):
-    fmt = streams.filter(quality=720)
-    assert all(f.quality == 720 for f in fmt)
+    stream = streams.get_closest_quality(600)
+    assert stream.quality == 720
 
 
 async def test_get_by_id(streams: StreamList):
-    ID = "137"
-    fmt = streams.get_by_id(ID)
-    assert fmt.id == ID
+    stream_id = "137"
+    stream = streams.get_by_id(stream_id)
+    assert stream.id == stream_id
+
+
+async def test_get_by_id_raises(streams: StreamList):
+    with pytest.raises(KeyError):
+        stream_id = "-1"
+        streams.get_by_id(stream_id)
