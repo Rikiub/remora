@@ -1,9 +1,9 @@
 from loguru import logger
 
 from remora.models.event.enum import CompletedResult, EventStatus, EventType
-from remora.models.event.media import MediaEvent, ProcessEvent
+from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
-from remora.models.event.process import ProcessorTask
+from remora.models.event.process import ProcessEvent, ProcessorTask
 
 
 async def log_event_playlist(event: BatchEvent):

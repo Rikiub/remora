@@ -10,6 +10,8 @@ from remora.models.stream.list import StreamList
 async def streams() -> StreamList:
     data = get_ydl_fixture("youtube_video.json")
     media = Media(**data)
+
+    assert len(media.streams) > 0
     return media.streams
 
 

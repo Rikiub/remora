@@ -13,7 +13,13 @@ from remora.models._base import BaseList
 from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import ProtocolType
 from remora.models.stream._sort import get_codec_rank, get_stream_rank
-from remora.models.stream.item import AudioStream, BaseStream, Stream, VideoStream
+from remora.models.stream.item import (
+    AudioStream,
+    BaseStream,
+    MuxedStream,
+    Stream,
+    VideoStream,
+)
 from remora.models.stream.type import StreamKind
 from remora.types import StreamQuality
 
@@ -72,20 +78,30 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
 
         return self.__class__(list(items))
 
-    def with_video(self) -> StreamList[VideoStream]:
+    def muxed(self) -> StreamList[MuxedStream]:
+        """Get strictly muxed streams."""
+        return StreamList[MuxedStream](
+            [s for s in self.root if isinstance(s, MuxedStream)]
+        )
+
+    def videos(self) -> StreamList[VideoStream]:
+        """Get all streams that contain video (including muxed streams)."""
         return StreamList[VideoStream](
             [s for s in self.root if isinstance(s, VideoStream)]
         )
 
-    def with_audio(self) -> StreamList[AudioStream]:
+    def audios(self) -> StreamList[AudioStream]:
+        """Get all streams that contain audio (including muxed streams)."""
         return StreamList[AudioStream](
             [s for s in self.root if isinstance(s, AudioStream)]
         )
 
-    def only_video(self) -> StreamList[VideoStream]:
+    def video_only(self) -> StreamList[VideoStream]:
+        """Get strictly video-only streams (excluding muxed streams)."""
         return StreamList[VideoStream]([s for s in self.root if type(s) is VideoStream])
 
-    def only_audio(self) -> StreamList[AudioStream]:
+    def audio_only(self) -> StreamList[AudioStream]:
+        """Get strictly audio-only streams (excluding muxed streams)."""
         return StreamList[AudioStream]([s for s in self.root if type(s) is AudioStream])
 
     @cached_property
@@ -95,24 +111,33 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         It will check if is 'video' or 'audio'.
         """
 
-        if self.with_video():
+        if self.videos():
             return StreamKind.VIDEO
-        elif self.with_audio():
+        elif self.audios():
             return StreamKind.AUDIO
         else:
             return StreamKind.VIDEO
 
-    def sort_by(
+    def sorted_by(
         self,
-        attribute: Literal["best", "extension", "quality", "codec", "protocol"],
+        attribute: Literal[
+            "best",
+            "extension",
+            "quality",
+            "protocol",
+            "video_codec",
+            "audio_codec",
+        ],
         reverse: bool = True,
     ) -> Self:
         """Sort by `Stream` attribute."""
 
         if attribute == "best":
             filter = get_stream_rank
-        elif attribute == "codec":
-            filter = lambda codec: get_codec_rank(codec, self.type)  # noqa: E731
+        elif attribute == "video_codec":
+            filter = lambda codec: get_codec_rank(codec, StreamKind.VIDEO)  # noqa: E731
+        elif attribute == "audio_codec":
+            filter = lambda codec: get_codec_rank(codec, StreamKind.AUDIO)  # noqa: E731
         else:
             filter = lambda s: getattr(s, attribute)  # noqa: E731
 
@@ -128,17 +153,20 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         """Get `Stream` by `id`.
 
         Raises:
-            IndexError: Provided id has not been founded.
+            KeyError: Provided id has not been founded.
         """
 
         try:
             stream = next(s for s in self if s.id == id)
             return stream
         except StopIteration:
-            raise IndexError(f"Stream with id '{id}' has not been founded")
+            raise KeyError(f"Stream with id '{id}' has not been found")
 
     def get_closest_quality(self, quality: int) -> T:
-        items = self.sort_by("quality", reverse=False)
+        if not self.root:
+            raise ValueError("Cannot find closest quality in an empty list")
+
+        items = self.sorted_by("quality", reverse=False)
         qualities = [i.quality for i in items]
         pos = bisect.bisect_left(qualities, quality)
 

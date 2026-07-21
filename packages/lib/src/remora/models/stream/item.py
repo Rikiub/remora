@@ -23,6 +23,10 @@ def _normalize_codec(value: str | None) -> str | None:
     return None if value == "none" else value
 
 
+def _is_ydl(value: dict) -> bool:
+    return bool(isinstance(value, dict) and value.get("format_id"))
+
+
 _Codec = Annotated[str, BeforeValidator(_normalize_codec)]
 SizeType = Literal["exact", "estimated", "unknown"]
 
@@ -98,7 +102,7 @@ class BaseStream(ABC, YDLSerializable):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_base(cls, data) -> dict:
-        if isinstance(data, dict):
+        if _is_ydl(data):
             data["ydl_options"] = {
                 "downloader": data.get("downloader_options", {}),
                 "headers": data.get("http_headers", {}),
@@ -145,7 +149,7 @@ class AudioStream(BaseStream):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_audio(cls, data) -> dict:
-        if isinstance(data, dict):
+        if _is_ydl(data):
             return {
                 **data,
                 "audio": data,
@@ -171,7 +175,7 @@ class VideoStream(BaseStream):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_video(cls, data) -> dict:
-        if isinstance(data, dict):
+        if _is_ydl(data):
             # Map resolution
             resolution = None
             width = data.get("width")

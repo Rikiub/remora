@@ -34,7 +34,6 @@ class LazyMedia(ExtractID):
         BeforeValidator(_normalize_type),
         TypeField,
     ] = "media"
-    type: Literal["media"] = "media"
     title: Annotated[str | None, EnsureNone] = None
     description: Annotated[str | None, EnsureNone] = None
     live_status: LiveStatus = "not_live"
@@ -60,7 +59,7 @@ class LazyMedia(ExtractID):
     @classmethod
     @override
     def _validate_ydl_media(cls, data) -> dict:
-        if isinstance(data, dict):
+        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
             # Map live status
             live_status: LiveStatus = "not_live"
 
@@ -95,6 +94,6 @@ class Media(LazyMedia):
     chapters: Annotated[list[Chapter], EnsureList] = []
     streams: Annotated[
         StreamList,
-        AfterValidator(lambda list: list.sort_by("best")),
+        AfterValidator(lambda list: list.sorted_by("best")),
         Field(alias="formats"),
     ]
