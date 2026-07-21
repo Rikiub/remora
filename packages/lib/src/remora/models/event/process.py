@@ -3,8 +3,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
+from remora.models.event._base import FileEvent
 from remora.models.event.enum import EventStatus
-from remora.models.event.media import FileEvent
 from remora.models.stream.item import AudioStream, VideoStream
 
 

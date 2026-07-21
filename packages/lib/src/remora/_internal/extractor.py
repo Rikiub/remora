@@ -30,7 +30,7 @@ class MediaExtractor:
     ) -> Media | Playlist:
         """Extract media from URL or update item."""
 
-        url = str(item) if isinstance(item, StrUrl) else str(item.url)
+        url = str(item if isinstance(item, StrUrl) else item.url)
 
         with logger.contextualize(status="extracting", url=url):
             logger.info("Extracting URL: {url}", url=url)

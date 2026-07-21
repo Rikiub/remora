@@ -22,7 +22,7 @@ from remora_cli.ui.extractor import SearchList
 class Remora:
     def __init__(self, download_options: DownloadOptions | None = None):
         self.download_options = download_options or DownloadOptions()
-        self._extractor = MediaExtractor()
+        self.extractor = MediaExtractor()
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -37,7 +37,7 @@ class Remora:
         self, item: StrUrl | LazyMedia | LazyPlaylist
     ) -> Media | Playlist:
         """Extract media from URL or update item."""
-        return await self._extractor.extract(item)
+        return await self.extractor.extract(item)
 
     async def extract_search(
         self,
@@ -46,7 +46,7 @@ class Remora:
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""
-        return await self._extractor.extract_search(query, service, limit)
+        return await self.extractor.extract_search(query, service, limit)
 
     @overload
     def download(self, item: StrUrl | LazyMedia) -> AsyncIterable[MediaEvent]: ...
@@ -72,7 +72,7 @@ class Remora:
             async for event in DownloadPipeline(
                 extracted,
                 config=self.download_options,
-                extractor=self._extractor,
+                extractor=self.extractor,
             ).download():
                 yield event
 
@@ -89,7 +89,7 @@ class Remora:
         async for event in DownloadBatch(
             extracted,
             config=self.download_options,
-            extractor=self._extractor,
+            extractor=self.extractor,
         ).download():
             yield event
 
