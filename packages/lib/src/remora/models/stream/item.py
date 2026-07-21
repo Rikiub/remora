@@ -9,8 +9,9 @@ from pydantic import (
     Tag,
     model_validator,
 )
+from typing_extensions import override
 
-from remora.models._base import RemoraBaseModel, Resolution
+from remora.models._base import RemoraBaseModel, Resolution, YDLSerializable
 from remora.models.format.audio import AudioExtension
 from remora.models.format.protocol import Protocol
 from remora.models.format.type import FormatKind
@@ -27,13 +28,13 @@ SizeType = Literal["exact", "estimated", "unknown"]
 
 # INFO
 class AudioInfo(RemoraBaseModel):
-    codec: Annotated[str, Field(alias="acodec")]
+    codec: Annotated[_Codec, Field(alias="acodec")]
     bitrate: Annotated[float | None, Field(alias="abr")] = None
     language: str | None = None
 
 
 class VideoInfo(RemoraBaseModel):
-    codec: Annotated[str, Field(alias="vcodec")]
+    codec: Annotated[_Codec, Field(alias="vcodec")]
     bitrate: Annotated[float | None, Field(alias="vbr")] = None
     resolution: Resolution | None = None
     fps: float | None = None
@@ -41,12 +42,12 @@ class VideoInfo(RemoraBaseModel):
 
 # STREAMS
 class YDLOptions(RemoraBaseModel):
-    downloader: dict = {}
-    headers: dict = {}
+    downloader: Annotated[dict, Field(alias="downloader_options")] = {}
+    headers: Annotated[dict, Field(alias="http_headers")] = {}
     cookies: str | None = None
 
 
-class BaseStream(ABC, RemoraBaseModel):
+class BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 
     type: Any
@@ -61,9 +62,41 @@ class BaseStream(ABC, RemoraBaseModel):
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
 
+    @override
+    def to_ydl_dict(self):
+        data = super().to_ydl_dict()
+
+        # Convert size
+        name = "filesize" if self.size_type == "estimated" else "filesize_approx"
+        data[name] = self.size_bytes
+
+        # Convert YDL options
+        data |= data.get("ydl_options") or {}
+
+        # Flatterize video and audio
+        video = data.get("video")
+        audio = data.get("audio")
+
+        if video and (vcodec := video.get("vcodec")):
+            data |= {
+                **video,
+                **data.get("resolution", {}),
+                "vcodec": vcodec if vcodec else "none",
+            }
+
+        if audio and (acodec := audio.get("vcodec")):
+            data |= {**audio, "acodec": acodec if acodec else "none"}
+
+        if video and audio:
+            data["video_ext"] = video["ext"]
+            data["audio_ext"] = audio["ext"]
+
+        # Return normalized info dict
+        return data
+
     @model_validator(mode="before")
     @classmethod
-    def _validate_ydl(cls, data) -> dict:
+    def _validate_ydl_base(cls, data) -> dict:
         if isinstance(data, dict):
             data["ydl_options"] = {
                 "downloader": data.get("downloader_options", {}),

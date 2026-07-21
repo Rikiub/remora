@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Annotated, Literal
 
-from pydantic import AliasChoices, Field, HttpUrl, computed_field, model_validator
+from pydantic import AliasChoices, Field, HttpUrl, computed_field
 
 from remora.models.media._base import (
     URL_CHOICES,
@@ -42,18 +42,7 @@ class LazyPlaylist(MediaList, ExtractID):
         Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
     ]
     title: Annotated[str, Field(alias="playlist_title")] = ""
-
     thumbnails: list[Thumbnail] = []
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_ydl_playlist(cls, data) -> dict:
-        if isinstance(data, dict):
-            _type = data.get("_type")
-
-            if not (_type and _type == "playlist" or data.get("entries")):
-                raise ValueError("The data isn't a valid playlist")
-        return data
 
 
 class Playlist(LazyPlaylist): ...

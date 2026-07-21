@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl, model_validator
+from typing_extensions import override
 
 from remora.models._base import EnsureNone, YDLSerializable
 from remora.models.metadata.social import Channel, Metrics, Uploader
@@ -39,6 +40,21 @@ class ExtractID(BaseExtract):
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
     metrics: Annotated[Metrics | None, EnsureNone] = None
+
+    @override
+    def to_ydl_dict(self):
+        data = super().to_ydl_dict()
+
+        fields = [
+            "music",
+            "metrics",
+            "uploader",
+            "channel",
+        ]
+        for f in fields:
+            data |= data.get(f) or {}
+
+        return data
 
     @model_validator(mode="before")
     @classmethod

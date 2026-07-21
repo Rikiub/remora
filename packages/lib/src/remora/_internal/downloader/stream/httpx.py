@@ -319,17 +319,17 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             )
 
     def _get_headers(self) -> dict[str, str]:
-        headers = self.stream.http_headers
+        headers = self.stream.ydl_options.headers
         return headers
 
     def _get_cookies(self) -> dict[str, str]:
         cookie_dict = {}
-        if not self.stream.cookies:
+        if not self.stream.ydl_options.cookies:
             return cookie_dict
 
         # 1. Clean the string and split
         # yt-dlp cookie strings often have multiple cookies separated by '; '
-        parts = self.stream.cookies.split(";")
+        parts = self.stream.ydl_options.cookies.split(";")
 
         for part in parts:
             if "=" not in part:
