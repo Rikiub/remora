@@ -1,6 +1,5 @@
-from pathlib import Path
-
 import pytest
+from utils import get_ydl_fixture
 
 from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, VideoStream
@@ -8,21 +7,21 @@ from remora.models.stream.list import StreamList
 
 
 @pytest.fixture(scope="module")
-async def streams(root_path: Path):
-    path = root_path / "resources" / "youtube-video.json"
-    media = Media.model_validate_json(path.read_bytes())
+async def streams():
+    data = get_ydl_fixture("youtube_video.json")
+    media = Media(**data)
     return media.streams
 
 
 # StreamList Tests
 async def test_video_type(streams: StreamList):
     fmt = streams.only_video()
-    assert all(isinstance(f, VideoStream) for f in fmt)
+    assert all(type(f) is VideoStream for f in fmt)
 
 
 async def test_audio_type(streams: StreamList):
     fmt = streams.only_audio()
-    assert all(isinstance(f, AudioStream) for f in fmt)
+    assert all(type(f) is AudioStream for f in fmt)
 
 
 async def test_closest_quality(streams: StreamList):

@@ -12,9 +12,9 @@ from typing_extensions import Self, TypeVar
 from remora.models._base import BaseList
 from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import ProtocolType
-from remora.models.format.type import FormatKind, FormatType
 from remora.models.stream._sort import get_codec_rank, get_stream_rank
 from remora.models.stream.item import AudioStream, BaseStream, Stream, VideoStream
+from remora.models.stream.type import StreamKind
 from remora.types import StreamQuality
 
 
@@ -72,29 +72,35 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
 
         return self.__class__(list(items))
 
-    def only_video(self) -> StreamList[VideoStream]:
+    def with_video(self) -> StreamList[VideoStream]:
         return StreamList[VideoStream](
             [s for s in self.root if isinstance(s, VideoStream)]
         )
 
-    def only_audio(self) -> StreamList[AudioStream]:
+    def with_audio(self) -> StreamList[AudioStream]:
         return StreamList[AudioStream](
             [s for s in self.root if isinstance(s, AudioStream)]
         )
 
+    def only_video(self) -> StreamList[VideoStream]:
+        return StreamList[VideoStream]([s for s in self.root if type(s) is VideoStream])
+
+    def only_audio(self) -> StreamList[AudioStream]:
+        return StreamList[AudioStream]([s for s in self.root if type(s) is AudioStream])
+
     @cached_property
-    def type(self) -> FormatType:
+    def type(self) -> StreamKind:
         """
         Determine main stream type.
         It will check if is 'video' or 'audio'.
         """
 
-        if self.only_video():
-            return FormatKind.VIDEO
-        elif self.only_audio():
-            return FormatKind.AUDIO
+        if self.with_video():
+            return StreamKind.VIDEO
+        elif self.with_audio():
+            return StreamKind.AUDIO
         else:
-            return FormatKind.VIDEO
+            return StreamKind.VIDEO
 
     def sort_by(
         self,

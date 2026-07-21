@@ -1,15 +1,14 @@
-from pathlib import Path
-
 import pytest
+from utils import get_ydl_fixture
 
 from remora.models.media.item import Media
 from remora.models.metadata.subtitle import SubtitleList
 
 
 @pytest.fixture(scope="module")
-async def subs(root_path: Path):
-    path = root_path / "resources" / "youtube-video.json"
-    media = Media.model_validate_json(path.read_bytes())
+async def subs():
+    data = get_ydl_fixture("youtube_video.json")
+    media = Media(**data)
     return media.subtitles
 
 

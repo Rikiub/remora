@@ -1,8 +1,8 @@
 from remora.models.codec.audio import AudioCodec
 from remora.models.codec.video import VideoCodec
 from remora.models.format.protocol import Protocol
-from remora.models.format.type import FormatKind, FormatType
 from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
+from remora.models.stream.type import StreamKind, StreamType
 
 
 def get_stream_rank(stream: Stream) -> tuple[float, ...]:
@@ -13,8 +13,8 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
             video = stream.video
             audio = stream.audio
 
-            video_codec = get_codec_rank(video.codec, FormatKind.VIDEO)
-            audio_codec = get_codec_rank(audio.codec, FormatKind.AUDIO)
+            video_codec = get_codec_rank(video.codec, StreamKind.VIDEO)
+            audio_codec = get_codec_rank(audio.codec, StreamKind.AUDIO)
             has_video = 1
 
             return (
@@ -28,7 +28,7 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
             )
         case VideoStream():
             video = stream.video
-            video_codec = get_codec_rank(video.codec, FormatKind.VIDEO)
+            video_codec = get_codec_rank(video.codec, StreamKind.VIDEO)
             has_video = 1
 
             return (
@@ -41,7 +41,7 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
             )
         case AudioStream():
             audio = stream.audio
-            audio_codec = get_codec_rank(audio.codec, FormatKind.AUDIO)
+            audio_codec = get_codec_rank(audio.codec, StreamKind.AUDIO)
             has_video = 0
 
             return (
@@ -60,12 +60,12 @@ _AUDIO_LIST = AudioCodec.by_best()[::-1]
 _PROTOCOL_LIST = Protocol.by_best()[::-1]
 
 
-def get_codec_rank(codec: str | None, type: FormatType) -> int:
+def get_codec_rank(codec: str | None, type: StreamType) -> int:
     if not codec:
         return -1
 
     priority: list[str] = (
-        _AUDIO_LIST if type == FormatKind.AUDIO else _VIDEO_LIST  # type: ignore
+        _AUDIO_LIST if type == StreamKind.AUDIO else _VIDEO_LIST  # type: ignore
     )
 
     try:

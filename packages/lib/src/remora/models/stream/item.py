@@ -16,6 +16,7 @@ from remora.models.format.audio import AudioExtension
 from remora.models.format.protocol import Protocol
 from remora.models.format.type import FormatKind
 from remora.models.format.video import VideoExtension
+from remora.models.stream.type import StreamKind
 
 
 def _normalize_codec(value: str | None) -> str | None:
@@ -193,7 +194,7 @@ class VideoStream(BaseStream):
 
 
 class MuxedStream(VideoStream, AudioStream):
-    type: Literal[FormatKind.MUXED] = FormatKind.MUXED  # type: ignore
+    type: Literal[StreamKind.MUXED] = StreamKind.MUXED  # type: ignore
     extension: Annotated[VideoExtension, Field(alias="ext")]  # type: ignore
 
 
@@ -210,26 +211,26 @@ def _infer_stream_type(data) -> str:
         audio = _normalize_codec(data.audio.codec)
 
     if video and audio:
-        return FormatKind.MUXED
+        return StreamKind.MUXED
     elif video:
-        return FormatKind.VIDEO
+        return StreamKind.VIDEO
     elif audio:
-        return FormatKind.AUDIO
+        return StreamKind.AUDIO
     raise ValueError("Cannot determine stream type")
 
 
 Stream = Annotated[
     Annotated[
         MuxedStream,
-        Tag(FormatKind.MUXED),
+        Tag(StreamKind.MUXED),
     ]
     | Annotated[
         VideoStream,
-        Tag(FormatKind.VIDEO),
+        Tag(StreamKind.VIDEO),
     ]
     | Annotated[
         AudioStream,
-        Tag(FormatKind.AUDIO),
+        Tag(StreamKind.AUDIO),
     ],
     Discriminator(_infer_stream_type),
 ]

@@ -39,14 +39,14 @@ class TestExceptions:
 
 class TestBase:
     async def test_media(self):
-        result = await extract("https://youtube.com/watch?v=Kx7B-XvmFtE")
-        assert isinstance(result, Media)
+        data = await extract("https://youtube.com/watch?v=Kx7B-XvmFtE")
+        assert isinstance(data, Media)
 
     async def test_playlist(self):
-        result = await extract(
+        data = await extract(
             "https://music.youtube.com/playlist?list=OLAK5uy_lRrAuEy29zo5mtAH465aEtvmRfakErDoI"
         )
-        assert isinstance(result, Playlist)
+        assert isinstance(data, Playlist)
 
 
 class TestSearch:
@@ -79,14 +79,17 @@ class TestSearch:
 
 
 class TestSite:
-    async def test_youtube(self):
-        await extract("https://www.youtube.com/watch?v=lBVhLcfoahw")
+    async def test_youtube(self, snapshot):
+        data = await extract("https://www.youtube.com/watch?v=lBVhLcfoahw")
+        assert data == snapshot
 
     async def test_ytmusic(self):
         await extract("https://music.youtube.com/watch?v=Kx7B-XvmFtE")
 
-    async def test_soundcloud(self):
-        await extract("https://api.soundcloud.com/tracks/1269676381")
+    async def test_soundcloud(self, snapshot):
+        data = await extract("https://api.soundcloud.com/tracks/1269676381")
+        data = sanitize_media(data)
+        assert data == snapshot
 
     """
     [facebook] 2868837949958495: Cannot parse data;
@@ -112,3 +115,15 @@ class TestSite:
 
     async def test_netease_music(self):
         await extract("http://music.163.com/#/song?id=421563082")
+
+
+def sanitize_media(data: Media | Playlist) -> dict:
+    if isinstance(data, Media):
+        url_prefix = "<class 'HttpUrl'>"
+
+        for s in data.thumbnails:
+            s.url = url_prefix  # type: ignore
+        for s in data.streams:
+            s.url = url_prefix  # type: ignore
+
+    return data.model_dump(mode="json")
