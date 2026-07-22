@@ -2,7 +2,6 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, get_args
 
-from click import Choice
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
@@ -21,11 +20,12 @@ class HelpPanel(StrEnum):
     downloader = "Downloader"
 
 
-FORMAT_CHOICES = [
+FormatEnum = [
     s
     for lit in (FormatKindStr, SafeVideoExtensionStr, SafeAudioExtensionStr)
     for s in get_args(lit)
 ]
+FormatEnum = StrEnum("FormatEnum", {s: s for s in FormatEnum})
 
 app = Typer()
 
@@ -39,36 +39,33 @@ async def download(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
             - Insert a [green]URL[/] to download. [grey62](Default)[/]\n
-            - Select a [green]SERVICE[/] to search and download.
+            - Insert a [green]service[/] and [green]query[/] to search and download.
             """,
             show_default=False,
             autocompletion=complete_query,
-            metavar="URL | SERVICE",
         ),
     ],
     format: Annotated[
-        str,
+        FormatEnum,  # type: ignore
         Option(
             "--format",
             "-f",
             help="""File type to request.\n
             - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
-            - To convert, select a file [green]EXTENSION[/]. [grey62](Slow)[/]
+            - To convert, select a file [green]extension[/]. [grey62](Slow)[/]
             """,
-            metavar="TYPE | EXTENSION",
             prompt="""
 What format you want request?
 
 - To get BEST, select 'video' or 'audio' (Fast)
-- To convert, select a file EXTENSION (Slow)
+- To convert, select a file extension (Slow)
 
 """,
             prompt_required=False,
             show_default=False,
             rich_help_panel=HelpPanel.file,
-            click_type=Choice(FORMAT_CHOICES),
         ),
-    ] = "video",
+    ] = FormatEnum.video,  # type: ignore
     quality: Annotated[
         int | None,
         Option(
@@ -109,7 +106,7 @@ What format you want request?
         ),
     ] = None,
 ):
-    """Download video/audio from [green]URL[/] or search [green]SERVICE[/]."""
+    """Download video/audio from [green]URL[/] or search [green]service[/]."""
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
@@ -132,7 +129,7 @@ What format you want request?
 
         remora = Remora(download_options=config)
 
-    async for target, result in extract_queries(query, remora._extractor):
+    async for target, result in extract_queries(query, remora.extractor):
         if isinstance(result, (Playlist, SearchList)):
             if not result.medias:
                 logger.error("'{}' don't have streams to download", target)

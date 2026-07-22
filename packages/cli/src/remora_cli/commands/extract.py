@@ -78,11 +78,10 @@ async def extract(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
             - Insert a [green]URL[/] to extract.\n
-            - Insert a [green]SERVICE[/] and [green]QUERY[/] to search and extract.
+            - Insert a [green]service[/] and [green]query[/] to search and extract.
             """,
             show_default=False,
             autocompletion=complete_query,
-            metavar="URL | SERVICE",
         ),
     ],
     format: Annotated[
@@ -113,7 +112,7 @@ async def extract(
         ),
     ] = [],
 ):
-    """Extract metadata from [green]URL[/] or search [green]SERVICE[/]."""
+    """Extract metadata from [green]URL[/] or search [green]service[/]."""
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
