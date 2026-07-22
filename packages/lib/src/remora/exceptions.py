@@ -10,7 +10,7 @@ class OutputTemplateError(RemoraError, ValueError):
 
 
 class RequestError(RemoraError, ConnectionError):
-    """Base exception for network/connection issues with websites."""
+    """Base exception for network/connection issues from websites."""
 
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
