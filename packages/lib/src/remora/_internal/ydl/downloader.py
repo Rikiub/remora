@@ -4,7 +4,7 @@ from typing import Any
 
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
-from remora._internal.ydl.messages import extract_status_code, format_except_message
+from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import DownloadError, MetadataDownloadError
@@ -55,9 +55,10 @@ def download_from_info(
         filepath = result["requested_downloads"][0]["filepath"]  # type: ignore
         return Path(filepath)
     except YDLDownloadError as error:
-        msg = format_except_message(error)
-        status_code = extract_status_code(str(error))
-        raise DownloadError(msg, status_code=status_code or 0)
+        raise DownloadError(
+            message=sanitize_ydl_error(error),
+            status_code=extract_status_code(error),
+        )
 
 
 def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:

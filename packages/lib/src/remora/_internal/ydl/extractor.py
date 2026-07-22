@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from typing import cast
 
-from yt_dlp.networking.exceptions import RequestError
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
-from remora._internal.ydl.messages import extract_status_code, format_except_message
+from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractError
@@ -52,9 +51,10 @@ def extract_info(query: str) -> YDLExtractInfo:
             auto_init=True,
         )
         info = ydl.extract_info(query, download=False)
-    except (YDLDownloadError, RequestError) as error:
-        msg = format_except_message(error)
-        status_code = extract_status_code(str(error))
-        raise ExtractError(msg, status_code=status_code or 0)
+    except YDLDownloadError as error:
+        raise ExtractError(
+            message=sanitize_ydl_error(error),
+            status_code=extract_status_code(error),
+        )
 
     return cast(YDLExtractInfo, info)
