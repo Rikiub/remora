@@ -14,12 +14,11 @@ from typing_extensions import override
 from remora.models._base import RemoraBaseModel, Resolution, YDLSerializable
 from remora.models.format.audio import AudioExtension
 from remora.models.format.protocol import Protocol
-from remora.models.format.type import FormatKind
 from remora.models.format.video import VideoExtension
 from remora.models.stream.type import StreamKind
 
 
-def _normalize_codec(value: str | None) -> str | None:
+def _normalize_value(value: str | None) -> str | None:
     return None if value == "none" else value
 
 
@@ -27,19 +26,26 @@ def _is_ydl(value: dict) -> bool:
     return bool(isinstance(value, dict) and value.get("format_id"))
 
 
-_Codec = Annotated[str, BeforeValidator(_normalize_codec)]
 SizeType = Literal["exact", "estimated", "unknown"]
 
 
 # INFO
 class AudioInfo(RemoraBaseModel):
-    codec: Annotated[_Codec, Field(alias="acodec")]
+    codec: Annotated[
+        str,
+        BeforeValidator(_normalize_value),
+        Field(alias="acodec"),
+    ]
     bitrate: Annotated[float | None, Field(alias="abr")] = None
     language: str | None = None
 
 
 class VideoInfo(RemoraBaseModel):
-    codec: Annotated[_Codec, Field(alias="vcodec")]
+    codec: Annotated[
+        str,
+        BeforeValidator(_normalize_value),
+        Field(alias="vcodec"),
+    ]
     bitrate: Annotated[float | None, Field(alias="vbr")] = None
     resolution: Resolution | None = None
     fps: float | None = None
@@ -60,10 +66,8 @@ class BaseStream(ABC, YDLSerializable):
 
     protocol: Protocol
     url: HttpUrl
-
     ydl_options: YDLOptions
 
-    extension: Any
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
 
@@ -79,22 +83,34 @@ class BaseStream(ABC, YDLSerializable):
         data |= data.get("ydl_options") or {}
 
         # Flatterize video and audio
-        video = data.get("video")
+        data |= {
+            "audio_ext": "none",
+            "video_ext": "none",
+            "acodec": "none",
+            "vcodec": "none",
+        }
+
         audio = data.get("audio")
+        video = data.get("video")
+
+        if audio and (acodec := audio.get("acodec")):
+            ext = audio.get("audio_ext") or "none"
+            data |= {
+                **audio,
+                "ext": ext,
+                "audio_ext": ext,
+                "acodec": acodec or "none",
+            }
 
         if video and (vcodec := video.get("vcodec")):
+            ext = video.get("video_ext") or "none"
             data |= {
                 **video,
                 **data.get("resolution", {}),
-                "vcodec": vcodec if vcodec else "none",
+                "ext": ext,
+                "video_ext": ext,
+                "vcodec": vcodec or "none",
             }
-
-        if audio and (acodec := audio.get("vcodec")):
-            data |= {**audio, "acodec": acodec if acodec else "none"}
-
-        if video and audio:
-            data["video_ext"] = video["ext"]
-            data["audio_ext"] = audio["ext"]
 
         # Return normalized info dict
         return data
@@ -127,12 +143,47 @@ class BaseStream(ABC, YDLSerializable):
             data["size_type"] = size_type
             data["size_bytes"] = size_bytes
 
+            # Get resolution
+            resolution = None
+            width = data.get("width")
+            height = data.get("height")
+
+            if width and height:
+                resolution = {
+                    "width": width,
+                    "height": height,
+                }
+
+            # Map data to video and audio
+            ext = _normalize_value(data.get("ext"))
+            audio_ext = _normalize_value(data.get("audio_ext"))
+            video_ext = _normalize_value(data.get("video_ext"))
+
+            audio_codec = _normalize_value(data.get("acodec"))
+            video_codec = _normalize_value(data.get("vcodec"))
+            is_muxed = audio_codec and video_codec
+
+            if is_muxed or audio_codec:
+                data["audio"] = {
+                    **data,
+                    "audio_ext": audio_ext or ext,
+                    "acodec": audio_codec,
+                }
+            if is_muxed or video_codec:
+                data["video"] = {
+                    **data,
+                    "video_ext": video_ext or ext,
+                    "vcodec": video_codec,
+                    "resolution": resolution,
+                }
+
+            # Return normalized dict
             return data
         return data
 
 
 class AudioStream(BaseStream):
-    type: Literal[FormatKind.AUDIO] = FormatKind.AUDIO
+    type: Literal[StreamKind.AUDIO] = StreamKind.AUDIO
     extension: Annotated[AudioExtension, Field(alias="ext")]
     audio: AudioInfo
 
@@ -146,19 +197,9 @@ class AudioStream(BaseStream):
     def display_quality(self) -> str:
         return f"{round(self.quality)}kbps"
 
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_ydl_audio(cls, data) -> dict:
-        if _is_ydl(data):
-            return {
-                **data,
-                "audio": data,
-            }
-        return data
-
 
 class VideoStream(BaseStream):
-    type: Literal[FormatKind.VIDEO] = FormatKind.VIDEO
+    type: Literal[StreamKind.VIDEO] = StreamKind.VIDEO
     extension: Annotated[VideoExtension, Field(alias="ext")]
     video: VideoInfo
 
@@ -172,30 +213,6 @@ class VideoStream(BaseStream):
     def display_quality(self) -> str:
         return f"{self.quality}p"
 
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_ydl_video(cls, data) -> dict:
-        if _is_ydl(data):
-            # Map resolution
-            resolution = None
-            width = data.get("width")
-            height = data.get("height")
-
-            if width and height:
-                resolution = {
-                    "width": width,
-                    "height": height,
-                }
-
-            return {
-                **data,
-                "video": {
-                    **data,
-                    "resolution": resolution,
-                },
-            }
-        return data
-
 
 class MuxedStream(VideoStream, AudioStream):
     type: Literal[StreamKind.MUXED] = StreamKind.MUXED  # type: ignore
@@ -207,12 +224,12 @@ def _infer_stream_type(data) -> str:
     audio = None
 
     if isinstance(data, dict):
-        video = _normalize_codec(data.get("video") or data.get("vcodec"))
-        audio = _normalize_codec(data.get("audio") or data.get("acodec"))
+        video = _normalize_value(data.get("video") or data.get("vcodec"))
+        audio = _normalize_value(data.get("audio") or data.get("acodec"))
     if isinstance(data, VideoStream):
-        video = _normalize_codec(data.video.codec)
+        video = _normalize_value(data.video.codec)
     if isinstance(data, AudioStream):
-        audio = _normalize_codec(data.audio.codec)
+        audio = _normalize_value(data.audio.codec)
 
     if video and audio:
         return StreamKind.MUXED
