@@ -1,18 +1,20 @@
 import pytest
-from utils import get_ydl_fixture
 
+from remora._internal.extractor import MediaExtractor
 from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, MuxedStream, VideoStream
 from remora.models.stream.list import StreamList
 
 
-@pytest.fixture(scope="module")
-async def streams() -> StreamList:
-    data = get_ydl_fixture("youtube_video.json")
-    media = Media(**data)
+@pytest.fixture
+async def streams(mock_extractor) -> StreamList:
+    mock_extractor("youtube/video.json")
 
-    assert len(media.streams) > 0
-    return media.streams
+    data = await MediaExtractor().extract("")
+    assert isinstance(data, Media)
+
+    assert len(data.streams) > 0
+    return data.streams
 
 
 # Filters: Video and Audio

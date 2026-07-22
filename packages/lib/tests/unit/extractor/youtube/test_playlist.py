@@ -6,7 +6,7 @@ from remora.models.media.list import Playlist
 
 @pytest.fixture
 async def playlist(mock_extractor) -> Playlist:
-    mock_extractor("youtube_playlist.json")
+    mock_extractor("youtube/playlist.json")
     data = await MediaExtractor().extract("")
     assert isinstance(data, Playlist)
     return data

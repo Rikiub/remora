@@ -4,8 +4,8 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 
 
-def get_ydl_fixture(filename: str) -> dict:
-    dir = ROOT_DIR / "fixtures" / "ydl"
+def get_ydl_data(filename: str) -> dict:
+    dir = ROOT_DIR / "data" / "ydl"
     file = dir / filename
 
     if not file.is_file():

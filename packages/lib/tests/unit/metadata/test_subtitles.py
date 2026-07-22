@@ -1,15 +1,16 @@
 import pytest
-from utils import get_ydl_fixture
 
+from remora._internal.extractor import MediaExtractor
 from remora.models.media.item import Media
 from remora.models.metadata.subtitle import SubtitleList
 
 
-@pytest.fixture(scope="module")
-async def subs():
-    data = get_ydl_fixture("youtube_video.json")
-    media = Media(**data)
-    return media.subtitles
+@pytest.fixture
+async def subs(mock_extractor):
+    mock_extractor("youtube/video.json")
+    data = await MediaExtractor().extract("")
+    assert isinstance(data, Media)
+    return data.subtitles
 
 
 async def test_externals(subs: SubtitleList):

@@ -6,8 +6,7 @@ from remora.models.media.item import Media
 
 @pytest.fixture
 async def media(mock_extractor) -> Media:
-    """Fixture to extract the mock media once for all stream tests."""
-    mock_extractor("youtube_video.json")
+    mock_extractor("youtube/video.json")
     data = await MediaExtractor().extract("")
     assert isinstance(data, Media)
     return data
