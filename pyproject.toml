@@ -5,7 +5,8 @@ dev = ["anyio>=4.12.1", "pytest>=9.0.0", "pytest-mock>=3.15.1", "ruff>=0.15.0"]
 [tool.pytest]
 strict = true
 anyio_mode = "auto"
-addopts = ["--import-mode=importlib"]
+addopts = ["--import-mode=importlib", "-m", "not integration"]
+markers = ["integration: mark a test as online", "unit: mark a test as offline"]
 
 # uv
 [tool.uv.sources]

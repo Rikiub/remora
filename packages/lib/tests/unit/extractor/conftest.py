@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from remora._internal.extractor import MediaExtractor
 
@@ -13,7 +14,7 @@ async def extract_ydl(mock_extractor):
 
 
 @pytest.fixture
-def mock_extractor(mocker, ydl_data):
+def mock_extractor(mocker: MockerFixture, ydl_data):
     """Returns a factory function to mock extract_info with any JSON fixture file."""
 
     def _mock(filename: str):

@@ -24,3 +24,17 @@ def ydl_data():
         return content
 
     return _
+
+
+# Mark directories
+def pytest_collection_modifyitems(config, items):
+    # Map test path to a mark
+    marks = {
+        "/integration/": pytest.mark.integration,
+        "/unit/": pytest.mark.unit,
+    }
+
+    for item in items:
+        for path, mark in marks.items():
+            if path in str(item.fspath):
+                item.add_marker(mark)

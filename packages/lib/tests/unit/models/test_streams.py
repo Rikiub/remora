@@ -6,7 +6,7 @@ from remora.models.stream.list import StreamList
 
 
 @pytest.fixture
-def streams(ydl_data) -> StreamList:
+def streams(ydl_data):
     data = ydl_data("youtube/video.json")
     data = Media(**data)
 
