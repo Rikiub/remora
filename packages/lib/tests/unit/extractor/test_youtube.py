@@ -1,32 +1,34 @@
+import pytest
+
 from remora._internal.extractor import MediaExtractor
 from remora.models.media.item import Media
-from remora.models.metadata.social import Channel, Uploader
 
 
-async def test_extract_youtube(mock_extractor):
+@pytest.fixture
+async def media(mock_extractor) -> Media:
+    """Fixture to extract the mock media once for all stream tests."""
     mock_extractor("youtube_video.json")
+    data = await MediaExtractor().extract("")
+    assert isinstance(data, Media)
+    return data
 
-    extractor = MediaExtractor()
-    media = await extractor.extract("")
 
-    assert isinstance(media, Media)
+async def test_media(media):
     assert media.id == "HVmeWkqIYqo"
     assert media.title == "¿Por qué no podemos imaginar COLORES nuevos?"
     assert media.duration == 629
-
-    validate_uploader(media.uploader)
-    validate_channel(media.channel)
-
     assert len(media.streams) > 0
 
 
-def validate_uploader(uploader: Uploader | None):
+async def test_uploader(media):
+    uploader = media.uploader
     assert uploader is not None
     assert uploader.id == "@curiosamente"
     assert str(uploader.url) == "https://www.youtube.com/@curiosamente"
 
 
-def validate_channel(channel: Channel | None):
+async def test_channel(media):
+    channel = media.channel
     assert channel is not None
     assert channel.id == "UCX16cLWl6dCjlZMgUBxgGkA"
     assert (

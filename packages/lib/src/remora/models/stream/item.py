@@ -76,7 +76,7 @@ class BaseStream(ABC, YDLSerializable):
         data = super().to_ydl_dict()
 
         # Convert size
-        name = "filesize" if self.size_type == "estimated" else "filesize_approx"
+        name = "filesize" if self.size_type == "exact" else "filesize_approx"
         data[name] = self.size_bytes
 
         # Convert YDL options
