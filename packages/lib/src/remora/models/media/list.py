@@ -41,7 +41,13 @@ class LazyPlaylist(MediaList, ExtractID):
         HttpUrl,
         Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
     ]
-    title: Annotated[str, Field(alias="playlist_title")] = ""
+    title: Annotated[
+        str,
+        Field(
+            alias="playlist_title",
+            validation_alias=AliasChoices("playlist_url", "title"),
+        ),
+    ] = ""
     thumbnails: list[Thumbnail] = []
 
 
