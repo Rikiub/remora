@@ -86,7 +86,7 @@ async def test_audio_streams_validation(media: Media):
         assert isinstance(itag_140, AudioStream)
         assert itag_140.audio.codec == "mp4a.40.2"
         assert itag_140.size_type == "exact"
-        assert itag_140.size_bytes == 10184375
+        assert itag_140.size_bytes == 3449447
 
 
 # VIDEO STREAMS VALIDATION
@@ -117,7 +117,7 @@ async def test_video_streams_validation(media: Media):
     itag_135 = next((s for s in video_streams if s.id == "135"), None)
     if itag_135:
         assert isinstance(itag_135, VideoStream)
-        assert itag_135.video.codec == "avc1.4d401f"
+        assert itag_135.video.codec == "avc1.4d401e"
         assert itag_135.quality == 480
         assert itag_135.display_quality == "480p"
 
@@ -159,4 +159,7 @@ async def test_stream_size_type_mapping(media: Media):
             assert stream.size_type == "unknown"
         elif stream.id == "139":
             assert stream.size_type == "exact"
-            assert stream.size_bytes == 3838235
+            assert stream.size_bytes == 1300631
+        elif stream.id == "18":
+            assert stream.size_type == "estimated"
+            assert stream.size_bytes == 11832459

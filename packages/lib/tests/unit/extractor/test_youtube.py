@@ -14,25 +14,30 @@ async def media(mock_extractor) -> Media:
 
 
 async def test_media(media):
-    assert media.id == "HVmeWkqIYqo"
-    assert media.title == "¿Por qué no podemos imaginar COLORES nuevos?"
-    assert media.duration == 629
+    assert media.id == "dQw4w9WgXcQ"
+    assert (
+        media.title
+        == "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)"
+    )
+    assert media.duration == 213
     assert len(media.streams) > 0
 
 
 async def test_uploader(media):
     uploader = media.uploader
     assert uploader is not None
-    assert uploader.id == "@curiosamente"
-    assert str(uploader.url) == "https://www.youtube.com/@curiosamente"
+    assert uploader.name == "Rick Astley"
+    assert uploader.id == "@RickAstleyYT"
+    assert str(uploader.url) == "https://www.youtube.com/@RickAstleyYT"
 
 
 async def test_channel(media):
     channel = media.channel
     assert channel is not None
-    assert channel.id == "UCX16cLWl6dCjlZMgUBxgGkA"
+    assert channel.name == "Rick Astley"
+    assert channel.id == "UCuAXFkgsw1L7xaCfnd5JJOw"
     assert (
-        str(channel.url) == "https://www.youtube.com/channel/UCX16cLWl6dCjlZMgUBxgGkA"
+        str(channel.url) == "https://www.youtube.com/channel/UCuAXFkgsw1L7xaCfnd5JJOw"
     )
     assert channel.is_verified is True
-    assert channel.followers == 4620000
+    assert channel.followers == 4520000
