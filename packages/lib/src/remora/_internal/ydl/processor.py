@@ -16,7 +16,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
-from remora.exceptions import FFmpegNotFoundError, ProcessingError
+from remora.exceptions import FFmpegNotFoundError, ProcessorError
 from remora.models.format.audio import AudioExtension
 from remora.types import StrPath
 
@@ -26,7 +26,7 @@ def catch(func):
         try:
             return func(*args, **kwargs)
         except FFmpegPostProcessorError as e:
-            raise ProcessingError(str(e))
+            raise ProcessorError(str(e))
 
     return wrapper
 
@@ -113,7 +113,7 @@ class YDLProcessor:
         try:
             pp.run(info)
         except KeyError:
-            raise ProcessingError("Unable to embed thumbnail")
+            raise ProcessorError("Unable to embed thumbnail")
 
         return self
 
@@ -167,7 +167,7 @@ class YDLProcessor:
                 },
             )
         except FFmpegPostProcessorError:
-            raise ProcessingError(
+            raise ProcessorError(
                 f"Files with extensions {', '.join(extensions)} are incompatibles and can't be merged"
             )
 

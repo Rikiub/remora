@@ -9,7 +9,7 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora.exceptions import DownloadError
+from remora.exceptions import DownloaderError
 from remora.models.event.stream import (
     StreamCompleted,
     StreamContinuous,
@@ -107,7 +107,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 if isinstance(error, httpx.HTTPStatusError):
                     status_code = error.response.status_code
 
-                raise DownloadError(str(error), status_code=status_code) from error
+                raise DownloaderError(str(error), status_code=status_code) from error
 
             path = await self._fix_extension(path)
             self.file_path = path

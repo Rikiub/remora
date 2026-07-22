@@ -7,7 +7,7 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora._internal.ydl.wrapper import YDL
-from remora.exceptions import DownloadError, MetadataDownloadError
+from remora.exceptions import DownloaderError, MetadataDownloaderError
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
@@ -55,7 +55,7 @@ def download_from_info(
         filepath = result["requested_downloads"][0]["filepath"]  # type: ignore
         return Path(filepath)
     except YDLDownloadError as error:
-        raise DownloadError(
+        raise DownloaderError(
             message=sanitize_ydl_error(error),
             status_code=extract_status_code(error),
         )
@@ -81,12 +81,12 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
             filename=str(filepath),
         )
     except YDLDownloadError as e:
-        raise MetadataDownloadError(str(e))
+        raise MetadataDownloaderError(str(e))
 
     if final:
         return Path(final[0][0])
     else:
-        raise MetadataDownloadError("Unable to download thumbnail")
+        raise MetadataDownloaderError("Unable to download thumbnail")
 
 
 def download_subtitles(
@@ -109,10 +109,10 @@ def download_subtitles(
             filename=str(filepath),
         )
     except YDLDownloadError as e:
-        raise MetadataDownloadError(str(e))
+        raise MetadataDownloaderError(str(e))
 
     if final:
         result = [Path(entry[0]) for entry in final]
         return result
     else:
-        raise MetadataDownloadError("Unable to download subtitles")
+        raise MetadataDownloaderError("Unable to download subtitles")

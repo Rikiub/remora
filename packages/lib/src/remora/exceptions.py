@@ -2,33 +2,36 @@
 
 
 class RemoraError(Exception):
-    """Base remora exception."""
+    """Base exception for all Remora errors."""
 
 
 class OutputTemplateError(RemoraError, ValueError):
-    """Output template error."""
+    """Raised when an output template path or string formatting is invalid."""
 
 
-class MediaConnectionError(RemoraError, ConnectionError):
+class RequestError(RemoraError, ConnectionError):
+    """Base exception for network/connection issues with websites."""
+
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.status_code = status_code
 
 
-class ExtractError(MediaConnectionError):
-    """Extraction error."""
+class ExtractorError(RequestError):
+    """Raised when metadata extraction fails."""
 
 
-class DownloadError(MediaConnectionError):
-    """Download error."""
+class DownloaderError(RequestError):
+    """Raised when media content fails to download."""
 
 
-class MetadataDownloadError(DownloadError):
-    "Metadata download error."
+class MetadataDownloaderError(DownloaderError):
+    """Raised when fetching external metadata fails during downloading."""
 
 
-class ProcessingError(RemoraError):
-    """Processing error."""
+class ProcessorError(RemoraError):
+    """Base exception for post-processing and media transcoding errors."""
 
 
-class FFmpegNotFoundError(ProcessingError, FileNotFoundError): ...
+class FFmpegNotFoundError(ProcessorError, FileNotFoundError):
+    """Raised when the ffmpeg executable is not found."""

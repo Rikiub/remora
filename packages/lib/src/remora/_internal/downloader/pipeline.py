@@ -18,7 +18,7 @@ from remora._internal.extractor import MediaExtractor
 from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
-from remora.exceptions import DownloadError, MetadataDownloadError, ProcessingError
+from remora.exceptions import DownloaderError, MetadataDownloaderError, ProcessorError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.enum import CompletedResult, EventStatus
 from remora.models.event.media import (
@@ -106,7 +106,7 @@ class DownloadPipeline:
 
                     stream = video_stream or audio_stream
                     if not stream:
-                        raise DownloadError("Streams not founded")
+                        raise DownloaderError("Streams not founded")
 
                     # Calculate Path & Check Existence
                     output = format_template(
@@ -214,7 +214,7 @@ class DownloadPipeline:
                     elif p := completed_event.audio_path:
                         results.file_path = p
                     else:
-                        raise DownloadError("Streams not founded")
+                        raise DownloaderError("Streams not founded")
 
                     logger.debug(
                         'Stream downloaded: "{file}"',
@@ -235,7 +235,7 @@ class DownloadPipeline:
                             )
                         elif event.status == EventStatus.COMPLETED:
                             results.file_path = event.file_path
-            except* (DownloadError, ProcessingError) as eg:
+            except* (DownloaderError, ProcessorError) as eg:
                 error = eg.exceptions[0]
                 logger.debug(
                     "Unable to download streams: {error}",
@@ -260,7 +260,7 @@ class DownloadPipeline:
                         get_tempfile(),
                     )
                     logger.debug("Thumbnail downloaded")
-                except MetadataDownloadError as e:
+                except MetadataDownloaderError as e:
                     await self._stream.send(
                         MediaWarning(
                             id=self.id,
@@ -278,7 +278,7 @@ class DownloadPipeline:
                         get_tempfile(),
                     )
                     logger.debug("Subtitles downloaded")
-                except MetadataDownloadError as e:
+                except MetadataDownloaderError as e:
                     await self._stream.send(
                         MediaWarning(
                             id=self.id,
@@ -326,7 +326,7 @@ class DownloadPipeline:
                 audio=audio,
                 merge_format=extension,
             )
-        except ProcessingError:
+        except ProcessorError:
             logger.debug(
                 "{} and {} don't supports merging as {}, fallback to mkv",
                 video[0].extension,
@@ -373,7 +373,7 @@ class DownloadPipeline:
                 event.progress.status = EventStatus.COMPLETED
 
                 await self._stream.send(event)
-            except ProcessingError as error:
+            except ProcessorError as error:
                 if raise_exceptions:
                     raise
 
@@ -403,7 +403,7 @@ class DownloadPipeline:
                 try:
                     async with track_prc(ProcessorTask.CHANGE_CONTAINER, True):
                         await prc.change_container(self.config.format_target)
-                except ProcessingError:
+                except ProcessorError:
                     async with track_prc(ProcessorTask.CONVERT_AUDIO):
                         await prc.convert_audio(self.config.format_target)
 

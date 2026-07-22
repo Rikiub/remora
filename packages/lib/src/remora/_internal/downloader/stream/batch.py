@@ -6,7 +6,7 @@ from pathlib import Path
 import anyio
 
 from remora._internal.downloader.stream.main import StreamDownloader
-from remora.exceptions import DownloadError
+from remora.exceptions import DownloaderError
 from remora.models.event.stream import (
     BatchStreamCompleted,
     BatchStreamDownloading,
@@ -57,7 +57,7 @@ class BatchStreamDownloader:
                 async with anyio.create_task_group() as tg:
                     tg.start_soon(self._download_video)
                     tg.start_soon(self._download_audio)
-            except* DownloadError as eg:
+            except* DownloaderError as eg:
                 raise eg.exceptions[0]
             finally:
                 # Safety measure to ensure one last sync happens

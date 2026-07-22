@@ -6,7 +6,7 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
-from remora.exceptions import ExtractError
+from remora.exceptions import ExtractorError
 from remora.models.search import SearchService, SearchServiceLike
 
 
@@ -52,7 +52,7 @@ def extract_info(query: str) -> YDLExtractInfo:
         )
         info = ydl.extract_info(query, download=False)
     except YDLDownloadError as error:
-        raise ExtractError(
+        raise ExtractorError(
             message=sanitize_ydl_error(error),
             status_code=extract_status_code(error),
         )

@@ -1,7 +1,7 @@
 import pytest
 
 from remora._internal.extractor import MediaExtractor
-from remora.exceptions import ExtractError
+from remora.exceptions import ExtractorError
 
 
 @pytest.mark.parametrize(
@@ -13,5 +13,5 @@ from remora.exceptions import ExtractError
     ],
 )
 async def test_exceptions(extractor: MediaExtractor, url: str):
-    with pytest.raises(ExtractError):
+    with pytest.raises(ExtractorError):
         await extractor.extract(url)

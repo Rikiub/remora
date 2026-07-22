@@ -5,7 +5,7 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
-from remora.exceptions import DownloadError
+from remora.exceptions import DownloaderError
 from remora.models.event.stream import StreamEvent
 from remora.models.stream.item import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
@@ -46,7 +46,7 @@ class StreamDownloader(BaseStreamDownloader):
                     async for event in client.download():
                         yield event
                     return
-            except* (TypeError, DownloadError) as eg:
+            except* (TypeError, DownloaderError) as eg:
                 error = eg.exceptions[0]
 
                 if isinstance(error, TypeError):
@@ -55,7 +55,7 @@ class StreamDownloader(BaseStreamDownloader):
                         protocol=self.stream.protocol,
                     )
                     use_fallback = True
-                elif isinstance(error, DownloadError) and error.status_code == 403:
+                elif isinstance(error, DownloaderError) and error.status_code == 403:
                     logger.debug("Webpage blocking access to resource (403 Forbidden)")
                     use_fallback = True
 
