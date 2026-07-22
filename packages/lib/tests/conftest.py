@@ -6,31 +6,21 @@ import pytest
 ROOT_DIR = Path(__file__).parent
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
 
 
 @pytest.fixture
-def mock_extractor(mocker):
-    """Returns a factory function to mock extract_info with any JSON fixture file."""
+def ydl_data():
+    def _(filename: str) -> dict:
+        dir = ROOT_DIR / "data" / "ydl"
+        file = dir / filename
 
-    def _mock(filename: str):
-        data = get_ydl_data(filename)
-        return mocker.patch(
-            "remora._internal.ydl.extractor.extract_info",
-            return_value=data,
-        )
+        if not file.is_file():
+            raise FileNotFoundError(file)
 
-    return _mock
+        content = json.loads(file.read_bytes())
+        return content
 
-
-def get_ydl_data(filename: str) -> dict:
-    dir = ROOT_DIR / "data" / "ydl"
-    file = dir / filename
-
-    if not file.is_file():
-        raise FileNotFoundError(file)
-
-    content = json.loads(file.read_bytes())
-    return content
+    return _

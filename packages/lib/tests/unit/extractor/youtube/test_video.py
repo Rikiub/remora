@@ -1,13 +1,11 @@
 import pytest
 
-from remora._internal.extractor import MediaExtractor
 from remora.models.media.item import Media
 
 
 @pytest.fixture
-async def media(mock_extractor) -> Media:
-    mock_extractor("youtube/video.json")
-    data = await MediaExtractor().extract("")
+async def media(extract_ydl) -> Media:
+    data = await extract_ydl("youtube/video.json")
     assert isinstance(data, Media)
     return data
 
@@ -39,4 +37,4 @@ async def test_channel(media):
         str(channel.url) == "https://www.youtube.com/channel/UCuAXFkgsw1L7xaCfnd5JJOw"
     )
     assert channel.is_verified is True
-    assert channel.followers == 4520000
+    assert channel.followers

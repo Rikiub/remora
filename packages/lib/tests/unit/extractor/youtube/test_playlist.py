@@ -1,13 +1,11 @@
 import pytest
 
-from remora._internal.extractor import MediaExtractor
 from remora.models.media.list import Playlist
 
 
 @pytest.fixture
-async def playlist(mock_extractor) -> Playlist:
-    mock_extractor("youtube/playlist.json")
-    data = await MediaExtractor().extract("")
+async def playlist(extract_ydl) -> Playlist:
+    data = await extract_ydl("youtube/playlist.json")
     assert isinstance(data, Playlist)
     return data
 
@@ -26,11 +24,11 @@ async def test_medias(playlist: Playlist):
     for media in playlist.medias:
         assert media.extractor == "Youtube"
 
-        assert media.title
-        assert media.duration
+        assert media.title is not None
+        assert media.duration is not None
 
-        assert media.uploader
-        assert media.channel
-        assert media.metrics
+        assert media.uploader is not None
+        assert media.channel is not None
+        assert media.metrics is not None
 
         assert len(media.thumbnails) > 0

@@ -1,6 +1,5 @@
 import pytest
 
-from remora._internal.extractor import MediaExtractor
 from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, MuxedStream, VideoStream
 from remora.models.stream.list import StreamList
@@ -8,9 +7,8 @@ from remora.models.stream.type import StreamKind
 
 
 @pytest.fixture
-async def media(mock_extractor) -> Media:
-    mock_extractor("youtube/video.json")
-    data = await MediaExtractor().extract("")
+async def media(extract_ydl) -> Media:
+    data = await extract_ydl("youtube/video.json")
     assert isinstance(data, Media)
     return data
 
