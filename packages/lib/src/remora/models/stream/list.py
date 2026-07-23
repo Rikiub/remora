@@ -29,12 +29,20 @@ def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
         return handler(v)
     except ValueError:
         id = "unknown"
+        is_stream = True
+
         if isinstance(v, BaseStream):
             id = v.id
         elif isinstance(v, dict):
             id = v.get("format_id") or v.get("id")
 
-        logger.opt(exception=True).debug('Omiting invalid stream "{}"', id)
+            # Avoid log storyboards
+            if v.get("ext") == "mhtml":
+                is_stream = False
+
+        if is_stream:
+            logger.opt(exception=True).debug('Omiting invalid stream "{}"', id)
+
         raise PydanticOmit
 
 
