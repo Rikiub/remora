@@ -28,7 +28,7 @@ class StreamSelector:
     def extract_best(self, streams: StreamList, type: type[T]) -> T | None:
         # Get type
         candidates = (
-            streams.videos() if issubclass(type, VideoStream) else streams.audios()
+            streams.videos() if issubclass(type, VideoStream) else streams.audio_only()
         )
 
         if not candidates:
