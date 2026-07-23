@@ -22,6 +22,12 @@ ExtractorField = Annotated[
 ]
 
 
+def is_ydl_media(data) -> bool:
+    return isinstance(data, dict) and bool(
+        data.get("extractor_key") or data.get("ie_key")
+    )
+
+
 # Base
 class BaseExtract(YDLSerializable): ...
 
@@ -59,19 +65,14 @@ class ExtractID(BaseExtract):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_base(cls, data) -> dict:
-        if isinstance(data, dict):
-            metrics = data
+        if is_ydl_media(data):
+            data["metrics"] = data
 
             if (uploader := data.get("uploader", None)) and isinstance(uploader, str):
-                uploader = {**data, "uploader": uploader}
+                data["uploader"] = {**data, "uploader": uploader}
 
             if (channel := data.get("channel", None)) and isinstance(channel, str):
-                channel = {**data, "channel": channel}
+                data["channel"] = {**data, "channel": channel}
 
-            return {
-                **data,
-                "metrics": metrics,
-                "uploader": uploader,
-                "channel": channel,
-            }
+            return data
         return data

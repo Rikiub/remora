@@ -22,8 +22,8 @@ def _normalize_value(value: str | None) -> str | None:
     return None if value == "none" else value
 
 
-def _is_ydl(value: dict) -> bool:
-    return bool(isinstance(value, dict) and value.get("format_id"))
+def _is_ydl_format(value: dict) -> bool:
+    return isinstance(value, dict) and bool(value.get("format_id"))
 
 
 SizeType = Literal["exact", "estimated", "unknown"]
@@ -37,6 +37,8 @@ class AudioInfo(RemoraBaseModel):
         Field(alias="acodec"),
     ]
     bitrate: Annotated[float | None, Field(alias="abr")] = None
+    channels: Annotated[int | None, Field(alias="audio_channels")] = None
+    sample_rate: Annotated[float | None, Field(alias="asr")] = None
     language: str | None = None
 
 
@@ -110,7 +112,7 @@ class BaseStream(ABC, YDLSerializable):
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_base(cls, data) -> dict:
-        if _is_ydl(data):
+        if _is_ydl_format(data):
             data["ydl_options"] = {
                 "downloader": data.get("downloader_options", {}),
                 "headers": data.get("http_headers", {}),

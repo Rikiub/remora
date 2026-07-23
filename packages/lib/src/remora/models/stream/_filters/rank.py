@@ -1,35 +1,50 @@
-from remora.models.codec.audio import AudioCodec
-from remora.models.codec.video import VideoCodec
+from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import Protocol
+from remora.models.stream._filters.config import RANK
 from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
 from remora.models.stream.type import StreamKind, StreamType
 
 
 def get_stream_rank(stream: Stream) -> tuple[float, ...]:
+    # Get general ranks
+    has_video = 0
+
+    video_codec = 0
+    video_ext = 0
+
+    audio_codec = 0
+    audio_ext = 0
+
     protocol = get_protocol_rank(stream.protocol)
 
+    if isinstance(stream, VideoStream):
+        video_codec = get_codec_rank(stream.video.codec, StreamKind.VIDEO)
+        video_ext = get_extension_rank(stream.extension, StreamKind.VIDEO)
+        has_video = 1
+    if isinstance(stream, AudioStream):
+        audio_codec = get_codec_rank(stream.audio.codec, StreamKind.AUDIO)
+        audio_ext = get_extension_rank(stream.extension, StreamKind.AUDIO)
+
+    # Calculate total rank
     match stream:
         case MuxedStream():
             video = stream.video
             audio = stream.audio
 
-            video_codec = get_codec_rank(video.codec, StreamKind.VIDEO)
-            audio_codec = get_codec_rank(audio.codec, StreamKind.AUDIO)
-            has_video = 1
-
             return (
                 has_video,
                 video.resolution.height if video.resolution else 0,
                 video.fps or 0,
                 video_codec,
+                audio.channels or 0,
                 audio_codec,
+                audio.sample_rate or 0,
                 stream.size_bytes or 0,
                 protocol,
+                video_ext,
             )
         case VideoStream():
             video = stream.video
-            video_codec = get_codec_rank(video.codec, StreamKind.VIDEO)
-            has_video = 1
 
             return (
                 has_video,
@@ -38,49 +53,52 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
                 video_codec,
                 stream.size_bytes or 0,
                 protocol,
+                video_ext,
             )
         case AudioStream():
             audio = stream.audio
-            audio_codec = get_codec_rank(audio.codec, StreamKind.AUDIO)
-            has_video = 0
 
             return (
                 has_video,
                 stream.size_bytes or 0,
+                audio.channels or 0,
                 audio_codec,
                 audio.bitrate or 0,
+                audio.sample_rate or 0,
                 protocol,
+                audio_ext,
             )
         case _:
             raise ValueError("Unable to sort streams. The stream type don't match.")
 
 
-_VIDEO_LIST = VideoCodec.by_best()[::-1]
-_AUDIO_LIST = AudioCodec.by_best()[::-1]
-_PROTOCOL_LIST = Protocol.by_best()[::-1]
-
-
 def get_codec_rank(codec: str | None, type: StreamType) -> int:
-    if not codec:
-        return -1
+    rank = RANK["audio_codec"] if type == StreamKind.AUDIO else RANK["video_codec"]
+    return _rank(codec, rank)
 
-    priority: list[str] = (
-        _AUDIO_LIST if type == StreamKind.AUDIO else _VIDEO_LIST  # type: ignore
+
+def get_extension_rank(extension: ExtensionType | None, type: StreamType) -> int:
+    rank = (
+        RANK["audio_extension"] if type == StreamKind.AUDIO else RANK["video_extension"]
     )
-
-    try:
-        # Higher index = Better quality
-        return priority.index(codec)
-    except ValueError:
-        return -1  # Unknown codec is ranked lowest
+    return _rank(extension, rank)
 
 
 def get_protocol_rank(protocol: Protocol | None) -> int:
-    if not protocol:
+    return _rank(protocol, RANK["protocol"])
+
+
+def _rank(value: str | None, rank_list: list[str]):
+    """
+    Helper to calculate the rank of a value from a list.
+    The list must be sorted from worst to best.
+    """
+
+    if not value:
         return -1
 
-    for index, name in enumerate(_PROTOCOL_LIST):
-        if name in protocol:
+    for index, name in enumerate(rank_list):
+        if name in value:
             return index
 
     return -1

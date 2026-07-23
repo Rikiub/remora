@@ -10,7 +10,12 @@ from pydantic import (
 from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
-from remora.models.media._base import PLAYLIST_EXTRACTORS, ExtractID, TypeField
+from remora.models.media._base import (
+    PLAYLIST_EXTRACTORS,
+    ExtractID,
+    TypeField,
+    is_ydl_media,
+)
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
 from remora.models.metadata.subtitle import SubtitleList
@@ -59,7 +64,7 @@ class LazyMedia(ExtractID):
     @classmethod
     @override
     def _validate_ydl_media(cls, data) -> dict:
-        if isinstance(data, dict) and (data.get("extractor_key") or data.get("ie_key")):
+        if is_ydl_media(data):
             # Map live status
             live_status: LiveStatus = "not_live"
 

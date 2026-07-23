@@ -12,7 +12,7 @@ from typing_extensions import Self, TypeVar
 from remora.models._base import BaseList
 from remora.models.format.extension import ExtensionType
 from remora.models.format.protocol import ProtocolType
-from remora.models.stream._sort import get_codec_rank, get_stream_rank
+from remora.models.stream._filters.rank import get_codec_rank, get_stream_rank
 from remora.models.stream.item import (
     AudioStream,
     BaseStream,

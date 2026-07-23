@@ -34,23 +34,6 @@ class Protocol(StrEnum):
     WEBSOCKET_FRAG = "websocket_frag"
     MHTML = "mhtml"
 
-    @classmethod
-    def by_best(cls) -> list[Protocol]:
-        return [
-            Protocol.HTTPS,
-            Protocol.FTPS,
-            Protocol.HTTP,
-            Protocol.FTP,
-            Protocol.M3U8_NATIVE,
-            Protocol.M3U8,
-            Protocol.HTTP_DASH_SEGMENTS,
-            Protocol.WEBSOCKET_FRAG,
-            Protocol.MMS,
-            Protocol.RTSP,
-            Protocol.F4F,
-            Protocol.F4M,
-        ]
-
     @property
     def is_segmented(self) -> bool:
         return self in {
