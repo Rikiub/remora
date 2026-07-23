@@ -84,8 +84,6 @@ class BaseStream(ABC, YDLSerializable):
 
         # Flatterize video and audio
         data |= {
-            "audio_ext": "none",
-            "video_ext": "none",
             "acodec": "none",
             "vcodec": "none",
         }
@@ -94,21 +92,15 @@ class BaseStream(ABC, YDLSerializable):
         video = data.get("video")
 
         if audio and (acodec := audio.get("acodec")):
-            ext = audio.get("audio_ext") or "none"
             data |= {
                 **audio,
-                "ext": ext,
-                "audio_ext": ext,
                 "acodec": acodec or "none",
             }
 
         if video and (vcodec := video.get("vcodec")):
-            ext = video.get("video_ext") or "none"
             data |= {
                 **video,
                 **data.get("resolution", {}),
-                "ext": ext,
-                "video_ext": ext,
                 "vcodec": vcodec or "none",
             }
 

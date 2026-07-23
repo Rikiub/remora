@@ -6,19 +6,24 @@ from remora.models._base import EnsureList, YDLSerializable
 from remora.models.metadata._base import Metadata
 
 
-def _validate_artists(value: str | list[str]) -> list[str]:
-    if isinstance(value, str) and (artists := value.split(",")):
-        return artists
-    elif isinstance(value, list) and len(value) == 1:
-        if artists := value[0].split(","):
-            return artists
-        else:
-            return value
-    else:
-        raise ValueError(f"{type(value)} must be a list or string")
+def _normalize_artists(value: str | list[str]) -> list[str]:
+    artists = []
+
+    # Split separated artists by comma
+    if isinstance(value, str) and (values := value.split(",")):
+        artists = values
+
+    if len(value) == 1 and (values := artists[0].split(",")):
+        artists = values
+
+    # Remove duplicates
+    artists = [v.strip() for v in artists]
+    artists = list(dict.fromkeys(artists))
+
+    return artists
 
 
-ValidateArtists = BeforeValidator(_validate_artists)
+ValidateArtists = BeforeValidator(_normalize_artists)
 
 
 class MusicMetadata(Metadata, YDLSerializable):
