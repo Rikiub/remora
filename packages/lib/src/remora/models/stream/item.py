@@ -13,8 +13,8 @@ from typing_extensions import override
 
 from remora.models._base import RemoraBaseModel, Resolution, YDLSerializable
 from remora.models.format.audio import AudioExtension
-from remora.models.format.protocol import Protocol
 from remora.models.format.video import VideoExtension
+from remora.models.protocol import Protocol
 from remora.models.stream.type import StreamKind
 
 

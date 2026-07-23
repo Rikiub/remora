@@ -16,7 +16,7 @@ from remora.models.event.stream import (
     StreamEvent,
     StreamSegmented,
 )
-from remora.models.format.protocol import Protocol
+from remora.models.protocol import Protocol
 from remora.models.stream.item import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 

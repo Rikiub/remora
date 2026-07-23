@@ -17,13 +17,13 @@ from remora.models.event.stream import BatchStreamEvent, StreamEvent
 # Formats
 from remora.models.format.audio import AudioExtension, AudioExtensionType
 from remora.models.format.extension import ExtensionType
-from remora.models.format.protocol import Protocol, ProtocolType
 from remora.models.format.type import FormatKind, FormatType
 from remora.models.format.video import VideoExtension, VideoExtensionType
 
 # Medias
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
+from remora.models.protocol import Protocol, ProtocolType
 
 # Streams
 from remora.models.stream.item import AudioStream, Stream, VideoStream

@@ -1,5 +1,5 @@
 from remora.models.format.extension import ExtensionType
-from remora.models.format.protocol import Protocol
+from remora.models.protocol import Protocol
 from remora.models.stream._filters.config import RANK
 from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
 from remora.models.stream.type import StreamKind, StreamType

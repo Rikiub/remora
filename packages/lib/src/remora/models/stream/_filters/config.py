@@ -1,4 +1,4 @@
-from remora.models.format.protocol import Protocol
+from remora.models.protocol import Protocol
 
 # Ranks sorted from best to worst
 RANK: dict[str, list[str]] = {
