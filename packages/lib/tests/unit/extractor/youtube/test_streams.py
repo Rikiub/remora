@@ -3,7 +3,6 @@ import pytest
 from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, MuxedStream, VideoStream
 from remora.models.stream.list import StreamList
-from remora.models.stream.type import StreamKind
 
 
 @pytest.fixture
@@ -57,15 +56,11 @@ async def test_stream_list_sorting_order(media: Media):
 async def test_audio_streams_validation(media: Media):
     """Validate properties specific to AudioStream objects (e.g., format_id 139, 140, 249, 251)."""
 
-    audio_streams = [
-        s
-        for s in media.streams
-        if isinstance(s, AudioStream) and not isinstance(s, MuxedStream)
-    ]
-    assert len(audio_streams) > 0, "No audio-only streams were parsed."
+    streams = media.streams.audio_only()
+    assert len(streams) > 0, "No audio-only streams were parsed."
 
-    for audio in audio_streams:
-        assert audio.type == StreamKind.AUDIO
+    for audio in streams:
+        assert audio.type == "audio"
         assert audio.audio is not None
         assert audio.audio.codec != "none"
 
@@ -78,7 +73,7 @@ async def test_audio_streams_validation(media: Media):
             assert audio.display_quality == "0kbps"
 
     # Specific check against known audio format from your JSON (itag 140)
-    itag_140 = next((s for s in audio_streams if s.id == "140"), None)
+    itag_140 = next((s for s in streams if s.id == "140"), None)
     if itag_140:
         assert isinstance(itag_140, AudioStream)
         assert itag_140.audio.codec == "mp4a.40.2"
@@ -100,7 +95,7 @@ async def test_video_streams_validation(media: Media):
     assert len(video_streams) > 0, "No standard video-only streams were parsed."
 
     for video in video_streams:
-        assert video.type == StreamKind.VIDEO
+        assert video.type == "video"
         assert video.video is not None
         assert video.video.codec != "none"
         assert video.video.resolution is not None
@@ -129,7 +124,7 @@ async def test_muxed_streams_validation(media: Media):
     assert len(muxed_streams) > 0, "No muxed (audio+video) streams were parsed."
 
     for muxed in muxed_streams:
-        assert muxed.type == StreamKind.MUXED
+        assert muxed.type == "muxed"
         assert muxed.video is not None and muxed.video.codec != "none"
         assert muxed.audio is not None and muxed.audio.codec != "none"
 

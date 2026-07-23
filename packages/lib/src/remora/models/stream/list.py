@@ -15,12 +15,12 @@ from remora.models.protocol import ProtocolType
 from remora.models.stream._filters.rank import get_codec_rank, get_stream_rank
 from remora.models.stream.item import (
     AudioStream,
-    BaseStream,
     MuxedStream,
     Stream,
+    StreamType,
     VideoStream,
+    _DiscriminatedStream,
 )
-from remora.models.stream.type import StreamKind
 from remora.types import StreamQuality
 
 
@@ -31,7 +31,7 @@ def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
         id = "unknown"
         is_stream = True
 
-        if isinstance(v, BaseStream):
+        if isinstance(v, Stream):
             id = v.id
         elif isinstance(v, dict):
             id = v.get("format_id") or v.get("id")
@@ -47,7 +47,7 @@ def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
 
 
 _LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
-T = TypeVar("T", default=Stream, bound=Stream)
+T = TypeVar("T", default=_DiscriminatedStream, bound=_DiscriminatedStream)
 
 
 class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
@@ -113,18 +113,18 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         return StreamList[AudioStream]([s for s in self.root if type(s) is AudioStream])
 
     @cached_property
-    def type(self) -> StreamKind:
+    def type(self) -> StreamType:
         """
         Determine main stream type.
         It will check if is 'video' or 'audio'.
         """
 
         if self.videos():
-            return StreamKind.VIDEO
+            return "video"
         elif self.audios():
-            return StreamKind.AUDIO
+            return "audio"
         else:
-            return StreamKind.VIDEO
+            return "video"
 
     def sorted_by(
         self,
@@ -143,9 +143,9 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         if attribute == "best":
             filter = get_stream_rank
         elif attribute == "video_codec":
-            filter = lambda codec: get_codec_rank(codec, StreamKind.VIDEO)  # noqa: E731
+            filter = lambda codec: get_codec_rank(codec, "video")  # noqa: E731
         elif attribute == "audio_codec":
-            filter = lambda codec: get_codec_rank(codec, StreamKind.AUDIO)  # noqa: E731
+            filter = lambda codec: get_codec_rank(codec, "audio")  # noqa: E731
         else:
             filter = lambda s: getattr(s, attribute)  # noqa: E731
 

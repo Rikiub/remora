@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from typing import Generic, Self, TypeVar, overload
 
 from pydantic import (
@@ -38,7 +39,7 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self):  # type: ignore
+    def __iter__(self) -> Iterator[T]:  # type: ignore
         return iter(self.root)
 
     @overload

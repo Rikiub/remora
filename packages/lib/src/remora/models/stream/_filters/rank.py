@@ -1,8 +1,13 @@
 from remora.models.format.extension import ExtensionType
 from remora.models.protocol import Protocol
 from remora.models.stream._filters.config import RANK
-from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
-from remora.models.stream.type import StreamKind, StreamType
+from remora.models.stream.item import (
+    AudioStream,
+    MuxedStream,
+    Stream,
+    StreamType,
+    VideoStream,
+)
 
 
 def get_stream_rank(stream: Stream) -> tuple[float, ...]:
@@ -18,12 +23,12 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
     protocol = get_protocol_rank(stream.protocol)
 
     if isinstance(stream, VideoStream):
-        video_codec = get_codec_rank(stream.video.codec, StreamKind.VIDEO)
-        video_ext = get_extension_rank(stream.extension, StreamKind.VIDEO)
+        video_codec = get_codec_rank(stream.video.codec, "video")
+        video_ext = get_extension_rank(stream.extension, "video")
         has_video = 1
     if isinstance(stream, AudioStream):
-        audio_codec = get_codec_rank(stream.audio.codec, StreamKind.AUDIO)
-        audio_ext = get_extension_rank(stream.extension, StreamKind.AUDIO)
+        audio_codec = get_codec_rank(stream.audio.codec, "audio")
+        audio_ext = get_extension_rank(stream.extension, "audio")
 
     # Calculate total rank
     match stream:
@@ -73,14 +78,12 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
 
 
 def get_codec_rank(codec: str | None, type: StreamType) -> int:
-    rank = RANK["audio_codec"] if type == StreamKind.AUDIO else RANK["video_codec"]
+    rank = RANK["audio_codec"] if type == "audio" else RANK["video_codec"]
     return _rank(codec, rank)
 
 
 def get_extension_rank(extension: ExtensionType | None, type: StreamType) -> int:
-    rank = (
-        RANK["audio_extension"] if type == StreamKind.AUDIO else RANK["video_extension"]
-    )
+    rank = RANK["audio_extension"] if type == "audio" else RANK["video_extension"]
     return _rank(extension, rank)
 
 

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from pydantic import (
     BeforeValidator,
@@ -15,7 +15,6 @@ from remora.models._base import RemoraBaseModel, Resolution, YDLSerializable
 from remora.models.format.audio import AudioExtension
 from remora.models.format.video import VideoExtension
 from remora.models.protocol import Protocol
-from remora.models.stream.type import StreamKind
 
 
 def _normalize_value(value: str | None) -> str | None:
@@ -26,6 +25,7 @@ def _is_ydl_format(value: dict) -> bool:
     return isinstance(value, dict) and bool(value.get("format_id"))
 
 
+StreamType = Literal["muxed", "video", "audio"]
 SizeType = Literal["exact", "estimated", "unknown"]
 
 
@@ -60,10 +60,10 @@ class YDLOptions(RemoraBaseModel):
     cookies: str | None = None
 
 
-class BaseStream(ABC, YDLSerializable):
+class _BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 
-    type: Any
+    type: StreamType
     id: Annotated[str, Field(alias="format_id")]
 
     protocol: Protocol
@@ -176,8 +176,8 @@ class BaseStream(ABC, YDLSerializable):
         return data
 
 
-class AudioStream(BaseStream):
-    type: Literal[StreamKind.AUDIO] = StreamKind.AUDIO
+class AudioStream(_BaseStream):
+    type: Literal[StreamType] = "audio"
     extension: Annotated[AudioExtension, Field(alias="ext")]
     audio: AudioInfo
 
@@ -192,8 +192,8 @@ class AudioStream(BaseStream):
         return f"{round(self.quality)}kbps"
 
 
-class VideoStream(BaseStream):
-    type: Literal[StreamKind.VIDEO] = StreamKind.VIDEO
+class VideoStream(_BaseStream):
+    type: Literal[StreamType] = "video"
     extension: Annotated[VideoExtension, Field(alias="ext")]
     video: VideoInfo
 
@@ -209,11 +209,11 @@ class VideoStream(BaseStream):
 
 
 class MuxedStream(VideoStream, AudioStream):
-    type: Literal[StreamKind.MUXED] = StreamKind.MUXED  # type: ignore
+    type: Literal[StreamType] = "muxed"  # type: ignore
     extension: Annotated[VideoExtension, Field(alias="ext")]  # type: ignore
 
 
-def _infer_stream_type(data) -> str:
+def _infer_stream_type(data) -> StreamType:
     video = None
     audio = None
 
@@ -226,26 +226,27 @@ def _infer_stream_type(data) -> str:
         audio = _normalize_value(data.audio.codec)
 
     if video and audio:
-        return StreamKind.MUXED
+        return "muxed"
     elif video:
-        return StreamKind.VIDEO
+        return "video"
     elif audio:
-        return StreamKind.AUDIO
+        return "audio"
     raise ValueError("Cannot determine stream type")
 
 
-Stream = Annotated[
+Stream = MuxedStream | VideoStream | AudioStream
+_DiscriminatedStream = Annotated[
     Annotated[
         MuxedStream,
-        Tag(StreamKind.MUXED),
+        Tag("muxed"),
     ]
     | Annotated[
         VideoStream,
-        Tag(StreamKind.VIDEO),
+        Tag("video"),
     ]
     | Annotated[
         AudioStream,
-        Tag(StreamKind.AUDIO),
+        Tag("audio"),
     ],
     Discriminator(_infer_stream_type),
 ]
