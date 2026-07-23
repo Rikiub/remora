@@ -4,7 +4,6 @@ import pytest
 
 from remora._internal.api import Remora
 from remora.models.download_options import DownloadOptions
-from remora.models.event.enum import EventStatus, EventType
 
 
 @pytest.fixture
@@ -19,13 +18,10 @@ def download(tmp_path: Path):
         result = await remora.extract(url)
 
         async for event in remora.download_batch(result):
-            if event.type == EventType.MEDIA:
-                if (
-                    event.status == EventStatus.COMPLETED
-                    and not event.file_path.is_file()
-                ):
+            if event.type == "media":
+                if event.status == "completed" and not event.file_path.is_file():
                     raise FileNotFoundError(event.file_path)
-                elif event.status == EventStatus.FAILED:
+                elif event.status == "failed":
                     raise AssertionError(f"Download failed: {event.message}")
 
     return wrap

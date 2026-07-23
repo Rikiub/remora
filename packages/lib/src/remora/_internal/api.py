@@ -4,7 +4,6 @@ from typing import overload
 
 from remora._internal.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
-from remora.models.event.enum import EventType
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
 from remora.models.event.stream import StreamEvent
@@ -64,7 +63,7 @@ class Remora:
 
         if isinstance(extracted, LazyPlaylist):
             async for event in self.download_batch(extracted):
-                if event.type == EventType.MEDIA:
+                if event.type == "media":
                     yield event
         else:
             from remora._internal.downloader.pipeline import DownloadPipeline

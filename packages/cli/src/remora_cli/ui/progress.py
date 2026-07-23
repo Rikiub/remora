@@ -2,7 +2,6 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
-from remora.models.event.enum import CompletedResult, EventStatus, EventType
 from remora.models.event.playlist import BatchEvent
 from remora.models.event.process import ProcessEvent, ProcessorTask
 from remora.models.media.item import LazyMedia
@@ -21,33 +20,33 @@ class ProgressCallback:
         if self.disable:
             return
 
-        if event.type == EventType.PLAYLIST:
+        if event.type == "playlist":
             match event.status:
-                case EventStatus.STARTED:
+                case "started":
                     self.progress.counter.reset(total=event.total)
-                case EventStatus.IN_PROGRESS:
+                case "in_progress":
                     self.progress.counter.update(completed=event.completed)
-                case EventStatus.COMPLETED:
+                case "completed":
                     match event.result:
-                        case CompletedResult.SUCCESS:
+                        case "success":
                             logger.success("Download completed")
-                        case CompletedResult.PARTIAL:
+                        case "partial":
                             logger.success("Download completed (Some items failed)")
-                case EventStatus.CANCELLED:
+                case "cancelled":
                     logger.warning("Download cancelled")
 
-        elif event.type == EventType.MEDIA:
+        elif event.type == "media":
             name = self._media_display_name(event.media)
 
             with logger.contextualize(media_title=name):
                 match event.status:
-                    case EventStatus.EXTRACTING:
+                    case "extracting":
                         self.progress.add_task(
                             event.id,
                             description=name or "Extracting[blink]...[/]",
                             status="Extracting[blink]...[/]",
                         )
-                    case EventStatus.DOWNLOADING:
+                    case "downloading":
                         self.progress.update(
                             event.id,
                             description=name,
@@ -55,22 +54,22 @@ class ProgressCallback:
                             completed=event.progress.downloaded_bytes,
                             total=event.progress.total_bytes,
                         )
-                    case EventStatus.PROCESSING:
+                    case "processing":
                         self.processor_callback(event.id, event.progress)
-                    case EventStatus.WARNING:
+                    case "warning":
                         logger.warning("Warning: {}", event.message)
-                    case EventStatus.FAILED:
+                    case "failed":
                         logger.error("Download failed: {}", event.message)
                         self.progress.update(event.id, status="Error")
-                    case EventStatus.COMPLETED:
+                    case "completed":
                         match event.result:
-                            case CompletedResult.SUCCESS:
+                            case "success":
                                 logger.success("Completed")
                                 self.progress.update(event.id, status="Completed")
-                            case CompletedResult.PARTIAL:
+                            case "partial":
                                 logger.success("Completed (Some data missed)")
                                 self.progress.update(event.id, status="Completed")
-                            case CompletedResult.DUPLICATE:
+                            case "duplicate":
                                 logger.success(
                                     'Skipped (Exists as "{file_extension}")',
                                     file_extension=event.file_extension,
@@ -88,7 +87,7 @@ class ProgressCallback:
     def processor_callback(self, id: str, event: ProcessEvent):
         self.progress.update(id, status="Processing[blink]...[/]")
 
-        if event.status == EventStatus.STARTED:
+        if event.status == "started":
             match event.task:
                 case ProcessorTask.CONVERT_AUDIO:
                     self.progress.update(id, status="Converting[blink]...[/]")

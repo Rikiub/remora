@@ -3,56 +3,48 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from remora.models.event._base import BaseEventID, FileEvent
-from remora.models.event.enum import CompletedResult, EventStatus, EventType
 from remora.models.event.process import ProcessEvent
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 
 
 class BaseMediaEvent(BaseEventID):
-    type: Literal[EventType.MEDIA, "media"] = EventType.MEDIA
+    type: Literal["media"] = "media"
     media: Media
 
 
 class MediaExtracting(BaseMediaEvent):
-    status: Literal[EventStatus.EXTRACTING, "extracting"] = EventStatus.EXTRACTING
+    status: Literal["extracting"] = "extracting"
     media: LazyMedia  # type: ignore
 
 
 class MediaDownloading(BaseMediaEvent):
-    status: Literal[EventStatus.DOWNLOADING, "downloading"] = EventStatus.DOWNLOADING
+    status: Literal["downloading"] = "downloading"
     progress: BatchStreamDownloading
 
 
 class MediaProcessing(BaseMediaEvent):
-    status: Literal[EventStatus.PROCESSING, "processing"] = EventStatus.PROCESSING
+    status: Literal["processing"] = "processing"
     progress: ProcessEvent
 
 
 class MediaCompleted(BaseMediaEvent, FileEvent):
-    status: Literal[EventStatus.COMPLETED, "completed"] = EventStatus.COMPLETED
-    result: Literal[
-        CompletedResult.SUCCESS,
-        CompletedResult.PARTIAL,
-        CompletedResult.DUPLICATE,
-        "success",
-        "partial",
-        "duplicate",
-    ]
+    status: Literal["completed"] = "completed"
+    result: Literal["success", "partial", "duplicate"]
 
 
 class MediaFailed(BaseMediaEvent):
-    status: Literal[EventStatus.FAILED, "failed"] = EventStatus.FAILED
+    status: Literal["failed"] = "failed"
     message: str
 
 
 class MediaWarning(BaseMediaEvent):
-    status: Literal[EventStatus.WARNING, "warning"] = EventStatus.WARNING
+    status: Literal["warning"] = "warning"
     message: str
 
 
 class MediaCancelled(BaseMediaEvent):
-    status: Literal[EventStatus.CANCELLED, "cancelled"] = EventStatus.CANCELLED
+    status: Literal["cancelled"] = "cancelled"
     media: LazyMedia | Media  # type: ignore
 
 

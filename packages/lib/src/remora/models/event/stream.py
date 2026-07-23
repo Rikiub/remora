@@ -1,21 +1,16 @@
-from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field
 
 from remora.models.event._base import BaseEvent, FileEvent
-from remora.models.event.enum import EventStatus
 
-
-class StreamProgress(StrEnum):
-    CONTINUOUS = "continuous"
-    SEGMENTED = "segmented"
+StreamProgress = Literal["continuous", "segmented"]
 
 
 # Progress Types
 class BaseStreamProgress(BaseEvent):
-    status: Literal[EventStatus.DOWNLOADING, "downloading"] = EventStatus.DOWNLOADING
+    status: Literal["downloading"] = "downloading"
     speed: float = 0
     elapsed: float = 0
     downloaded_bytes: float = 0
@@ -23,7 +18,7 @@ class BaseStreamProgress(BaseEvent):
 
 class StreamContinuous(BaseStreamProgress):
     total_bytes: float | None
-    type: Literal[StreamProgress.CONTINUOUS, "continuous"] = StreamProgress.CONTINUOUS
+    type: Literal["continuous"] = "continuous"
 
     @property
     def fraction(self) -> float | None:
@@ -35,7 +30,7 @@ class StreamContinuous(BaseStreamProgress):
 class StreamSegmented(BaseStreamProgress):
     current_segment: int = 0
     total_segments: int | None = None
-    type: Literal[StreamProgress.SEGMENTED, "segmented"] = StreamProgress.SEGMENTED
+    type: Literal["segmented"] = "segmented"
 
     @property
     def fraction(self) -> float | None:
@@ -52,7 +47,7 @@ StreamProgressEvent = Annotated[
 
 
 class StreamCompleted(FileEvent):
-    status: Literal[EventStatus.COMPLETED, "completed"] = EventStatus.COMPLETED
+    status: Literal["completed"] = "completed"
 
 
 StreamEvent = Annotated[
@@ -63,7 +58,7 @@ StreamEvent = Annotated[
 
 # Multiple streams
 class BatchStreamDownloading(BaseEvent):
-    status: Literal[EventStatus.DOWNLOADING, "downloading"] = EventStatus.DOWNLOADING
+    status: Literal["downloading"] = "downloading"
     streams: list[StreamProgressEvent]
 
     @property
@@ -109,7 +104,7 @@ class BatchStreamDownloading(BaseEvent):
 
 
 class BatchStreamCompleted(BaseEvent):
-    status: Literal[EventStatus.COMPLETED, "completed"] = EventStatus.COMPLETED
+    status: Literal["completed"] = "completed"
     video_path: Path
     audio_path: Path
 

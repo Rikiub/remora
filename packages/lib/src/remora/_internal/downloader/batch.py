@@ -9,7 +9,6 @@ from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
 from remora.exceptions import RemoraError
 from remora.models.download_options import DownloadOptions
-from remora.models.event.enum import CompletedResult
 from remora.models.event.playlist import (
     BatchEvent,
     PlaylistCancelled,
@@ -94,9 +93,7 @@ class DownloadBatch:
                         id=self.id,
                         completed=self.completed,
                         total=self.total,
-                        result=CompletedResult.PARTIAL
-                        if self.failed
-                        else CompletedResult.SUCCESS,
+                        result="partial" if self.failed else "success",
                     )
                 )
 

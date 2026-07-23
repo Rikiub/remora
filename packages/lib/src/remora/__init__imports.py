@@ -9,7 +9,6 @@ from remora.models.download_options import DownloadOptions
 
 # --- TYPES ---
 # Events
-from remora.models.event.enum import CompletedResult, EventStatus, EventType
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent, PlaylistEvent
 from remora.models.event.stream import BatchStreamEvent, StreamEvent
