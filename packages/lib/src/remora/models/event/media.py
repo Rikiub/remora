@@ -1,6 +1,4 @@
-from typing import Annotated, Literal
-
-from pydantic import Field
+from typing import Literal
 
 from remora.models.event._base import BaseEventID, FileEvent
 from remora.models.event.process import Processing
@@ -8,53 +6,52 @@ from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 
 
-class BaseMediaEvent(BaseEventID):
+class _BaseMedia(BaseEventID):
     type: Literal["media"] = "media"
     media: Media
 
 
-class MediaExtracting(BaseMediaEvent):
+class MediaExtracting(_BaseMedia):
     status: Literal["extracting"] = "extracting"
     media: LazyMedia  # type: ignore
 
 
-class MediaDownloading(BaseMediaEvent):
+class MediaDownloading(_BaseMedia):
     status: Literal["downloading"] = "downloading"
     progress: BatchStreamDownloading
 
 
-class MediaProcessing(BaseMediaEvent):
+class MediaProcessing(_BaseMedia):
     status: Literal["processing"] = "processing"
     progress: Processing
 
 
-class MediaCompleted(BaseMediaEvent, FileEvent):
+class MediaCompleted(_BaseMedia, FileEvent):
     status: Literal["completed"] = "completed"
     result: Literal["success", "partial", "duplicate"]
 
 
-class MediaFailed(BaseMediaEvent):
+class MediaFailed(_BaseMedia):
     status: Literal["failed"] = "failed"
     message: str
 
 
-class MediaWarning(BaseMediaEvent):
+class MediaWarning(_BaseMedia):
     status: Literal["warning"] = "warning"
     message: str
 
 
-class MediaCancelled(BaseMediaEvent):
+class MediaCancelled(_BaseMedia):
     status: Literal["cancelled"] = "cancelled"
     media: LazyMedia | Media  # type: ignore
 
 
-MediaEvent = Annotated[
+MediaEvent = (
     MediaExtracting
     | MediaDownloading
     | MediaProcessing
     | MediaCompleted
     | MediaFailed
     | MediaWarning
-    | MediaCancelled,
-    Field(discriminator="status"),
-]
+    | MediaCancelled
+)

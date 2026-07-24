@@ -1,32 +1,43 @@
 from loguru import logger
 
-from remora.models.event.media import MediaEvent
-from remora.models.event.playlist import BatchEvent
+from remora.models.event.media import (
+    MediaCancelled,
+    MediaCompleted,
+    MediaEvent,
+    MediaFailed,
+    MediaProcessing,
+    MediaWarning,
+)
+from remora.models.event.playlist import (
+    BatchEvent,
+    PlaylistCancelled,
+    PlaylistCompleted,
+    PlaylistInProgress,
+    PlaylistStarted,
+)
 from remora.models.event.process import Processing
 
 
 async def log_event_playlist(event: BatchEvent):
-    if event.type == "playlist":
-        match event.status:
-            case "started":
-                logger.info(
-                    "Download started with {playlist_total} items",
-                    playlist_total=event.total,
-                )
-            case "in_progress":
-                logger.info(
-                    "{playlist_completed} of {playlist_total} items completed",
-                    playlist_completed=event.completed,
-                    playlist_total=event.total,
-                )
-            case "cancelled":
-                logger.warning("Download cancelled")
-            case "completed":
-                match event.result:
-                    case "success":
-                        logger.success("Download completed")
-                    case "partial":
-                        logger.warning("Download completed partially")
+    match event:
+        case PlaylistStarted():
+            logger.info(
+                "Download started with {playlist_total} items",
+                playlist_total=event.total,
+            )
+        case PlaylistInProgress():
+            logger.info(
+                "{playlist_completed} of {playlist_total} items completed",
+                playlist_completed=event.completed,
+                playlist_total=event.total,
+            )
+        case PlaylistCancelled():
+            logger.warning("Download cancelled")
+
+        case PlaylistCompleted(result="success"):
+            logger.success("Download completed")
+        case PlaylistCompleted(result="partial"):
+            logger.warning("Download completed partially")
 
 
 async def log_event_media(event: MediaEvent):
@@ -35,16 +46,16 @@ async def log_event_media(event: MediaEvent):
         media_title=event.media.title,
         status=event.status,
     ):
-        match event.status:
-            case "processing":
+        match event:
+            case MediaProcessing():
                 await _processor_callback(event.progress)
-            case "warning":
+            case MediaWarning():
                 logger.warning("Warning: {}", event.message)
-            case "failed":
+            case MediaFailed():
                 logger.error("Download failed: {}", event.message)
-            case "cancelled":
+            case MediaCancelled():
                 logger.info("Download cancelled")
-            case "completed":
+            case MediaCompleted():
                 log = logger.bind(
                     file_path=event.file_path,
                     file_extension=event.file_extension,

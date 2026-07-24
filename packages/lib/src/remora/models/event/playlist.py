@@ -1,41 +1,34 @@
-from typing import Annotated, Literal
-
-from pydantic import Field
+from typing import Literal
 
 from remora.models.event._base import BaseEventID
 from remora.models.event.media import MediaEvent
 
 
-class BasePlaylistEvent(BaseEventID):
+class _BasePlaylist(BaseEventID):
     type: Literal["playlist"] = "playlist"
 
     completed: int
     total: int
 
 
-class PlaylistStarted(BasePlaylistEvent):
+class PlaylistStarted(_BasePlaylist):
     status: Literal["started"] = "started"
 
 
-class PlaylistInProgress(BasePlaylistEvent):
+class PlaylistInProgress(_BasePlaylist):
     status: Literal["in_progress"] = "in_progress"
 
 
-class PlaylistCompleted(BasePlaylistEvent):
+class PlaylistCompleted(_BasePlaylist):
     status: Literal["completed"] = "completed"
     result: Literal["success", "partial"]
 
 
-class PlaylistCancelled(BasePlaylistEvent):
+class PlaylistCancelled(_BasePlaylist):
     status: Literal["cancelled"] = "cancelled"
 
 
-PlaylistEvent = Annotated[
-    PlaylistStarted | PlaylistInProgress | PlaylistCompleted | PlaylistCancelled,
-    Field(discriminator="status"),
-]
-
-BatchEvent = Annotated[
-    PlaylistEvent | MediaEvent,
-    Field(discriminator="type"),
-]
+PlaylistEvent = (
+    PlaylistStarted | PlaylistInProgress | PlaylistCompleted | PlaylistCancelled
+)
+BatchEvent = PlaylistEvent | MediaEvent

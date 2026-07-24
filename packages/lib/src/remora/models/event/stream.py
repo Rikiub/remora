@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Literal
-
-from pydantic import Field
+from typing import Literal
 
 from remora.models.event._base import BaseEvent, FileEvent
 
@@ -9,14 +7,14 @@ StreamProgress = Literal["continuous", "segmented"]
 
 
 # Progress Types
-class BaseStreamProgress(BaseEvent):
+class _BaseStream(BaseEvent):
     status: Literal["downloading"] = "downloading"
     speed: float = 0
     elapsed: float = 0
     downloaded_bytes: float = 0
 
 
-class StreamContinuous(BaseStreamProgress):
+class StreamContinuous(_BaseStream):
     total_bytes: float | None
     type: Literal["continuous"] = "continuous"
 
@@ -27,7 +25,7 @@ class StreamContinuous(BaseStreamProgress):
         return self.downloaded_bytes / self.total_bytes
 
 
-class StreamSegmented(BaseStreamProgress):
+class StreamSegmented(_BaseStream):
     current_segment: int = 0
     total_segments: int | None = None
     type: Literal["segmented"] = "segmented"
@@ -40,20 +38,12 @@ class StreamSegmented(BaseStreamProgress):
 
 
 # Single Stream
-StreamProgressEvent = Annotated[
-    StreamContinuous | StreamSegmented,
-    Field(discriminator="type"),
-]
-
-
 class StreamCompleted(FileEvent):
     status: Literal["completed"] = "completed"
 
 
-StreamEvent = Annotated[
-    StreamProgressEvent | StreamCompleted,
-    Field(discriminator="status"),
-]
+StreamProgressEvent = StreamContinuous | StreamSegmented
+StreamEvent = StreamProgressEvent | StreamCompleted
 
 
 # Multiple streams
@@ -109,7 +99,4 @@ class BatchStreamCompleted(BaseEvent):
     audio_path: Path
 
 
-BatchStreamEvent = Annotated[
-    BatchStreamDownloading | BatchStreamCompleted,
-    Field(discriminator="status"),
-]
+BatchStreamEvent = BatchStreamDownloading | BatchStreamCompleted

@@ -2,7 +2,21 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
-from remora.models.event.playlist import BatchEvent
+from remora.models.event.media import (
+    MediaCompleted,
+    MediaDownloading,
+    MediaExtracting,
+    MediaFailed,
+    MediaProcessing,
+    MediaWarning,
+)
+from remora.models.event.playlist import (
+    BatchEvent,
+    PlaylistCancelled,
+    PlaylistCompleted,
+    PlaylistInProgress,
+    PlaylistStarted,
+)
 from remora.models.event.process import Processing
 from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
@@ -20,65 +34,63 @@ class ProgressCallback:
         if self.disable:
             return
 
-        if event.type == "playlist":
-            match event.status:
-                case "started":
+        name = ""
+
+        with logger.contextualize(media_title=name):
+            match event:
+                # Playlist
+                case PlaylistStarted():
                     self.progress.counter.reset(total=event.total)
-                case "in_progress":
+                case PlaylistInProgress():
                     self.progress.counter.update(completed=event.completed)
-                case "completed":
-                    match event.result:
-                        case "success":
-                            logger.success("Download completed")
-                        case "partial":
-                            logger.success("Download completed (Some items failed)")
-                case "cancelled":
+                case PlaylistCancelled():
                     logger.warning("Download cancelled")
 
-        elif event.type == "media":
-            name = self._media_display_name(event.media)
+                case PlaylistCompleted(result="success"):
+                    logger.success("Download completed")
+                case PlaylistCompleted(result="partial"):
+                    logger.success("Download completed (Some items failed)")
 
-            with logger.contextualize(media_title=name):
-                match event.status:
-                    case "extracting":
-                        self.progress.add_task(
-                            event.id,
-                            description=name or "Extracting[blink]...[/]",
-                            status="Extracting[blink]...[/]",
-                        )
-                    case "downloading":
-                        self.progress.update(
-                            event.id,
-                            description=name,
-                            status="Downloading",
-                            completed=event.progress.downloaded_bytes,
-                            total=event.progress.total_bytes,
-                        )
-                    case "processing":
-                        self.processor_callback(event.id, event.progress)
-                    case "warning":
-                        logger.warning("Warning: {}", event.message)
-                    case "failed":
-                        logger.error("Download failed: {}", event.message)
-                        self.progress.update(event.id, status="Error")
-                    case "completed":
-                        match event.result:
-                            case "success":
-                                logger.success("Completed")
-                                self.progress.update(event.id, status="Completed")
-                            case "partial":
-                                logger.success("Completed (Some data missed)")
-                                self.progress.update(event.id, status="Completed")
-                            case "duplicate":
-                                logger.success(
-                                    'Skipped (Exists as "{file_extension}")',
-                                    file_extension=event.file_extension,
-                                    icon="🔄",
-                                )
-                                self.progress.update(event.id, status="Skipped")
+                # Media
+                case MediaExtracting():
+                    self.progress.add_task(
+                        event.id,
+                        description=name or "Extracting[blink]...[/]",
+                        status="Extracting[blink]...[/]",
+                    )
+                case MediaDownloading():
+                    self.progress.update(
+                        event.id,
+                        description=name,
+                        status="Downloading",
+                        completed=event.progress.downloaded_bytes,
+                        total=event.progress.total_bytes,
+                    )
+                case MediaProcessing():
+                    self.processor_callback(event.id, event.progress)
+                case MediaWarning():
+                    logger.warning("Warning: {}", event.message)
+                case MediaFailed():
+                    logger.error("Download failed: {}", event.message)
+                    self.progress.update(event.id, status="Error")
+                case MediaCompleted():
+                    match event.result:
+                        case "success":
+                            logger.success("Completed")
+                            self.progress.update(event.id, status="Completed")
+                        case "partial":
+                            logger.success("Completed (Some data missed)")
+                            self.progress.update(event.id, status="Completed")
+                        case "duplicate":
+                            logger.success(
+                                'Skipped (Exists as "{file_extension}")',
+                                file_extension=event.file_extension,
+                                icon="🔄",
+                            )
+                            self.progress.update(event.id, status="Skipped")
 
-                        if self._tg:
-                            self._tg.start_soon(self._finish_item, event)
+                    if self._tg:
+                        self._tg.start_soon(self._finish_item, event)
 
     async def _finish_item(self, event: BatchEvent):
         await anyio.sleep(1.0)
