@@ -1,4 +1,4 @@
-from remora.models.format.extension import ExtensionType
+from remora.models.container.extension.types import ExtensionType
 from remora.models.protocol import Protocol
 from remora.models.stream._filters.config import RANK
 from remora.models.stream.item import (

@@ -3,8 +3,8 @@ from typing import Literal
 
 from typing_extensions import override
 
-from remora.models.format._base import BaseExtension
-from remora.models.format.format import FormatType
+from remora.models.container.extension._base import BaseExtension
+from remora.models.container.format import FormatType
 
 
 class VideoExtension(BaseExtension, StrEnum):

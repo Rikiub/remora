@@ -1,4 +1,4 @@
-from remora.models.format.format import FormatType
+from remora.models.container.format import FormatType
 
 
 class BaseExtension:

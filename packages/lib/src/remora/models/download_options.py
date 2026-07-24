@@ -5,12 +5,9 @@ from pydantic import AfterValidator
 from remora._internal.path import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
-from remora.models.format.extension import (
-    ExtensionType,
-    FormatTargetType,
-    get_extension,
-)
-from remora.models.format.format import FormatType
+from remora.models.container.extension.types import ExtensionType, get_extension
+from remora.models.container.format import FormatType
+from remora.models.container.target import FormatTargetType
 from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
 

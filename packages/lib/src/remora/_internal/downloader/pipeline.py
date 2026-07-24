@@ -32,9 +32,9 @@ from remora.models.event.media import (
 )
 from remora.models.event.process import Processing, ProcessorTask
 from remora.models.event.stream import BatchStreamDownloading
-from remora.models.format.audio import AudioExtension
-from remora.models.format.extension import get_extension
-from remora.models.format.video import VideoExtension
+from remora.models.container.extension.audio import AudioExtension
+from remora.models.container.extension.types import get_extension
+from remora.models.container.extension.video import VideoExtension
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StrPath

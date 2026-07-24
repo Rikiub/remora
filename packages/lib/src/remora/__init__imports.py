@@ -14,10 +14,10 @@ from remora.models.event.playlist import BatchEvent, PlaylistEvent
 from remora.models.event.stream import BatchStreamEvent, StreamEvent
 
 # Formats
-from remora.models.format.audio import AudioExtension, AudioExtensionType
-from remora.models.format.extension import ExtensionType
-from remora.models.format.format import FormatType
-from remora.models.format.video import VideoExtension, VideoExtensionType
+from remora.models.container.extension.audio import AudioExtension, AudioExtensionType
+from remora.models.container.extension.types import ExtensionType
+from remora.models.container.format import FormatType
+from remora.models.container.extension.video import VideoExtension, VideoExtensionType
 
 # Medias
 from remora.models.media.item import LazyMedia, Media

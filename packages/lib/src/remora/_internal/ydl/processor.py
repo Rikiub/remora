@@ -17,7 +17,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import FFmpegNotFoundError, ProcessorError
-from remora.models.format.audio import AudioExtension
+from remora.models.container.extension.audio import AudioExtension
 from remora.types import StrPath
 
 

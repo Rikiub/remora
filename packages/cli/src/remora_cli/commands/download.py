@@ -5,7 +5,7 @@ from typing import Annotated, get_args
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
-from remora.models.format.extension import FormatTargetType
+from remora.models.container.target import FormatTargetType
 from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
