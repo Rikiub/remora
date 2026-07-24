@@ -7,7 +7,7 @@ from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_erro
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
-from remora.models.search import SearchService, SearchServiceLike
+from remora.models.search import SearchService
 
 
 @dataclass(slots=True, frozen=True)
@@ -20,15 +20,15 @@ class SearchQuery:
 
 
 SEARCH_QUERIES = {
-    SearchQuery(SearchService.SOUNDCLOUD, "scsearch{limit}:"),
-    SearchQuery(SearchService.YOUTUBE, "ytsearch{limit}:"),
-    SearchQuery(SearchService.YTMUSIC, "https://music.youtube.com/search?q="),
+    SearchQuery("soundcloud", "scsearch{limit}:"),
+    SearchQuery("youtube", "ytsearch{limit}:"),
+    SearchQuery("ytmusic", "https://music.youtube.com/search?q="),
 }
 
 
 def extract_query(
     query: str,
-    service: str | SearchServiceLike,
+    service: str | SearchService,
     limit: int = 20,
 ) -> YDLExtractInfo:
     """Extract info from search service."""

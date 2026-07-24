@@ -12,7 +12,7 @@ from remora.models.media.list import LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
 from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail
-from remora.models.search import SearchServiceLike
+from remora.models.search import SearchService
 from remora.models.stream.item import Stream
 from remora.types import StrPath, StrUrl
 from remora_cli.ui.extractor import SearchList
@@ -41,7 +41,7 @@ class Remora:
     async def extract_search(
         self,
         query: str,
-        service: SearchServiceLike,
+        service: SearchService,
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""

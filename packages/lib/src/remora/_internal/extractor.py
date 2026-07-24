@@ -9,7 +9,7 @@ from remora.models._base import YDLSerializable
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist, SearchList
 from remora.models.media.types import ExtractAdapter
-from remora.models.search import SearchServiceLike
+from remora.models.search import SearchService
 from remora.types import StrUrl
 
 T = TypeVar("T", bound=YDLSerializable)
@@ -47,7 +47,7 @@ class MediaExtractor:
     async def extract_search(
         self,
         query: str,
-        service: SearchServiceLike,
+        service: SearchService,
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""
