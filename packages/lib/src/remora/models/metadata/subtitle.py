@@ -11,7 +11,7 @@ from remora.models.metadata._base import Metadata
 SubtitleType = Literal["external", "embedded"]
 
 
-class BaseSubtitle(Metadata, YDLSerializable):
+class _BaseSubtitle(Metadata, YDLSerializable):
     type: SubtitleType
     name: str = ""
     language: str
@@ -27,12 +27,12 @@ class BaseSubtitle(Metadata, YDLSerializable):
         return data
 
 
-class ExternalSubtitle(BaseSubtitle):
+class ExternalSubtitle(_BaseSubtitle):
     type: Literal["external"] = "external"  # type: ignore
     url: HttpUrl
 
 
-class EmbeddedSubtitle(BaseSubtitle):
+class EmbeddedSubtitle(_BaseSubtitle):
     type: Literal["embedded"] = "embedded"  # type: ignore
     content: Annotated[str, Field(alias="data")]
 
