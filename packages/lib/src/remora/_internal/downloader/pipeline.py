@@ -15,7 +15,8 @@ from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.batch import BatchStreamDownloader
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.extractor import MediaExtractor
-from remora._internal.path import get_ffmpeg, get_tempfile
+from remora._internal.ffmpeg import get_ffmpeg
+from remora._internal.path import get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
 from remora.exceptions import DownloaderError, MetadataDownloaderError, ProcessorError

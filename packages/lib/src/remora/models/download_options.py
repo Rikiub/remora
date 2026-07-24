@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator
 
-from remora._internal.path import validate_ffmpeg
+from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
 from remora.models.container.extension.types import ExtensionType, get_extension

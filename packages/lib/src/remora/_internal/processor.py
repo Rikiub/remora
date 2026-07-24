@@ -3,7 +3,7 @@ from pathlib import Path
 
 from anyio.to_thread import run_sync
 
-from remora._internal.path import get_ffmpeg
+from remora._internal.ffmpeg import get_ffmpeg
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.exceptions import FFmpegNotFoundError
