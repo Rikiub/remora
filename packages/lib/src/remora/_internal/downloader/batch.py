@@ -17,7 +17,7 @@ from remora.models.event.playlist import (
     PlaylistStarted,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.media.list import LazyPlaylist, EntriesList, Playlist
+from remora.models.media.list import EntriesList, LazyPlaylist, Playlist
 from remora.models.media.types import AnyExtractResult
 
 
