@@ -4,7 +4,7 @@ from typing import Literal
 from typing_extensions import override
 
 from remora.models.format._base import BaseExtension
-from remora.models.format.type import FormatKind
+from remora.models.format.format import FormatType
 
 
 class AudioExtension(BaseExtension, StrEnum):
@@ -36,8 +36,8 @@ class AudioExtension(BaseExtension, StrEnum):
     WEBA = "weba"
 
     @property
-    def type(self):
-        return FormatKind.AUDIO
+    def type(self) -> FormatType:
+        return "audio"
 
     @property
     def is_safe(self) -> bool:

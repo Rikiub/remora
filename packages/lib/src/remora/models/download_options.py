@@ -7,10 +7,10 @@ from remora._internal.template.output import validate_template
 from remora.models._base import RemoraBaseModel
 from remora.models.format.extension import (
     ExtensionType,
-    FormatTargetStr,
+    FormatTargetType,
     get_extension,
 )
-from remora.models.format.type import FormatKind, FormatType
+from remora.models.format.format import FormatType
 from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
 
@@ -31,7 +31,7 @@ class DownloadOptions(RemoraBaseModel):
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
-    format: FormatTargetStr = "video"
+    format: FormatTargetType = "video"
     quality: StreamQuality | int | None = None
 
     ffmpeg_path: Annotated[
@@ -51,12 +51,11 @@ class DownloadOptions(RemoraBaseModel):
             "video" or "audio".
         """
 
-        try:
-            target = FormatKind(self.format)
-            return target
-        except ValueError:
-            target = get_extension(self.format)
-            return target.type
+        if self.format in ("video", "audio"):
+            return self.format
+
+        target = get_extension(self.format)
+        return target.type
 
     @property
     def format_target(self) -> ExtensionType | None:

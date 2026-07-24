@@ -1,4 +1,4 @@
-from remora.models.format.type import FormatKind
+from remora.models.format.format import FormatType
 
 
 class BaseExtension:
@@ -15,7 +15,7 @@ class BaseExtension:
         return False
 
     @property
-    def type(self) -> FormatKind:
+    def type(self) -> FormatType:
         raise NotImplementedError()
 
     @property

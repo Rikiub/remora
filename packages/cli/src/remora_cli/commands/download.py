@@ -5,9 +5,7 @@ from typing import Annotated, get_args
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
-from remora.models.format.audio import SafeAudioExtensionStr
-from remora.models.format.type import FormatKindStr
-from remora.models.format.video import SafeVideoExtensionStr
+from remora.models.format.extension import FormatTargetType
 from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
@@ -20,11 +18,7 @@ class HelpPanel(StrEnum):
     downloader = "Downloader"
 
 
-FormatEnum = [
-    s
-    for lit in (FormatKindStr, SafeVideoExtensionStr, SafeAudioExtensionStr)
-    for s in get_args(lit)
-]
+FormatEnum = [s for lit in FormatTargetType for s in get_args(lit)]
 FormatEnum = StrEnum("FormatEnum", {s: s for s in FormatEnum})
 
 app = Typer()

@@ -16,7 +16,7 @@ from remora.models.event.stream import BatchStreamEvent, StreamEvent
 # Formats
 from remora.models.format.audio import AudioExtension, AudioExtensionType
 from remora.models.format.extension import ExtensionType
-from remora.models.format.type import FormatKind, FormatType
+from remora.models.format.format import FormatType
 from remora.models.format.video import VideoExtension, VideoExtensionType
 
 # Medias

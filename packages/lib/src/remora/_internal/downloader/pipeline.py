@@ -34,7 +34,6 @@ from remora.models.event.process import Processing, ProcessorTask
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.format.audio import AudioExtension
 from remora.models.format.extension import get_extension
-from remora.models.format.type import FormatKind
 from remora.models.format.video import VideoExtension
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
@@ -98,9 +97,9 @@ class DownloadPipeline:
                     )
 
                     if not self.ffmpeg_path:
-                        if self.config.format_type == FormatKind.VIDEO:
+                        if self.config.format_type == "video":
                             audio_stream = None
-                        elif self.config.format_type == FormatKind.AUDIO:
+                        elif self.config.format_type == "audio":
                             video_stream = None
 
                     stream = video_stream or audio_stream
