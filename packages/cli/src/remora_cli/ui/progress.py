@@ -3,7 +3,7 @@ from anyio.abc import TaskGroup
 from loguru import logger
 
 from remora.models.event.playlist import BatchEvent
-from remora.models.event.process import ProcessEvent, ProcessorTask
+from remora.models.event.process import ProcessEvent
 from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
 
@@ -89,9 +89,9 @@ class ProgressCallback:
 
         if event.status == "started":
             match event.task:
-                case ProcessorTask.CONVERT_AUDIO:
+                case "convert_audio":
                     self.progress.update(id, status="Converting[blink]...[/]")
-                case ProcessorTask.MERGE_STREAMS:
+                case "merge_streams":
                     self.progress.update(id, status="Merging[blink]...[/]")
 
     def _media_display_name(self, media: LazyMedia) -> str:
