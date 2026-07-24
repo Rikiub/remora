@@ -15,11 +15,11 @@ def subs(ydl_data):
 
 # Filters: Type
 async def test_externals(subs: SubtitleList):
-    assert len(subs.externals) >= 1
+    assert len(subs.externals()) >= 1
 
 
 async def test_languages(subs: SubtitleList):
-    assert all(key in subs.languages for key in {"en", "es-419"})
+    assert all(key in subs.languages() for key in {"en", "es-419"})
 
 
 # Filters: General

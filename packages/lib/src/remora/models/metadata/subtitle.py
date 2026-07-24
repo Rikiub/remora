@@ -72,19 +72,16 @@ class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
         BeforeValidator(_parse_ydl_subtitles),
     ] = []
 
-    @property
     def languages(self) -> set[str]:
         """Return all unique language codes available."""
         return {s.language for s in self.root if isinstance(s, ExternalSubtitle)}
 
-    @property
     def externals(self) -> SubtitleList[ExternalSubtitle]:
         """Subtitles hosted on a URL."""
         return SubtitleList[ExternalSubtitle](  # type: ignore
             [item for item in self if isinstance(item, ExternalSubtitle)],
         )
 
-    @property
     def embedded(self) -> SubtitleList[EmbeddedSubtitle]:
         """Subtitles found inside the media file."""
         return SubtitleList[EmbeddedSubtitle](  # type: ignore
