@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Generic, Literal, Self
 
 from pydantic import BeforeValidator, Field, HttpUrl
-from typing_extensions import TypeVar
+from typing_extensions import TypeVar, override
 
 from remora.models._base import BaseList, YDLSerializable
 from remora.models.metadata._base import Metadata
@@ -104,6 +104,7 @@ class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
 
         return self.__class__(list(items))
 
+    @override
     def to_ydl_dict(self):
         """Convert back into the nested yt-dlp dictionary format:"""
 
