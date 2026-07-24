@@ -30,7 +30,7 @@ from remora.models.event.media import (
     MediaProcessing,
     MediaWarning,
 )
-from remora.models.event.process import MergeProcessing, Processing, ProcessorTask
+from remora.models.event.process import Processing, ProcessorTask
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.format.audio import AudioExtension
 from remora.models.format.extension import get_extension
@@ -308,11 +308,10 @@ class DownloadPipeline:
         merging = MediaProcessing(
             id=self.id,
             media=self.media,
-            progress=MergeProcessing(
+            progress=Processing(
                 status="started",
+                task="merge_streams",
                 file_path=file_path,
-                video_stream=video[0],
-                audio_stream=audio[0],
             ),
         )
         await self._stream.send(merging)

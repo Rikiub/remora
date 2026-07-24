@@ -2,7 +2,7 @@ from loguru import logger
 
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
-from remora.models.event.process import ProcessEvent
+from remora.models.event.process import Processing
 
 
 async def log_event_playlist(event: BatchEvent):
@@ -68,7 +68,7 @@ async def log_event_media(event: MediaEvent):
                 )
 
 
-async def _processor_callback(event: ProcessEvent):
+async def _processor_callback(event: Processing):
     with logger.contextualize(status=event.status, task=event.task):
         if event.status == "completed":
             match event.task:
@@ -83,11 +83,7 @@ async def _processor_callback(event: ProcessEvent):
                         extension=event.file_extension,
                     )
                 case "merge_streams":
-                    logger.debug(
-                        'Merged video "{video}" and audio "{audio}" formats',
-                        video=event.video_stream.extension,
-                        audio=event.audio_stream.extension,
-                    )
+                    logger.debug("Merged video and audio formats")
                 case "embed_subtitles":
                     logger.debug("Subtitles embedded")
                 case "embed_thumbnail":

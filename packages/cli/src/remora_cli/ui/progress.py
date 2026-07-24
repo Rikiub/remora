@@ -3,7 +3,7 @@ from anyio.abc import TaskGroup
 from loguru import logger
 
 from remora.models.event.playlist import BatchEvent
-from remora.models.event.process import ProcessEvent
+from remora.models.event.process import Processing
 from remora.models.media.item import LazyMedia
 from remora_cli.ui.rich_progress import DownloadProgress
 
@@ -84,7 +84,7 @@ class ProgressCallback:
         await anyio.sleep(1.0)
         self.progress.remove_task(event.id)
 
-    def processor_callback(self, id: str, event: ProcessEvent):
+    def processor_callback(self, id: str, event: Processing):
         self.progress.update(id, status="Processing[blink]...[/]")
 
         if event.status == "started":

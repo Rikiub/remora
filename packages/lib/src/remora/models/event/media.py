@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from pydantic import Field
 
 from remora.models.event._base import BaseEventID, FileEvent
-from remora.models.event.process import ProcessEvent
+from remora.models.event.process import Processing
 from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
 
@@ -25,7 +25,7 @@ class MediaDownloading(BaseMediaEvent):
 
 class MediaProcessing(BaseMediaEvent):
     status: Literal["processing"] = "processing"
-    progress: ProcessEvent
+    progress: Processing
 
 
 class MediaCompleted(BaseMediaEvent, FileEvent):
