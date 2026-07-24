@@ -44,7 +44,7 @@ async def extract_queries(
 
                     result = await extractor.extract_search(entry, target)
 
-                    if not result.medias:
+                    if not result.entries.medias():
                         logger.warning("No results found")
                         raise Exit()
 

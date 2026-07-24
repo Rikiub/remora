@@ -17,7 +17,7 @@ from remora.models.event.playlist import (
     PlaylistStarted,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.media.list import LazyPlaylist, MediaList, Playlist
+from remora.models.media.list import LazyPlaylist, EntriesList, Playlist
 from remora.models.media.types import AnyExtractResult
 
 
@@ -134,8 +134,8 @@ class DownloadBatch:
         match item:
             case LazyMedia():
                 medias: list[LazyMedia] = [item]
-            case MediaList():
-                medias = item.medias
+            case EntriesList():
+                medias = list(item.medias())
             case list():
                 medias = item
             case _:

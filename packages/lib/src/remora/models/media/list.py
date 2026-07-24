@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeVar
 
-from pydantic import AliasChoices, Field, HttpUrl, computed_field
+from pydantic import AliasChoices, Field, HttpUrl
 
+from remora.models._base import BaseList
 from remora.models.media._base import (
     URL_CHOICES,
     BaseExtract,
@@ -14,23 +15,35 @@ from remora.models.media._base import (
 from remora.models.media.item import LazyMedia
 from remora.models.metadata.thumbnail import Thumbnail
 
+# Entries List
+_Entry = TypeVar("_Entry", LazyMedia, "LazyPlaylist")
 
-class MediaList(ABC, BaseExtract):
-    entries: Annotated[list[LazyMedia | LazyPlaylist], Field(repr=False)] = []
+
+class EntriesList(BaseList[_Entry]):
+    def medias(self) -> EntriesList[LazyMedia]:
+        return EntriesList([item for item in self.root if isinstance(item, LazyMedia)])
+
+    def playlists(self) -> EntriesList[LazyPlaylist]:
+        return EntriesList(
+            [item for item in self.root if isinstance(item, LazyPlaylist)]
+        )
+
+
+class _BaseList(ABC, BaseExtract):
+    entries: Annotated[EntriesList, Field(repr=False, default_factory=EntriesList)]
     extractor: ExtractorField
 
-    @computed_field
-    @property
-    def medias(self) -> list[LazyMedia]:
-        return [item for item in self.entries if isinstance(item, LazyMedia)]
 
-    @computed_field
-    @property
-    def playlists(self) -> list[LazyPlaylist]:
-        return [item for item in self.entries if isinstance(item, LazyPlaylist)]
+# Search
+class SearchList(_BaseList):
+    type: Literal["search"] = "search"
+
+    service: str
+    query: str
 
 
-class LazyPlaylist(MediaList, ExtractID):
+# Playlist
+class LazyPlaylist(_BaseList, ExtractID):
     type: Literal["playlist"] = "playlist"
 
     id: Annotated[
@@ -52,10 +65,3 @@ class LazyPlaylist(MediaList, ExtractID):
 
 
 class Playlist(LazyPlaylist): ...
-
-
-class SearchList(MediaList):
-    type: Literal["search"] = "search"
-
-    service: str
-    query: str

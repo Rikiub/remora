@@ -21,7 +21,7 @@ async def test_playlist(playlist: Playlist):
 
 
 async def test_medias(playlist: Playlist):
-    for media in playlist.medias:
+    for media in playlist.entries.medias():
         assert media.extractor == "Youtube"
 
         assert media.title is not None

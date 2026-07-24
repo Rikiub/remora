@@ -125,11 +125,11 @@ What format you want request?
 
     async for target, result in extract_queries(query, remora.extractor):
         if isinstance(result, (Playlist, SearchList)):
-            if not result.medias:
+            if not result.entries.medias():
                 logger.error("'{}' don't have streams to download", target)
 
         if isinstance(result, SearchList):
-            result = result.medias[0]
+            result = result.entries.medias()[0]
 
         async with ProgressCallback(CONFIG.quiet) as progress:
             async for event in remora.download_batch(result):

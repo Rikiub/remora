@@ -8,18 +8,20 @@ DEFAULT_QUERY = "Sub Urban - Rabbit Hole"
 # General
 async def test_resolve_medias(extractor: MediaExtractor):
     result = await extractor.extract_search("If Nevermore", service="ytmusic")
-    assert len(result.medias) >= 1
+    entries = result.entries.medias()
+    assert len(entries) >= 1
 
-    for entry in result.medias:
+    for entry in entries:
         entry = await extractor.extract(entry)
         assert isinstance(entry, Media)
 
 
 async def test_resolve_playlists(extractor: MediaExtractor):
     result = await extractor.extract_search("If Nevermore", service="ytmusic")
-    assert len(result.playlists) >= 1
+    entries = result.entries.playlists()
+    assert len(entries) >= 1
 
-    for entry in result.playlists:
+    for entry in entries:
         entry = await extractor.extract(entry)
         assert isinstance(entry, Playlist)
 
