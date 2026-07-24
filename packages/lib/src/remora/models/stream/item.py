@@ -54,7 +54,7 @@ class VideoInfo(RemoraBaseModel):
 
 
 # STREAMS
-class YDLOptions(RemoraBaseModel):
+class ExtractorMeta(RemoraBaseModel):
     downloader: Annotated[dict, Field(alias="downloader_options")] = {}
     headers: Annotated[dict, Field(alias="http_headers")] = {}
     cookies: str | None = None
@@ -68,7 +68,7 @@ class _BaseStream(ABC, YDLSerializable):
 
     protocol: Protocol
     url: HttpUrl
-    ydl_options: YDLOptions
+    extractor_meta: ExtractorMeta
 
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
@@ -82,7 +82,7 @@ class _BaseStream(ABC, YDLSerializable):
         data[name] = self.size_bytes
 
         # Convert YDL options
-        data |= data.get("ydl_options") or {}
+        data |= data.get("extractor_meta") or {}
 
         # Flatterize video and audio
         data |= {
@@ -113,7 +113,7 @@ class _BaseStream(ABC, YDLSerializable):
     @classmethod
     def _validate_ydl_base(cls, data) -> dict:
         if _is_ydl_format(data):
-            data["ydl_options"] = {
+            data["extractor_meta"] = {
                 "downloader": data.get("downloader_options", {}),
                 "headers": data.get("http_headers", {}),
                 "cookies": data.get("cookies"),

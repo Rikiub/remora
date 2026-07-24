@@ -18,7 +18,7 @@ from remora.models.media._base import (
 from remora.models.metadata.music import MusicMetadata
 from remora.models.metadata.playback import Chapter, Heatmap
 from remora.models.metadata.subtitle import SubtitleList
-from remora.models.metadata.thumbnail import Thumbnail
+from remora.models.metadata.thumbnail import ThumbnailList
 from remora.models.stream.list import StreamList
 
 
@@ -50,7 +50,10 @@ class LazyMedia(ExtractID):
     categories: Annotated[list[str], EnsureList] = []
     tags: Annotated[list[str], EnsureList] = []
 
-    thumbnails: list[Thumbnail] = []
+    thumbnails: Annotated[
+        ThumbnailList,
+        AfterValidator(lambda list: list.sorted_by("best")),
+    ] = ThumbnailList()
 
     @field_validator("extractor")
     @classmethod

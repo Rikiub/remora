@@ -19,6 +19,9 @@ from remora._internal.path import get_ffmpeg, get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
 from remora.exceptions import DownloaderError, MetadataDownloaderError, ProcessorError
+from remora.models.container.extension.audio import AudioExtension
+from remora.models.container.extension.types import get_extension
+from remora.models.container.extension.video import VideoExtension
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
     MediaCancelled,
@@ -32,9 +35,6 @@ from remora.models.event.media import (
 )
 from remora.models.event.process import Processing, ProcessorTask
 from remora.models.event.stream import BatchStreamDownloading
-from remora.models.container.extension.audio import AudioExtension
-from remora.models.container.extension.types import get_extension
-from remora.models.container.extension.video import VideoExtension
 from remora.models.media.item import LazyMedia, Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.types import StrPath
@@ -254,7 +254,7 @@ class DownloadPipeline:
                 try:
                     logger.debug("Downloading thumbnail")
                     results.thumbnail = await download_thumbnail(
-                        media.thumbnails[-1],
+                        media.thumbnails[0],
                         get_tempfile(),
                     )
                     logger.debug("Thumbnail downloaded")
