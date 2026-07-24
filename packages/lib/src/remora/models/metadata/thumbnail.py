@@ -1,6 +1,7 @@
 from typing import Generic, Literal, Self, TypeVar
 
 from pydantic import model_validator
+from typing_extensions import override
 
 from remora.models._base import BaseList, Resolution, YDLSerializable
 from remora.models.metadata._base import Metadata
@@ -10,6 +11,18 @@ class Thumbnail(Metadata, YDLSerializable):
     id: str = ""
     url: str
     resolution: Resolution | None = None
+
+    @override
+    def to_ydl_dict(self):
+        data = super().to_ydl_dict()
+
+        if res := self.resolution:
+            data |= {
+                "width": res.width,
+                "height": res.height,
+            }
+
+        return data
 
     @model_validator(mode="before")
     @classmethod
@@ -21,8 +34,8 @@ class Thumbnail(Metadata, YDLSerializable):
 
             if isinstance(resolution, str) and width and height:
                 data["resolution"] = {
-                    "width": data["width"],
-                    "height": data["height"],
+                    "width": width,
+                    "height": height,
                 }
             else:
                 data["resolution"] = None
@@ -35,20 +48,18 @@ T = TypeVar("T")
 
 
 class ThumbnailList(YDLSerializable, BaseList[T], Generic[T]):
-    root: list[T] = []
-
     def filter(self, width: int, height: int) -> Self:
-        """Filter subtitles by options."""
+        """Filter thumbnails by options."""
 
         items = (s for s in self.root)
         return self.__class__(list(items))
 
-    def sort_by(
+    def sorted_by(
         self,
-        attribute: Literal["best", "extension", "quality", "codec", "protocol"],
+        attribute: Literal["best"],
         reverse: bool = True,
     ) -> Self:
-        """Sort by `Stream` attribute."""
+        """Sort by `Thumbnail` attribute."""
 
         filter = lambda s: getattr(s, attribute)  # noqa: E731
 
