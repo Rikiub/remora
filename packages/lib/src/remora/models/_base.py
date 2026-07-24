@@ -4,6 +4,7 @@ from typing import Generic, Self, TypeVar, overload
 from pydantic import (
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     RootModel,
     ValidationError,
     WrapValidator,
@@ -14,7 +15,8 @@ from remora._internal.ydl.types import YDLExtractInfo
 T = TypeVar("T")
 
 
-class RemoraBaseModel(BaseModel): ...
+class RemoraBaseModel(BaseModel):
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
 class Resolution(RemoraBaseModel):

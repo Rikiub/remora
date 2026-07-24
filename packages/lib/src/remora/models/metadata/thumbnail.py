@@ -15,7 +15,7 @@ class Thumbnail(Metadata, YDLSerializable):
     id: str = ""
     url: str
     resolution: Resolution | None = None
-    extractor_meta: ExtractorMeta
+    extractor_meta: ExtractorMeta = ExtractorMeta()
 
     @override
     def to_ydl_dict(self):
@@ -36,19 +36,19 @@ class Thumbnail(Metadata, YDLSerializable):
         if isinstance(data, dict):
             # Map resolution
             resolution = data.get("resolution")
-            width = data.get("width")
-            height = data.get("height")
 
-            if isinstance(resolution, str) and width and height:
-                data["resolution"] = {
-                    "width": width,
-                    "height": height,
-                }
-            else:
-                data["resolution"] = None
+            if isinstance(resolution, str) or resolution is None:
+                width = data.get("width")
+                height = data.get("height")
+
+                if width and height:
+                    data["resolution"] = {"width": width, "height": height}
+                else:
+                    data["resolution"] = None
 
             # Map extras
-            data["extractor_meta"] = data
+            if "extractor_meta" not in data:
+                data["extractor_meta"] = data
 
             return data
         return data
@@ -76,7 +76,7 @@ class ThumbnailList(YDLSerializable, BaseList[T], Generic[T]):
 
     def sorted_by(
         self,
-        attribute: Literal["best"],
+        attribute: Literal["best", "width", "height"],
         reverse: bool = True,
     ) -> Self:
         """Sort by `Thumbnail` attribute."""

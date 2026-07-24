@@ -1,21 +1,53 @@
 import pytest
 
-from remora.models.media.item import Media
-from remora.models.metadata.subtitle import SubtitleList
+from remora.models.metadata.subtitle import (
+    EmbeddedSubtitle,
+    ExternalSubtitle,
+    SubtitleList,
+)
 
 
 @pytest.fixture
-def subs(ydl_data):
-    data = ydl_data("youtube/video.json")
-    data = Media(**data)
+def subs() -> SubtitleList:
+    URL = "http://example.com/subtitle"
 
-    assert len(data.subtitles) > 1
-    return data.subtitles
+    return SubtitleList(
+        [
+            ExternalSubtitle(
+                name="English",
+                language="en",
+                extension="vtt",
+                url=URL,
+            ),
+            ExternalSubtitle(
+                name="Spanish",
+                language="es",
+                extension="vtt",
+                url=URL,
+            ),
+            ExternalSubtitle(
+                name="Spanish",
+                language="es-419",
+                extension="srt",
+                url=URL,
+            ),
+            EmbeddedSubtitle(
+                name="Lyrics",
+                language="lyrics",
+                extension="lrc",
+                content="...",
+            ),
+        ]
+    )
 
 
 # Filters: Type
 async def test_externals(subs: SubtitleList):
-    assert len(subs.externals()) >= 1
+    assert len(subs.externals()) > 0
+
+
+async def test_embedded(subs: SubtitleList):
+    assert len(subs.embedded()) > 0
 
 
 async def test_languages(subs: SubtitleList):

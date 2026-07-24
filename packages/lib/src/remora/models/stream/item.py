@@ -68,7 +68,7 @@ class _BaseStream(ABC, YDLSerializable):
 
     protocol: Protocol
     url: HttpUrl
-    extractor_meta: ExtractorMeta
+    extractor_meta: ExtractorMeta = ExtractorMeta()
 
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
@@ -177,7 +177,7 @@ class _BaseStream(ABC, YDLSerializable):
 
 
 class AudioStream(_BaseStream):
-    type: Literal[StreamType] = "audio"
+    type: Literal["audio"] = "audio"
     extension: Annotated[AudioExtension, Field(alias="ext")]
     audio: AudioInfo
 
@@ -193,7 +193,7 @@ class AudioStream(_BaseStream):
 
 
 class VideoStream(_BaseStream):
-    type: Literal[StreamType] = "video"
+    type: Literal["video"] = "video"
     extension: Annotated[VideoExtension, Field(alias="ext")]
     video: VideoInfo
 

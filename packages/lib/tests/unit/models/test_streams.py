@@ -1,17 +1,84 @@
 import pytest
+from pydantic import ValidationError
 
-from remora.models.media.item import Media
-from remora.models.stream.item import AudioStream, MuxedStream, VideoStream
+from remora.models.stream.item import (
+    AudioInfo,
+    AudioStream,
+    MuxedStream,
+    Resolution,
+    VideoInfo,
+    VideoStream,
+)
 from remora.models.stream.list import StreamList
+
+URL = "https://example.com/video"
 
 
 @pytest.fixture
-def streams(ydl_data):
-    data = ydl_data("youtube/video.json")
-    data = Media(**data)
+def streams() -> StreamList:
+    """List of streams for testing."""
 
-    assert len(data.streams) > 0
-    return data.streams
+    return StreamList(
+        [
+            # Covers: muxed, find_by_id(id="2"), quality=720, protocol="https", extension="mp4"
+            MuxedStream(
+                id="2",
+                url=URL,
+                protocol="https",
+                extension="mp4",
+                size_type="estimated",
+                size_bytes=11832459,
+                video=VideoInfo(
+                    codec="avc1.42001E",
+                    resolution=Resolution(width=1280, height=720),  # Gives quality=720
+                    bitrate=444.226,
+                    fps=25,
+                ),
+                audio=AudioInfo(
+                    codec="mp4a.40.2",
+                    bitrate=128.0,
+                    channels=2,
+                    sample_rate=44100,
+                    language="en",
+                ),
+            ),
+            # Covers: videos, video_only, vp9 codec filter
+            VideoStream(
+                id="1",
+                url=URL,
+                protocol="m3u8",
+                extension="webm",
+                video=VideoInfo(
+                    codec="vp9",
+                    resolution=Resolution(width=1920, height=1080),
+                ),
+            ),
+            # Covers: audios, audio_only, opus codec filter
+            AudioStream(
+                id="3",
+                url=URL,
+                protocol="https",
+                extension="webm",
+                audio=AudioInfo(
+                    codec="opus",
+                    bitrate=160.0,
+                    language="es-419",
+                ),
+            ),
+            # Covers: Extra audio stream for robustness
+            AudioStream(
+                id="4",
+                url=URL,
+                protocol="m3u8",
+                extension="m4a",
+                audio=AudioInfo(
+                    codec="mp4a.40.5",
+                    bitrate=64.0,
+                    language=None,
+                ),
+            ),
+        ]
+    )
 
 
 # Filters: Video and Audio
@@ -23,7 +90,7 @@ def streams(ydl_data):
         ("audios", (AudioStream, MuxedStream)),
     ],
 )
-async def test_stream_type_filters(streams: StreamList, method, expected_class):
+def test_stream_type_filters(streams: StreamList, method, expected_class):
     filtered = getattr(streams, method)()
     assert len(filtered) > 0, f"No streams returned for .{method}()"
     assert all(isinstance(s, expected_class) for s in filtered)
@@ -36,7 +103,7 @@ async def test_stream_type_filters(streams: StreamList, method, expected_class):
         ("audio_only", AudioStream),
     ],
 )
-async def test_stream_strict_type_filters(streams: StreamList, method, expected_class):
+def test_stream_strict_type_filters(streams: StreamList, method, expected_class):
     filtered = getattr(streams, method)()
     assert len(filtered) > 0, f"No streams returned for .{method}()"
     assert all(type(s) is expected_class for s in filtered)
@@ -44,52 +111,130 @@ async def test_stream_strict_type_filters(streams: StreamList, method, expected_
 
 # Filters: General
 @pytest.mark.parametrize(
-    "filter_kwargs, attr_name, expected_value",
+    "attribute, filter_value",
     [
-        ({"extension": "mp4"}, "extension", "mp4"),
-        ({"quality": 720}, "quality", 720),
-        ({"protocol": "https"}, "protocol", "https"),
+        ("quality", 720),
+        ("extension", "webm"),
+        ("protocol", "https"),
     ],
 )
-async def test_generic_filters(
-    streams: StreamList, filter_kwargs, attr_name, expected_value
-):
-    filtered = streams.filter(**filter_kwargs)
-    assert len(filtered) > 0, f"Filter {filter_kwargs} yielded no results"
-    assert all(getattr(s, attr_name) == expected_value for s in filtered)
+def test_filter_general(streams: StreamList, attribute, filter_value):
+    filters = {attribute: filter_value}
+    filtered = streams.filter(**filters)
+
+    assert len(filtered) > 0, f"Filter {filters} yielded no results"
+    assert all(getattr(s, attribute) == filter_value for s in filtered)
 
 
-async def test_filter_video_codec(streams: StreamList):
+def test_filter_language(streams: StreamList):
+    """Test filter of partial languages keys. Should be able of found audio streams with `es-419` like keys."""
+
+    language = "es"
+    filtered = streams.filter(language=language)
+
+    assert len(filtered) > 0
+    assert all(
+        isinstance(s, AudioStream)
+        and s.audio.language
+        and s.audio.language.startswith(language)
+        for s in filtered
+    )
+
+
+def test_filter_video_codec(streams: StreamList):
+    """Test filter of partial video codec strings."""
+
     codec = "vp9"
     filtered = streams.filter(video_codec=codec)
+
     assert len(filtered) > 0
     assert all(
         isinstance(s, VideoStream) and s.video.codec.startswith(codec) for s in filtered
     )
 
 
-async def test_filter_audio_codec(streams: StreamList):
+def test_filter_audio_codec(streams: StreamList):
+    """Test filter of partial audio codec strings."""
+
     codec = "opus"
     filtered = streams.filter(audio_codec=codec)
+
     assert len(filtered) > 0
     assert all(
         isinstance(s, AudioStream) and s.audio.codec.startswith(codec) for s in filtered
     )
 
 
+# Sorter
+def test_sorted_by_best(streams: StreamList):
+    streams = streams.sorted_by("best")
+
+    match_ids = ["1", "2", "3", "4"]  # Must match with the fixture
+    streams_ids = [s.id for s in streams]
+    assert len(streams_ids) > 0
+
+    for index, _ in enumerate(streams_ids):
+        assert match_ids[index] == streams_ids[index]
+
+
 # Getters
-async def test_closest_quality(streams: StreamList):
+def test_closest_quality(streams: StreamList):
     stream = streams.get_closest_quality(600)
     assert stream.quality == 720
 
 
-async def test_get_by_id(streams: StreamList):
-    stream_id = "137"
-    stream = streams.get_by_id(stream_id)
-    assert stream.id == stream_id
+def test_get_by_id(streams: StreamList):
+    ID = "1"
+    stream = streams.get_by_id(ID)
+    assert stream.id == ID
 
 
-async def test_get_by_id_raises(streams: StreamList):
+def test_missing_get_by_id(streams: StreamList):
     with pytest.raises(KeyError):
         stream_id = "-1"
         streams.get_by_id(stream_id)
+
+
+# Errors
+def test_invalid_video_extension():
+    with pytest.raises(ValidationError):
+        VideoStream(
+            id="1",
+            url=URL,
+            protocol="https",
+            extension="opus",  # This is a audio extension
+            video=VideoInfo(codec="vp9"),
+        )
+
+
+def test_invalid_audio_extension():
+    with pytest.raises(ValidationError):
+        AudioStream(
+            id="2",
+            url=URL,
+            protocol="https",
+            extension="mp4",  # This is a video extension
+            audio=AudioInfo(codec="opus"),
+        )
+
+
+def test_none_video_codec():
+    with pytest.raises(ValidationError):
+        VideoStream(
+            id="1",
+            url=URL,
+            protocol="https",
+            extension="mp4",
+            video=VideoInfo(codec="none"),
+        )
+
+
+def test_none_audio_codec():
+    with pytest.raises(ValidationError):
+        AudioStream(
+            id="2",
+            url=URL,
+            protocol="https",
+            extension="m4a",
+            audio=AudioInfo(codec="none"),
+        )

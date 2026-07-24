@@ -58,6 +58,7 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         quality: int | StreamQuality | None = None,
         extension: str | ExtensionType | None = None,
         protocol: str | ProtocolType | None = None,
+        language: str | None = None,
         video_codec: str | None = None,
         audio_codec: str | None = None,
     ) -> Self:
@@ -69,6 +70,8 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
             items = (s for s in items if s.extension == extension)
         if quality:
             items = (s for s in items if s.quality == quality)
+        if protocol:
+            items = (s for s in items if s.protocol == protocol)
         if video_codec:
             items = (
                 s
@@ -81,8 +84,14 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
                 for s in items
                 if isinstance(s, AudioStream) and s.audio.codec.startswith(audio_codec)
             )
-        if protocol:
-            items = (s for s in items if s.protocol == protocol)
+        if language:
+            items = (
+                s
+                for s in items
+                if isinstance(s, AudioStream)
+                and s.audio.language
+                and s.audio.language.startswith(language)
+            )
 
         return self.__class__(list(items))
 
