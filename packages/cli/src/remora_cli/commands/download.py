@@ -1,6 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, get_args
+from typing import Annotated
 
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
@@ -9,7 +9,7 @@ from remora.models.container.target import FormatTargetType
 from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
-from remora_cli.helpers import make_async
+from remora_cli.helpers import make_async, unwrap_literals
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -18,7 +18,7 @@ class HelpPanel(StrEnum):
     downloader = "Downloader"
 
 
-FormatEnum = [s for lit in FormatTargetType for s in get_args(lit)]
+FormatEnum = unwrap_literals(FormatTargetType)
 FormatEnum = StrEnum("FormatEnum", {s: s for s in FormatEnum})
 
 app = Typer()
