@@ -7,7 +7,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import override
 
 from remora.models._base import EnsureList, EnsureNone
 from remora.models.media._base import (
@@ -62,7 +61,6 @@ class LazyMedia(ExtractID):
 
     @model_validator(mode="before")
     @classmethod
-    @override
     def _validate_ydl_media(cls, data) -> dict:
         if is_ydl_media(data):
             # Map live status
