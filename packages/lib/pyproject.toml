@@ -8,12 +8,16 @@ dependencies = [
     "pydantic>=2.9.2",
     "typing-extensions>=4.12.2",
     "lazy-imports>=1.0.0",
-    "pyffmpeg-bin>=1.8.0.1",
     "pathvalidate>=3.2.1",
     "loguru>=0.7.3",
     "mutagen>=1.47.0",
     "httpx>=0.28.1",
     "anyio>=4.12.1",
+]
+
+[project.optional-dependencies]
+ffmpeg = [
+    "imageio-ffmpeg>=0.6.0",
 ]
 
 [build-system]
