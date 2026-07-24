@@ -8,7 +8,7 @@ from remora.models.metadata._base import Metadata
 
 
 class ExtractorMeta(BaseModel):
-    preference: int
+    preference: int = 0
 
 
 class Thumbnail(Metadata, YDLSerializable):
@@ -54,7 +54,7 @@ class Thumbnail(Metadata, YDLSerializable):
         return data
 
 
-T = TypeVar("T", bound=Thumbnail)
+T = TypeVar("T", default=Thumbnail, bound=Thumbnail)
 
 
 class ThumbnailList(YDLSerializable, BaseList[T], Generic[T]):

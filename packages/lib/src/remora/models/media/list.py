@@ -13,7 +13,7 @@ from remora.models.media._base import (
     ExtractorField,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.metadata.thumbnail import Thumbnail
+from remora.models.metadata.thumbnail import ThumbnailList
 
 # Entries List
 _Entry = TypeVar("_Entry", LazyMedia, "LazyPlaylist")
@@ -61,7 +61,7 @@ class LazyPlaylist(_BaseList, ExtractID):
             validation_alias=AliasChoices("playlist_url", "title"),
         ),
     ] = ""
-    thumbnails: list[Thumbnail] = []
+    thumbnails: ThumbnailList = ThumbnailList()
 
 
 class Playlist(LazyPlaylist): ...
