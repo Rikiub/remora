@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest_mock import MockerFixture, MockFixture
+from pytest_mock import MockerFixture
 
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.downloader.selector import StreamSelector
