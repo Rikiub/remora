@@ -54,10 +54,10 @@ class Thumbnail(Metadata, YDLSerializable):
         return data
 
 
-T = TypeVar("T", default=Thumbnail, bound=Thumbnail)
+_T = TypeVar("_T", default=Thumbnail, bound=Thumbnail)
 
 
-class ThumbnailList(YDLSerializable, BaseList[T], Generic[T]):
+class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
     def filter(self, width: int, height: int) -> Self:
         """Filter thumbnails by options."""
 
@@ -94,7 +94,7 @@ class ThumbnailList(YDLSerializable, BaseList[T], Generic[T]):
             )
         )
 
-    def _sort_by_best_filter(self, thumbnail: T) -> tuple[int, ...]:
+    def _sort_by_best_filter(self, thumbnail: _T) -> tuple[int, ...]:
         return (
             thumbnail.extractor_meta.preference,
             thumbnail.resolution.width if thumbnail.resolution else -1,

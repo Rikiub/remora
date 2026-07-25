@@ -12,8 +12,6 @@ from pydantic import (
 
 from remora._internal.ydl.types import YDLExtractInfo
 
-T = TypeVar("T")
-
 
 class RemoraBaseModel(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
@@ -29,8 +27,11 @@ class YDLSerializable(RemoraBaseModel):
         return self.model_dump(by_alias=True, mode="json")
 
 
-class BaseList(RootModel[list[T]], Generic[T]):
-    root: list[T] = []
+_T = TypeVar("_T")
+
+
+class BaseList(RootModel[list[_T]], Generic[_T]):
+    root: list[_T] = []
 
     def __contains__(self, other) -> bool:
         return other in self.root
@@ -41,16 +42,16 @@ class BaseList(RootModel[list[T]], Generic[T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self) -> Iterator[T]:  # type: ignore
+    def __iter__(self) -> Iterator[_T]:  # type: ignore
         return iter(self.root)
 
     @overload
-    def __getitem__(self, index: int) -> T: ...
+    def __getitem__(self, index: int) -> _T: ...
 
     @overload
     def __getitem__(self, index: slice) -> Self: ...
 
-    def __getitem__(self, index) -> T | Self:
+    def __getitem__(self, index) -> _T | Self:
         match index:
             case int() | slice():
                 return self.root[index]  # type: ignore

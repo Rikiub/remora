@@ -63,12 +63,12 @@ def _parse_ydl_subtitles(data):
     return data
 
 
-T = TypeVar("T", bound=Subtitle, default=Subtitle)
+_T = TypeVar("_T", bound=Subtitle, default=Subtitle)
 
 
-class SubtitleList(YDLSerializable, BaseList[T], Generic[T]):
+class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
     root: Annotated[
-        list[T],
+        list[_T],
         BeforeValidator(_parse_ydl_subtitles),
     ] = []
 

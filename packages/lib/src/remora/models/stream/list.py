@@ -47,10 +47,10 @@ def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
 
 
 _LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
-T = TypeVar("T", default=_DiscriminatedStream, bound=_DiscriminatedStream)
+_T = TypeVar("_T", default=_DiscriminatedStream, bound=_DiscriminatedStream)
 
 
-class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
+class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
     """List of streams which can be filtered."""
 
     def filter(
@@ -166,7 +166,7 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
             )
         )
 
-    def get_by_id(self, id: str) -> T:
+    def get_by_id(self, id: str) -> _T:
         """Get `Stream` by `id`.
 
         Raises:
@@ -179,7 +179,7 @@ class StreamList(BaseList[Annotated[T, _LogOnErrorOmit]], Generic[T]):
         except StopIteration:
             raise KeyError(f"Stream with id '{id}' has not been found")
 
-    def get_closest_quality(self, quality: int) -> T:
+    def get_closest_quality(self, quality: int) -> _T:
         if not self.root:
             raise ValueError("Cannot find closest quality in an empty list")
 

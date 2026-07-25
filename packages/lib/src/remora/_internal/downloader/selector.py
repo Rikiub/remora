@@ -5,7 +5,7 @@ from remora.models.media.item import Media
 from remora.models.stream.item import AudioStream, Stream, VideoStream
 from remora.models.stream.list import StreamList
 
-T = TypeVar("T", bound=Stream)
+_T = TypeVar("_T", bound=Stream)
 
 
 class StreamSelector:
@@ -24,7 +24,7 @@ class StreamSelector:
         video = self.extract_best(media.streams, VideoStream)
         return video, audio
 
-    def extract_best(self, streams: StreamList, type: type[T]) -> T | None:
+    def extract_best(self, streams: StreamList, type: type[_T]) -> _T | None:
         # Get type
         candidates = (
             streams.videos() if issubclass(type, VideoStream) else streams.audio_only()
@@ -44,4 +44,4 @@ class StreamSelector:
         else:
             result = candidates[0]
 
-        return cast(T, result)
+        return cast(_T, result)
