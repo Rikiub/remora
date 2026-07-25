@@ -8,25 +8,39 @@ from remora.types import StrPath
 
 
 def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path:
+    """Get FFmpeg binary from path or system.
+
+    Raises:
+        FFmpegNotFoundError: FFmpeg binary not found.
+    """
+
     ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
 
     if not ffmpeg_path:
-        raise FileNotFoundError("FFmpeg path is needed for use processors.")
+        raise FFmpegNotFoundError("FFmpeg path not provided.")
 
     return validate_ffmpeg(ffmpeg_path)
 
 
 @cache
 def find_global_ffmpeg() -> Path | None:
+    """Try to find FFmpeg binary from system."""
+
     path = shutil.which("ffmpeg")
     return Path(path) if path else None
 
 
 @cache
 def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
+    """Validate provided FFmpeg binary.
+
+    Raises:
+        FFmpegNotFoundError: Issue when try to execute the binary.
+    """
+
     # Ensure the path is not None
     if not ffmpeg_path:
-        raise FFmpegNotFoundError("FFmpeg executable not founded.")
+        raise FFmpegNotFoundError("FFmpeg executable not found.")
 
     ffmpeg_path = Path(ffmpeg_path)
 

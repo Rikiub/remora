@@ -15,7 +15,7 @@ def clear_caches():
 
 def test_validate_ffmpeg_none():
     """Test that passing None raises the correct error."""
-    with pytest.raises(FFmpegNotFoundError, match="FFmpeg executable not founded."):
+    with pytest.raises(FFmpegNotFoundError, match="FFmpeg executable not found."):
         validate_ffmpeg(None)
 
 

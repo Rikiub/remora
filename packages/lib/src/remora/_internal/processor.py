@@ -1,12 +1,12 @@
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Self
 
 from anyio.to_thread import run_sync
 
 from remora._internal.ffmpeg import get_ffmpeg
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
-from remora.exceptions import FFmpegNotFoundError
 from remora.models.container.extension.audio import AudioExtensionType
 from remora.models.container.extension.types import ExtensionType
 from remora.models.container.extension.video import VideoExtensionType
@@ -21,23 +21,14 @@ class MediaProcessor:
         self.file_path = Path(file_path)
 
         # Validate FFmpeg
-        try:
-            ffmpeg_path = get_ffmpeg(ffmpeg_path)
-        except FileNotFoundError as e:
-            raise FFmpegNotFoundError(str(e)) from e
-
-        if not self.file_path.is_file():
-            raise FileNotFoundError(f'"{self.file_path.name}" not is a file.')
-
-        # Set ffmpeg
-        self.ffmpeg_path = Path(ffmpeg_path)
+        self.ffmpeg_path = get_ffmpeg(ffmpeg_path)
         self._prc = YDLProcessor(self.file_path, self.ffmpeg_path)
 
     @property
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, format: str | ExtensionType):
+    async def change_container(self, format: str | ExtensionType) -> Self:
         result = await run_sync(self._prc.video_remuxer, str(format))
         self._update_file(result)
         return self
@@ -46,12 +37,12 @@ class MediaProcessor:
         self,
         format: str | AudioExtensionType | None = None,
         quality: int | None = None,
-    ):
+    ) -> Self:
         result = await run_sync(self._prc.extract_audio, str(format), quality)
         self._update_file(result)
         return self
 
-    async def embed_metadata(self, media: Media):
+    async def embed_metadata(self, media: Media) -> Self:
         info = media.to_ydl_dict()
         if media.music:
             info |= _media_to_ydl_music(media, media.music)
@@ -60,12 +51,12 @@ class MediaProcessor:
         self._update_file(result)
         return self
 
-    async def embed_thumbnail(self, thumbnail: StrPath, square: bool = False):
+    async def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
         result = await run_sync(self._prc.embed_thumbnail, thumbnail, square)
         self._update_file(result)
         return self
 
-    async def embed_subtitles(self, subtitles: Sequence[StrPath]):
+    async def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
         result = await run_sync(self._prc.embed_subtitle, subtitles)
         self._update_file(result)
         return self
@@ -75,7 +66,7 @@ class MediaProcessor:
         video: tuple[VideoStream, Path],
         audio: tuple[AudioStream, Path],
         merge_format: VideoExtensionType,
-    ):
+    ) -> Self:
         real_streams: list[RequestedFormat] = []
 
         for fmt in (video, audio):
@@ -93,10 +84,6 @@ class MediaProcessor:
         )
 
         self._update_file(result)
-        return self
-
-    async def fix_m4a(self):
-        await run_sync(self._prc.fix_m4a)
         return self
 
     def _update_file(self, processor: YDLProcessor):

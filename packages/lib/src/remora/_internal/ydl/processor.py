@@ -14,9 +14,11 @@ from yt_dlp.postprocessor.ffmpeg import (
     FFmpegVideoRemuxerPP,
 )
 
+from remora._internal.ffmpeg import validate_ffmpeg
+from remora._internal.ydl.messages import sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
-from remora.exceptions import FFmpegNotFoundError, ProcessorError
+from remora.exceptions import ProcessorError
 from remora.models.container.extension.audio import AudioExtension
 from remora.types import StrPath
 
@@ -25,8 +27,9 @@ def catch(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except FFmpegPostProcessorError as e:
-            raise ProcessorError(str(e))
+        except FFmpegPostProcessorError as error:
+            error = sanitize_ydl_error(error)
+            raise ProcessorError(str(error))
 
     return wrapper
 
@@ -40,10 +43,7 @@ class RequestedFormat(TypedDict):
 class YDLProcessor:
     def __init__(self, file_path: StrPath, ffmpeg_path: StrPath | None = None) -> None:
         self.file_path = Path(file_path)
-        self.ffmpeg_path = ffmpeg_path
-
-        if not self.ffmpeg_path:
-            raise FFmpegNotFoundError("FFmpeg is needed for use processors.")
+        self.ffmpeg_path = validate_ffmpeg(ffmpeg_path)
 
         if not self.file_extension:
             raise ValueError(f'"{self.file_path}" must have a file extension')
@@ -79,7 +79,7 @@ class YDLProcessor:
         return self
 
     @catch
-    def embed_metadata(self, data: YDLExtractInfo):
+    def embed_metadata(self, data: YDLExtractInfo) -> Self:
         pp = FFmpegMetadataPP(
             None,
             add_metadata=True,
@@ -175,7 +175,7 @@ class YDLProcessor:
         return self
 
     @catch
-    def fix_m4a(self, _format=None):
+    def fix_m4a(self, _format=None) -> Self:
         if self.file_extension == AudioExtension.M4A:
             pp_fix = FFmpegFixupM4aPP()
             _, data = pp_fix.run(self._params | {"container": "m4a_dash"})
