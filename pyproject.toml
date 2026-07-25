@@ -31,7 +31,6 @@ select = [
     "UP", # pyupgrade (modernize)
     "I",  # isort (sort imports)
 ]
-ignore = ["E501"] # ignore "line too long"
 
 # ty
 [tool.ty.rules]

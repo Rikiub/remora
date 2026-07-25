@@ -168,7 +168,8 @@ class YDLProcessor:
             )
         except FFmpegPostProcessorError:
             raise ProcessorError(
-                f"Files with extensions {', '.join(extensions)} are incompatibles and can't be merged"
+                f"Files with extension {', '.join(extensions)} "
+                "are incompatible and can't be merged"
             )
 
         self._update_filepath(data)

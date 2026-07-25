@@ -27,7 +27,10 @@ async def test_streams_and_types(streams: StreamList):
 
 # Audio streams validation
 async def test_audio_streams_validation(streams: StreamList):
-    """Validate properties specific to AudioStream objects (e.g., format_id 139, 140, 249, 251)."""
+    """
+    Validate properties specific to AudioStream objects.
+    (e.g., format_id 139, 140, 249, 251).
+    """
 
     audios = streams.audio_only()
     assert len(audios) > 0, "No audio-only streams were parsed."
@@ -53,7 +56,10 @@ async def test_audio_streams_validation(streams: StreamList):
 
 # VIDEO STREAMS VALIDATION
 async def test_video_streams_validation(streams: StreamList):
-    """Validate properties specific to VideoStream objects (e.g., format_id 160, 133, 134, etc)."""
+    """
+    Validate properties specific to VideoStream objects.
+    (e.g., format_id 160, 133, 134, etc).
+    """
 
     videos = streams.video_only()
     assert len(videos) > 0, "No standard video-only streams were parsed."
@@ -80,7 +86,10 @@ async def test_video_streams_validation(streams: StreamList):
 
 # MUXED STREAMS VALIDATION
 async def test_muxed_streams_validation(streams: StreamList):
-    """Validate properties specific to MuxedStream (Video + Audio combined, e.g., format_id 18)."""
+    """
+    Validate properties specific to MuxedStream.
+    (Video + Audio combined, e.g., format_id 18).
+    """
 
     muxeds = streams.muxed()
 
@@ -108,7 +117,10 @@ async def test_muxed_streams_validation(streams: StreamList):
 
 # EDGE CASES & SIZE TYPE INFERENCE
 async def test_stream_size_type_mapping(streams: StreamList):
-    """Validate that size_type is correctly inferred based on filesize vs filesize_approx."""
+    """
+    Validate that `size_type` is correctly inferred.
+    The compare is based on `filesize` vs `filesize_approx`.
+    """
 
     for stream in streams:
         if stream.size_bytes is None:

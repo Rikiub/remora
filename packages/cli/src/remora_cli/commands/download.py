@@ -1,3 +1,4 @@
+import textwrap
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -44,17 +45,20 @@ async def download(
         Option(
             "--format",
             "-f",
-            help="""File type to request.\n
-            - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
-            - To convert, select a file [green]extension[/]. [grey62](Slow)[/]
-            """,
-            prompt="""
-What format you want request?
+            help="""
+                File type to request.\n
+                - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
+                - To convert, select a file [green]extension[/]. [grey62](Slow)[/]
+                """,  # noqa: E501
+            prompt=textwrap.dedent(
+                """
+                What format you want request?
 
-- To get BEST, select 'video' or 'audio' (Fast)
-- To convert, select a file extension (Slow)
-
-""",
+                - To get BEST, select 'video' or 'audio' (Fast)
+                - To convert, select a file extension (Slow)
+                
+                """
+            ),
             prompt_required=False,
             show_default=False,
             rich_help_panel=HelpPanel.file,

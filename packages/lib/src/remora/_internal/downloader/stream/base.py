@@ -24,7 +24,9 @@ class BaseStreamDownloader(ABC):
         stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"
 
         logger.bind(status="downloading").debug(
-            'Downloading {stream_type} stream "{stream_id}" (extension:{extension} | quality:{quality}) with "{downloader}"',
+            'Downloading {stream_type} stream "{stream_id}" (extension:{extension} '
+            "| quality:{quality}) "
+            'with "{downloader}',
             stream_id=self.stream.id,
             stream_type=stream_type,
             quality=self.stream.quality,

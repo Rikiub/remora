@@ -31,7 +31,9 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
     logger.add(
         sys.stderr,
         level=level,
-        format="<cyan>{time:HH:mm:ss}</cyan> | <level>{level: <8}</level> | <level>{message}</level>",
+        format="<cyan>{time:HH:mm:ss}</cyan> "
+        "| <level>{level: <8}</level> "
+        "| <level>{message}</level>",
         enqueue=True,
     )
 

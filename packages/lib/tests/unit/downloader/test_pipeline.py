@@ -123,7 +123,10 @@ async def test_download_pipeline_muxed(
     mock_pipeline: MockPipeline,
     dummy_media: Media,
 ):
-    """Test that the pipeline correctly extracts, downloads and completes from video and audio."""
+    """
+    Test that the pipeline correctly extracts, downloads and completes
+    from video and audio.
+    """
 
     pipeline = mock_pipeline(dummy_media)
 

@@ -16,11 +16,11 @@ class DownloadOptions(RemoraBaseModel):
 
     If FFmpeg is not installed, options marked with (FFmpeg) will not be available.
 
-    Args:
+    Arguments:
         output_template: Directory where to save files.
         format: Target file format to search or convert if is a extension.
         quality: Target quality to try filter.
-        ffmpeg_path: Path to FFmpeg executable. By default, it will get the global installed FFmpeg.
+        ffmpeg_path: Path to FFmpeg executable.
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
     """
 

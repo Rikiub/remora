@@ -32,13 +32,19 @@ def setup_logging(level: logs.LoggingLevels):
 
     # Structured Logs
     """
+    format = (
+        "<cyan>{time:HH:mm:ss}</cyan> "
+        + "| <level>{level: <8}</level> "
+        + "| <level>{message}</level>"
+    )
+
     logger.add(
         "logs/trace.jsonl",
         level="DEBUG",
         rotation="10 MB",
         serialize=True,
         enqueue=True,
-        format="<cyan>{time:HH:mm:ss}</cyan> | <level>{level: <8}</level> | <level>{message}</level>",
+        format=format,
         filter={
             "remora_cli": "CRITICAL",
             "remora": "DEBUG",

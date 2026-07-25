@@ -19,7 +19,12 @@ from remora._internal.ffmpeg import get_ffmpeg
 from remora._internal.path import get_tempfile
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
-from remora.exceptions import DownloaderError, MetadataDownloaderError, ProcessorError
+from remora.exceptions import (
+    DownloaderError,
+    FFmpegNotFoundError,
+    MetadataDownloaderError,
+    ProcessorError,
+)
 from remora.models.container.extension.audio import AudioExtension
 from remora.models.container.extension.types import get_extension
 from remora.models.container.extension.video import VideoExtension
@@ -66,7 +71,7 @@ class DownloadPipeline:
 
         try:
             self.ffmpeg_path = get_ffmpeg(self.config.ffmpeg_path)
-        except FileNotFoundError:
+        except FFmpegNotFoundError:
             self.ffmpeg_path = None
             logger.debug("FFmpeg binary not found, processing disabled")
 

@@ -20,7 +20,8 @@ def streams() -> StreamList:
 
     return StreamList(
         [
-            # Covers: muxed, find_by_id(id="2"), quality=720, protocol="https", extension="mp4"
+            # Covers: muxed, find_by_id(id="2")
+            # Covers: quality=720, protocol="https", extension="mp4"
             MuxedStream(
                 id="2",
                 url=URL,
@@ -127,7 +128,10 @@ def test_filter_general(streams: StreamList, attribute, filter_value):
 
 
 def test_filter_language(streams: StreamList):
-    """Test filter of partial languages keys. Should be able of found audio streams with `es-419` like keys."""
+    """
+    Test filter of partial languages keys.
+    Should be able of found audio streams with `es-419` like keys.
+    """
 
     language = "es"
     filtered = streams.filter(language=language)
