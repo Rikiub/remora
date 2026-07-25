@@ -55,8 +55,8 @@ class VideoInfo(RemoraBaseModel):
 
 # STREAMS
 class ExtractorMeta(RemoraBaseModel):
-    downloader: Annotated[dict, Field(alias="downloader_options")] = {}
-    headers: Annotated[dict, Field(alias="http_headers")] = {}
+    downloader: Annotated[dict, Field(alias="downloader_options")] = {}  # noqa: RUF012
+    headers: Annotated[dict, Field(alias="http_headers")] = {}  # noqa: RUF012
     cookies: str | None = None
 
 

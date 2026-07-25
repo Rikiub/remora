@@ -49,7 +49,7 @@ async def download(
                 File type to request.\n
                 - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
                 - To convert, select a file [green]extension[/]. [grey62](Slow)[/]
-                """,  # noqa: E501
+                """,
             prompt=textwrap.dedent(
                 """
                 What format you want request?
@@ -128,9 +128,8 @@ async def download(
         remora = Remora(download_options=config)
 
     async for target, result in extract_queries(query, remora.extractor):
-        if isinstance(result, (Playlist, SearchList)):
-            if not result.entries.medias():
-                logger.error("'{}' don't have streams to download", target)
+        if isinstance(result, (Playlist, SearchList)) and not result.entries.medias():
+            logger.error("'{}' don't have streams to download", target)
 
         if isinstance(result, SearchList):
             result = result.entries.medias()[0]

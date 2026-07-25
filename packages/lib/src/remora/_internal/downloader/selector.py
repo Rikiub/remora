@@ -34,9 +34,10 @@ class StreamSelector:
             return None
 
         # Filter by extension
-        if self.config.format_target:
-            if filtered := candidates.filter(extension=self.config.format_target):
-                candidates = filtered
+        if self.config.format_target and (
+            filtered := candidates.filter(extension=self.config.format_target)
+        ):
+            candidates = filtered
 
         if self.config.quality:
             # Resolve Quality

@@ -44,12 +44,11 @@ class BatchStreamDownloader:
             BatchStreamEvent
         ](30)
 
-        async with receive_stream:
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(self._producer)
+        async with receive_stream, anyio.create_task_group() as tg:
+            tg.start_soon(self._producer)
 
-                async for event in receive_stream:
-                    yield event
+            async for event in receive_stream:
+                yield event
 
     async def _producer(self):
         async with self._send_stream:

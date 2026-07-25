@@ -44,11 +44,11 @@ class LazyMedia(ExtractID):
 
     # Metadata
     duration: float | None = None
-    heatmap: Annotated[list[Heatmap], EnsureList] = []
+    heatmap: Annotated[list[Heatmap], EnsureList] = []  # noqa: RUF012
     music: Annotated[MusicMetadata | None, EnsureNone] = None
 
-    categories: Annotated[list[str], EnsureList] = []
-    tags: Annotated[list[str], EnsureList] = []
+    categories: Annotated[list[str], EnsureList] = []  # noqa: RUF012
+    tags: Annotated[list[str], EnsureList] = []  # noqa: RUF012
 
     thumbnails: Annotated[
         ThumbnailList,
@@ -97,7 +97,7 @@ class Media(LazyMedia):
     """Online media representation."""
 
     subtitles: SubtitleList = SubtitleList()
-    chapters: Annotated[list[Chapter], EnsureList] = []
+    chapters: Annotated[list[Chapter], EnsureList] = []  # noqa: RUF012
     streams: Annotated[
         StreamList,
         AfterValidator(lambda list: list.sorted_by("best")),

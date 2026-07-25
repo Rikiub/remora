@@ -91,8 +91,4 @@ def get_format(record) -> str:
 def remora_only_debug(record):
     is_remora = record["name"].startswith("remora.")
     is_debug = record["level"].name == "DEBUG"
-
-    if is_remora and not is_debug:
-        return False
-
-    return True
+    return is_remora and not is_debug

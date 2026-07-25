@@ -9,7 +9,7 @@ from loguru import logger
 
 from remora.types import APP_NAME
 
-__all__ = ["LoggingLevels", "enable", "disable", "setup"]
+__all__ = ["LoggingLevels", "disable", "enable", "setup"]
 
 LoggingLevels = Literal["DEBUG", "SUCCESS", "INFO", "WARNING", "ERROR", "CRITICAL"]
 

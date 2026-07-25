@@ -33,12 +33,12 @@ class MusicMetadata(Metadata, YDLSerializable):
         EnsureList,
         ValidateArtists,
         Field(alias="artist"),
-    ] = []
+    ] = []  # noqa: RUF012
     album: str | None = None
     album_artists: Annotated[
         list[str],
         EnsureList,
         ValidateArtists,
         Field(alias="album_artist"),
-    ] = []
-    genres: list[str] = []
+    ] = []  # noqa: RUF012
+    genres: list[str] = []  # noqa: RUF012

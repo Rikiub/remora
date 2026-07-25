@@ -72,10 +72,9 @@ def extract_status_code(
     Checks object attributes first, falls back to regex.
     """
 
-    if isinstance(error, ExtractorError):
-        if isinstance(error.cause, HTTPError):
-            status_code = error.cause.status
-            return status_code
+    if isinstance(error, ExtractorError) and isinstance(error.cause, HTTPError):
+        status_code = error.cause.status
+        return status_code
 
     if isinstance(error, DownloadError):
         if error.exc_info and error.exc_info[1]:

@@ -42,12 +42,11 @@ class YDLStreamDownloader(BaseStreamDownloader):
             StreamEvent
         ](30)
 
-        async with receive_stream:
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(self._producer)
+        async with receive_stream, anyio.create_task_group() as tg:
+            tg.start_soon(self._producer)
 
-                async for event in receive_stream:
-                    yield event
+            async for event in receive_stream:
+                yield event
 
     async def _producer(self):
         from remora._internal.ydl.downloader import download_format
@@ -85,11 +84,8 @@ class YDLStreamDownloader(BaseStreamDownloader):
                 self.total_segments = d.get("fragment_count")
 
                 if total_bytes:
-                    if downloaded_bytes > self.downloaded_bytes:
-                        self.downloaded_bytes = downloaded_bytes
-
-                    if total_bytes > self.total_bytes:
-                        self.total_bytes = total_bytes
+                    self.downloaded_bytes = max(self.downloaded_bytes, downloaded_bytes)
+                    self.total_bytes = max(self.total_bytes, total_bytes)
 
                 speed = d.get("speed") or 0
                 elapsed = d.get("elapsed") or 0

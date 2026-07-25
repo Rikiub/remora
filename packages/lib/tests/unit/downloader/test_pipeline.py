@@ -80,8 +80,8 @@ def mock_pipeline(
         mocker.patch(f"{MODULE_PATH}.shutil.move")
 
         # Mock Stream Selectors to return dummy streams
-        video = media.streams[0] if 0 <= 0 < len(media.streams) else None
-        audio = media.streams[1] if 0 <= 1 < len(media.streams) else None
+        video = media.streams[0] if 0 <= 0 < len(media.streams) else None  # noqa: PLR0133
+        audio = media.streams[1] if 0 <= 1 < len(media.streams) else None  # noqa: PLR0133
 
         mock_selector = mocker.patch(f"{MODULE_PATH}.{StreamSelector.__name__}")
         mock_selector.return_value.resolve.return_value = (video, audio)

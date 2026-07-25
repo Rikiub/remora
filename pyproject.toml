@@ -38,3 +38,7 @@ extend-select = [
     "UP", # pyupgrade (modernize)
     "I",  # isort (sort imports)
 ]
+ignore = [
+    "EXE002", # Ignore executable warning
+    "RUF100", # Ignore comments warnings
+]

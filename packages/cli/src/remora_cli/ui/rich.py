@@ -11,12 +11,15 @@ CONSOLE = Console(stderr=True)
 def smart_print(
     content: Any,
     pager: bool = True,
-    console: Console = Console(force_terminal=True),
+    console: Console | None = None,
 ):
     """Catch output and open to system pager if content is too long.
 
     By default will set environment variables to ensure system pager can process colors.
     """
+
+    # Init Console
+    console = console or Console(force_terminal=True)
 
     # Set colors on LESS pager (default in Linux/macOS)
     os.environ["LESS"] = "-RF"

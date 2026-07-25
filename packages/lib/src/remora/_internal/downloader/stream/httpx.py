@@ -22,14 +22,16 @@ from remora.types import DEFAULT_RETRIES, StrPath
 
 
 class HttpxStreamDownloader(BaseStreamDownloader):
-    SUPPORTED_PROTOCOLS = {
-        Protocol.HTTP,
-        Protocol.HTTPS,
-        Protocol.M3U8,
-        Protocol.M3U8_NATIVE,
-        Protocol.HTTP_DASH_SEGMENTS,
-        Protocol.HTTP_DASH_SEGMENTS_GENERATOR,
-    }
+    SUPPORTED_PROTOCOLS = frozenset(
+        {
+            Protocol.HTTP,
+            Protocol.HTTPS,
+            Protocol.M3U8,
+            Protocol.M3U8_NATIVE,
+            Protocol.HTTP_DASH_SEGMENTS,
+            Protocol.HTTP_DASH_SEGMENTS_GENERATOR,
+        }
+    )
 
     def __init__(
         self,
@@ -72,12 +74,11 @@ class HttpxStreamDownloader(BaseStreamDownloader):
             StreamEvent
         ](20)
 
-        async with receive_stream:
-            async with anyio.create_task_group() as tg:
-                tg.start_soon(self._producer)
+        async with receive_stream, anyio.create_task_group() as tg:
+            tg.start_soon(self._producer)
 
-                async for event in receive_stream:
-                    yield event
+            async for event in receive_stream:
+                yield event
 
     async def _producer(self):
         async with self._send_stream:
@@ -100,7 +101,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                         raise TypeError(
                             f"Unable to handle protocol: {self.stream.protocol}"
                         )
-            except* Exception as eg:
+            except* (httpx.HTTPError, OSError, ValueError, TypeError) as eg:
                 error = eg.exceptions[0]
                 status_code = 0
 

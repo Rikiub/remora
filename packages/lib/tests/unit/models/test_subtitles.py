@@ -51,7 +51,7 @@ async def test_embedded(subs: SubtitleList):
 
 
 async def test_languages(subs: SubtitleList):
-    assert all(key in subs.languages() for key in {"en", "es-419"})
+    assert all(key in subs.languages() for key in ("en", "es-419"))
 
 
 # Filters: General

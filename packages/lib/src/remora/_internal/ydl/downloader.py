@@ -92,10 +92,11 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
 def download_subtitles(
     filepath: StrPath,
     subtitles: YDLExtractInfo,
-    automatic_captions: YDLExtractInfo = {},
+    automatic_captions: YDLExtractInfo | None = None,
 ) -> list[Path]:
-    ydl = YDL({"writesubtitles": True, "allsubtitles": True})
+    automatic_captions = automatic_captions or {}
 
+    ydl = YDL({"writesubtitles": True, "allsubtitles": True})
     subs = ydl.process_subtitles(
         str(filepath),
         subtitles,

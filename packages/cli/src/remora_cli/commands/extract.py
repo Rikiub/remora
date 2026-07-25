@@ -101,7 +101,7 @@ async def extract(
             autocompletion=complete_template_key,
             callback=parse_keys,
         ),
-    ] = [],
+    ] = [],  # noqa: B006
     exclude: Annotated[
         list[str],
         Option(
@@ -110,7 +110,7 @@ async def extract(
             autocompletion=complete_template_key,
             callback=parse_keys,
         ),
-    ] = [],
+    ] = [],  # noqa: B006
 ):
     """Extract metadata from [green]URL[/] or search [green]service[/]."""
 

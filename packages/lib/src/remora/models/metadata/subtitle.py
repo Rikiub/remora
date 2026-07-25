@@ -70,7 +70,7 @@ class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
     root: Annotated[
         list[_T],
         BeforeValidator(_parse_ydl_subtitles),
-    ] = []
+    ] = []  # noqa: RUF012
 
     def languages(self) -> set[str]:
         """Return all unique language codes available."""
