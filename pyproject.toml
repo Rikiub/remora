@@ -1,12 +1,17 @@
 [dependency-groups]
-dev = ["anyio>=4.12.1", "pytest>=9.0.0", "pytest-mock>=3.15.1", "ruff>=0.15.0"]
+dev = [{ include-group = "lint" }, { include-group = "test" }]
+lint = ["ruff>=0.15.0", "ty>=0.0.63"]
+test = ["anyio>=4.12.1", "pytest>=9.0.0", "pytest-mock>=3.15.1"]
 
 # pytest
 [tool.pytest]
 strict = true
 anyio_mode = "auto"
 addopts = ["--import-mode=importlib", "-m", "not integration"]
-markers = ["integration: mark a test as online", "unit: mark a test as offline"]
+markers = [
+    "integration: tests that realize real network calls and access to filesystem",
+    "unit: tests that run offline and simulate core operations",
+]
 
 # uv
 [tool.uv.sources]
@@ -20,18 +25,16 @@ members = ["packages/*"]
 include = ["packages"]
 typeCheckingMode = "standard"
 
+# ty
+[tool.ty.rules]
+unused-type-ignore-comment = "ignore"
+
 # ruff
 [tool.ruff]
 src = ["packages/*/src"]
 
 [tool.ruff.lint]
-select = [
-    "E",  # pycodestyle (ruff default)
-    "F",  # pyflakes (ruff default)
+extend-select = [
     "UP", # pyupgrade (modernize)
     "I",  # isort (sort imports)
 ]
-
-# ty
-[tool.ty.rules]
-unused-type-ignore-comment = "ignore"
