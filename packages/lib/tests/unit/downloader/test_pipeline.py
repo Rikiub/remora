@@ -24,9 +24,8 @@ from remora.models.event.stream import (
     StreamContinuous,
 )
 from remora.models.media.item import Media
-from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
-from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
-from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
+from remora.models.metadata.subtitle import SubtitleList
+from remora.models.metadata.thumbnail import ThumbnailList
 
 MODULE_PATH = "remora._internal.downloader.pipeline"
 URL = "https://example.com"
@@ -56,49 +55,6 @@ class FakeStreamDownloader(StreamDownloader):
     async def download(self):
         yield StreamContinuous(total_bytes=50000)
         yield StreamCompleted(file_path=Path())
-
-
-def get_dummy_media() -> Media:
-    return Media(
-        extractor="Youtube",
-        id="test_123",
-        title="Mock Video",
-        url="https://youtube.com/watch?v=test",
-        thumbnails=[
-            Thumbnail(
-                id="1",
-                url=URL,
-            )
-        ],
-        subtitles=[
-            ExternalSubtitle(
-                url=URL,
-                name="English",
-                language="en",
-                extension="vtt",
-            ),
-        ],
-        streams=[
-            VideoStream(
-                id="1",
-                url=URL,
-                protocol="https",
-                size_type="exact",
-                size_bytes=50000,
-                extension="mp4",
-                video=VideoInfo(codec="vp9"),
-            ),
-            AudioStream(
-                id="2",
-                url=URL,
-                protocol="https",
-                size_type="exact",
-                size_bytes=4000,
-                extension="m4a",
-                audio=AudioInfo(codec="m4a"),
-            ),
-        ],
-    )
 
 
 MockPipeline = Callable[[Media], DownloadPipeline]
@@ -163,11 +119,13 @@ def mock_pipeline(
 
 
 # Tests
-async def test_download_pipeline_muxed(mock_pipeline: MockPipeline):
+async def test_download_pipeline_muxed(
+    mock_pipeline: MockPipeline,
+    dummy_media: Media,
+):
     """Test that the pipeline correctly extracts, downloads and completes from video and audio."""
 
-    media = get_dummy_media()
-    pipeline = mock_pipeline(media)
+    pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
     events = []
@@ -189,12 +147,14 @@ async def test_download_pipeline_muxed(mock_pipeline: MockPipeline):
     assert completion_event.result == "success"
 
 
-async def test_download_pipeline_single(mock_pipeline: MockPipeline):
+async def test_download_pipeline_single(
+    mock_pipeline: MockPipeline,
+    dummy_media: Media,
+):
     """Test that the pipeline correctly extracts, downloads and completes."""
 
-    media = get_dummy_media()
-    media.streams = media.streams.audio_only()  # ty:ignore[invalid-assignment]
-    pipeline = mock_pipeline(media)
+    dummy_media.streams = dummy_media.streams.audio_only()  # ty:ignore[invalid-assignment]
+    pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
     events = []
@@ -207,6 +167,7 @@ async def test_download_pipeline_single(mock_pipeline: MockPipeline):
 async def test_full_processor_metadata(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
+    dummy_media: Media,
 ):
     """Test that the pipeline correctly applies post-processing."""
 
@@ -214,8 +175,7 @@ async def test_full_processor_metadata(
     processor: MediaProcessor = mock_processor(MODULE_PATH)
 
     # Init pipeline
-    media = get_dummy_media()
-    pipeline = mock_pipeline(media)
+    pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
     async for _ in pipeline.download():
@@ -231,6 +191,7 @@ async def test_full_processor_metadata(
 async def test_empty_processor_metadata(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
+    dummy_media: Media,
 ):
     """Test that the pipeline correctly extracts, downloads and completes."""
 
@@ -239,12 +200,10 @@ async def test_empty_processor_metadata(
 
     # Init pipeline
     # And remove metadata
-    media = get_dummy_media()
+    dummy_media.subtitles = SubtitleList()
+    dummy_media.thumbnails = ThumbnailList()
 
-    media.subtitles = SubtitleList()
-    media.thumbnails = ThumbnailList()
-
-    pipeline = mock_pipeline(media)
+    pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
     async for _ in pipeline.download():
