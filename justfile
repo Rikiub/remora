@@ -3,19 +3,50 @@ default:
     @just --list
 
 # ==============================
+# Application
+# ==============================
+
+[doc('Run CLI app')]
+[group("app")]
+run *args:
+    -@uv run remora {{ args }}
+
+# ==============================
 # Environment
 # ==============================
 
-[group("env")]
 [doc('Sync dependencies and set up the virtual environment')]
+[group("env")]
 setup:
     uv sync
 
-[group('env')]
 [doc('Upgrade all dependencies to their latest versions based on pyproject.toml')]
+[group('env')]
 upgrade:
     uv lock --upgrade
     uv sync
+
+# ==============================
+# Maintenance
+# ==============================
+
+[doc('Clean cache directories, bytecode, and temp files')]
+[group("maintenance")]
+clean:
+    # Clean tool caches
+    rm -rf .ruff_cache/
+    rm -rf .pytest_cache/
+    
+    # Clean project temp folders
+    rm -rf tmp/
+    
+    # Clean build artifacts
+    rm -rf build/ dist/ *.egg-info/
+    
+    # Clean Python bytecode 
+    find . -type d -name "__pycache__" -exec rm -rf {} +
+    find . -type f -name "*.pyc" -delete
+
 
 # ==============================
 # Testing
@@ -23,13 +54,13 @@ upgrade:
 
 alias test := test-unit
 
-[group('test')]
 [doc('Run integration tests with pytest')]
+[group('test')]
 test-integration *args:
     uv run pytest -m "integration" {{ args }}
 
-[group('test')]
 [doc('Run unit tests with pytest')]
+[group('test')]
 test-unit *args:
     uv run pytest {{ args }}
 
@@ -37,27 +68,27 @@ test-unit *args:
 # Code Quality & Formatting
 # ==============================
 
-[group('quality')]
 [doc('Format code with Ruff')]
+[group('quality')]
 format:
     uv run ruff format .
 
+[doc('Lint code and apply safe fixes with Ruff')]
 [group('quality')]
-[doc('Lint code with Ruff and apply safe fixes')]
 lint:
     uv run ruff check . --fix
 
-[group('quality')]
 [doc('Run static type checking and apply fixes with ty')]
+[group('quality')]
 type:
     uv run ty check --fix
 
-[group('quality')]
 [doc('Run all formatting and apply safe fixes (formatting, linting, types)')]
+[group('quality')]
 fix: format lint type
 
-[group('quality')]
 [doc('Run all quality checks without changes (formatting, linting, types, unit tests)')]
+[group('quality')]
 check:
     uv run ruff format --check .
     uv run ruff check .
