@@ -38,18 +38,18 @@ upgrade:
 [group("maintenance")]
 clean:
     # Clean tool caches
-    rm -rf .ruff_cache/
-    rm -rf .pytest_cache/
+    -rm -rf .ruff_cache/
+    -rm -rf .pytest_cache/
     
     # Clean project temp folders
-    rm -rf tmp/
+    -rm -rf tmp/
     
     # Clean build artifacts
-    rm -rf build/ dist/ *.egg-info/
+    -rm -rf build/ dist/ *.egg-info/
     
     # Clean Python bytecode 
-    find . -type d -name "__pycache__" -exec rm -rf {} +
-    find . -type f -name "*.pyc" -delete
+    -find . -type d -name "__pycache__" -exec rm -rf {} +
+    -find . -type f -name "*.pyc" -delete
 
 
 # ==============================
