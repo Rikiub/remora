@@ -13,9 +13,7 @@ temp_dir := "tmp/"
 [group("app")]
 run *args:
     @mkdir -p {{ temp_dir }}
-    @cd {{ temp_dir }}
-    
-    -@uv run remora "$@"
+    -@cd {{ temp_dir }} && uv run remora "$@"
 
 # ==============================
 # Environment
