@@ -5,7 +5,7 @@ from remora import logs
 from remora_cli.ui.rich import CONSOLE
 
 
-def setup_logging(level: logs.LoggingLevels):
+def setup_logging(level: logs.LoggingLevels) -> None:
     logs.enable()
 
     is_verbose = level != "INFO"
@@ -88,7 +88,7 @@ def get_format(record) -> str:
     return f"{icon} {status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
 
 
-def remora_only_debug(record):
+def remora_only_debug(record) -> bool:
     is_remora = record["name"].startswith("remora.")
     is_debug = record["level"].name == "DEBUG"
-    return is_remora and not is_debug
+    return not (is_remora and not is_debug)
