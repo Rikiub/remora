@@ -6,9 +6,13 @@ default:
 # Application
 # ==============================
 
-[doc('Run CLI app')]
+temp_dir := "tmp/"
+
+[doc('Run CLI app isolated in tmp/ directory')]
 [group("app")]
 run *args:
+    @mkdir -p {{ temp_dir }}
+    @cd {{ temp_dir }}
     -@uv run remora {{ args }}
 
 # ==============================
