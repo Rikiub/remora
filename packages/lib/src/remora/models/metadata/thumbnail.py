@@ -84,7 +84,7 @@ class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
         if attribute == "best":
             filter = self._sort_by_best_filter
         else:
-            filter = lambda s: getattr(s, attribute)  # noqa: E731
+            filter = lambda s: getattr(s, attribute)
 
         return self.__class__(
             sorted(

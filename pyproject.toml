@@ -40,5 +40,4 @@ extend-select = [
 ]
 ignore = [
     "EXE002", # Ignore executable warning
-    "RUF100", # Ignore comments warnings
 ]

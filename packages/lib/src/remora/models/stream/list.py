@@ -152,11 +152,11 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
         if attribute == "best":
             filter = get_stream_rank
         elif attribute == "video_codec":
-            filter = lambda codec: get_codec_rank(codec, "video")  # noqa: E731
+            filter = lambda codec: get_codec_rank(codec, "video")
         elif attribute == "audio_codec":
-            filter = lambda codec: get_codec_rank(codec, "audio")  # noqa: E731
+            filter = lambda codec: get_codec_rank(codec, "audio")
         else:
-            filter = lambda s: getattr(s, attribute)  # noqa: E731
+            filter = lambda s: getattr(s, attribute)
 
         return self.__class__(
             sorted(
