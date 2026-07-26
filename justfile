@@ -8,12 +8,14 @@ default:
 
 temp_dir := "tmp/"
 
+[positional-arguments]
 [doc('Run CLI app isolated in tmp/ directory')]
 [group("app")]
 run *args:
     @mkdir -p {{ temp_dir }}
     @cd {{ temp_dir }}
-    -@uv run remora {{ args }}
+    
+    -@uv run remora "$@"
 
 # ==============================
 # Environment
@@ -94,7 +96,14 @@ fix: format lint type
 [doc('Run all quality checks without changes (formatting, linting, types, unit tests)')]
 [group('quality')]
 check:
+    # Format
     uv run ruff format --check .
+
+    # Lint
     uv run ruff check .
+
+    # Type check
     uv run ty check
+
+    # Run tests
     uv run pytest
