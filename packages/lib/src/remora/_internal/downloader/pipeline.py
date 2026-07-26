@@ -213,7 +213,9 @@ class DownloadPipeline:
                             video=(video_stream, completed_event.video_path),
                             audio=(audio_stream, completed_event.audio_path),
                         )
-                    elif (p := completed_event.video_path) or (p := completed_event.audio_path):
+                    elif (p := completed_event.video_path) or (
+                        p := completed_event.audio_path
+                    ):
                         results.file_path = p
                     else:
                         raise DownloaderError("Streams not founded")
