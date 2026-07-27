@@ -13,11 +13,11 @@ from pydantic import (
 from remora._internal.ydl.types import YDLExtractInfo
 
 
-class RemoraBaseModel(BaseModel):
+class RemoraModel(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
-class YDLSerializable(RemoraBaseModel):
+class YDLSerializable(RemoraModel):
     def to_ydl_dict(self) -> YDLExtractInfo:
         return self.model_dump(by_alias=True, mode="json")
 

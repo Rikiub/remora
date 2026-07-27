@@ -11,7 +11,7 @@ from pydantic import (
 )
 from typing_extensions import override
 
-from remora.models._base import RemoraBaseModel, YDLSerializable
+from remora.models._base import RemoraModel, YDLSerializable
 from remora.models.container.extension.audio import AudioExtension
 from remora.models.container.extension.video import VideoExtension
 from remora.models.metadata.size import Resolution
@@ -31,7 +31,7 @@ SizeType = Literal["exact", "estimated", "unknown"]
 
 
 # INFO
-class AudioInfo(RemoraBaseModel):
+class AudioInfo(RemoraModel):
     codec: Annotated[
         str,
         BeforeValidator(_normalize_value),
@@ -43,7 +43,7 @@ class AudioInfo(RemoraBaseModel):
     language: str | None = None
 
 
-class VideoInfo(RemoraBaseModel):
+class VideoInfo(RemoraModel):
     codec: Annotated[
         str,
         BeforeValidator(_normalize_value),
@@ -55,7 +55,7 @@ class VideoInfo(RemoraBaseModel):
 
 
 # STREAMS
-class ExtractorMeta(RemoraBaseModel):
+class ExtractorMeta(RemoraModel):
     downloader: Annotated[dict, Field(alias="downloader_options")] = {}  # noqa: RUF012
     headers: Annotated[dict, Field(alias="http_headers")] = {}  # noqa: RUF012
     cookies: str | None = None

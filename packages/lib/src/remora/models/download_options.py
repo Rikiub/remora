@@ -4,14 +4,14 @@ from pydantic import AfterValidator
 
 from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
-from remora.models._base import RemoraBaseModel
+from remora.models._base import RemoraModel
 from remora.models.container.extension.types import ExtensionType, get_extension
 from remora.models.container.format import FormatType
 from remora.models.container.target import FormatTargetType
 from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
 
-class DownloadOptions(RemoraBaseModel):
+class DownloadOptions(RemoraModel):
     """Configuration to shape the streams to download.
 
     If FFmpeg is not installed, options marked with (FFmpeg) will not be available.

@@ -1,6 +1,6 @@
-from remora.models._base import RemoraBaseModel
+from remora.models._base import RemoraModel
 
 
-class Resolution(RemoraBaseModel):
+class Resolution(RemoraModel):
     width: int
     height: int
