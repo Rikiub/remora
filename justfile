@@ -1,3 +1,5 @@
+set positional-arguments
+
 [doc('List available recipes')]
 default:
     @just --list
@@ -6,14 +8,13 @@ default:
 # Application
 # ==============================
 
-temp_dir := "tmp/"
+_temp_dir := "tmp/"
 
-[positional-arguments]
 [doc('Run CLI app isolated in tmp/ directory')]
 [group("app")]
 run *args:
-    @mkdir -p {{ temp_dir }}
-    -@cd {{ temp_dir }} && uv run remora "$@"
+    @mkdir -p {{ _temp_dir }}
+    -@cd {{ _temp_dir }} && uv run remora "$@"
 
 # ==============================
 # Environment
@@ -74,34 +75,23 @@ test-unit *args:
 
 [doc('Format code with Ruff')]
 [group('quality')]
-format:
-    uv run ruff format .
+format *args:
+    uv run ruff format . {{ args }}
 
-[doc('Lint code and apply safe fixes with Ruff')]
+[doc('Lint code with Ruff')]
 [group('quality')]
-lint:
-    uv run ruff check . --fix
+lint *args:
+    uv run ruff check . {{ args }}
 
-[doc('Run static type checking and apply fixes with ty')]
+[doc('Type check code with ty')]
 [group('quality')]
-type:
-    uv run ty check --fix
+type *args:
+    uv run ty check {{ args }}
 
 [doc('Run all formatting and apply safe fixes (formatting, linting, types)')]
 [group('quality')]
-fix: format lint type
+fix: format (lint "--fix") (type "--fix")
 
 [doc('Run all quality checks without changes (formatting, linting, types, unit tests)')]
 [group('quality')]
-check:
-    # Format
-    uv run ruff format --check .
-
-    # Lint
-    uv run ruff check .
-
-    # Type check
-    uv run ty check
-
-    # Run tests
-    uv run pytest
+check: (format "--check") lint type test-unit
