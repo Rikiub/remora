@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from pydantic import BaseModel
+from remora.models._base import RemoraModel
 
 
-class BaseEvent(BaseModel): ...
+class BaseEvent(RemoraModel): ...
 
 
-class BaseEventID(BaseModel):
+class BaseEventID(RemoraModel):
     id: str
 
 
