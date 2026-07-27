@@ -1,5 +1,3 @@
-set positional-arguments
-
 [doc('List available recipes')]
 default:
     @just --list
@@ -10,6 +8,7 @@ default:
 
 _temp_dir := "tmp/"
 
+[positional-arguments]
 [doc('Run CLI app isolated in tmp/ directory')]
 [group("app")]
 run *args:
