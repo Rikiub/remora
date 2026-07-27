@@ -1,7 +1,7 @@
 from os import PathLike
 from typing import Literal
 
-from pydantic import HttpUrl
+from pydantic.networks import HttpUrl
 
 # Quality
 AudioQuality = Literal[128, 256, 360]
