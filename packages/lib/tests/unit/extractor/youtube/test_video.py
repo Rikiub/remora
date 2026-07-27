@@ -10,7 +10,7 @@ async def media(extract_ydl) -> Media:
     return data
 
 
-async def test_media(media):
+async def test_media(media: Media):
     assert media.id == "dQw4w9WgXcQ"
     assert (
         media.title
@@ -20,7 +20,7 @@ async def test_media(media):
     assert len(media.streams) > 0
 
 
-async def test_uploader(media):
+async def test_uploader(media: Media):
     uploader = media.uploader
     assert uploader is not None
     assert uploader.name == "Rick Astley"
@@ -28,7 +28,7 @@ async def test_uploader(media):
     assert str(uploader.url) == "https://www.youtube.com/@RickAstleyYT"
 
 
-async def test_channel(media):
+async def test_channel(media: Media):
     channel = media.channel
     assert channel is not None
     assert channel.name == "Rick Astley"
