@@ -2,9 +2,9 @@ import textwrap
 
 import pytest
 
+from remora.models.metadata.size import Resolution
 from remora.models.metadata.thumbnail import (
     ExtractorMeta,
-    Resolution,
     Thumbnail,
     ThumbnailList,
 )

@@ -1,11 +1,11 @@
 import pytest
 from pydantic import ValidationError
 
+from remora.models.metadata.size import Resolution
 from remora.models.stream.item import (
     AudioInfo,
     AudioStream,
     MuxedStream,
-    Resolution,
     VideoInfo,
     VideoStream,
 )

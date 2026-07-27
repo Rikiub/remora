@@ -3,8 +3,9 @@ from typing import Generic, Literal, Self
 from pydantic import BaseModel, model_validator
 from typing_extensions import TypeVar, override
 
-from remora.models._base import BaseList, Resolution, YDLSerializable
+from remora.models._base import BaseList, YDLSerializable
 from remora.models.metadata._base import Metadata
+from remora.models.metadata.size import Resolution
 
 
 class ExtractorMeta(BaseModel):

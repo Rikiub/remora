@@ -17,11 +17,6 @@ class RemoraBaseModel(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
-class Resolution(RemoraBaseModel):
-    width: int
-    height: int
-
-
 class YDLSerializable(RemoraBaseModel):
     def to_ydl_dict(self) -> YDLExtractInfo:
         return self.model_dump(by_alias=True, mode="json")
