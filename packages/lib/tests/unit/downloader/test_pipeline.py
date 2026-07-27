@@ -24,11 +24,11 @@ from remora.models.event.stream import (
     StreamContinuous,
 )
 from remora.models.media.item import Media
-from remora.models.metadata.subtitle import SubtitleList
-from remora.models.metadata.thumbnail import ThumbnailList
+from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
+from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
+from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 
 MODULE_PATH = "remora._internal.downloader.pipeline"
-URL = "https://example.com"
 
 
 # Fake dependencies
@@ -61,6 +61,53 @@ MockPipeline = Callable[[Media], DownloadPipeline]
 
 
 # Fixtures
+@pytest.fixture
+def dummy_media() -> Media:
+    """Full media rich of placeholder metadata and streams."""
+    URL = "https://example.com/video"
+
+    return Media(
+        extractor="Youtube",
+        id="test_123",
+        title="Mock Video",
+        url="https://youtube.com/watch?v=test",
+        thumbnails=[
+            Thumbnail(
+                id="1",
+                url=URL,
+            )
+        ],
+        subtitles=[
+            ExternalSubtitle(
+                url=URL,
+                name="English",
+                language="en",
+                extension="vtt",
+            ),
+        ],
+        streams=[
+            VideoStream(
+                id="1",
+                url=URL,
+                protocol="https",
+                size_type="exact",
+                size_bytes=50000,
+                extension="mp4",
+                video=VideoInfo(codec="vp9"),
+            ),
+            AudioStream(
+                id="2",
+                url=URL,
+                protocol="https",
+                size_type="exact",
+                size_bytes=4000,
+                extension="m4a",
+                audio=AudioInfo(codec="m4a"),
+            ),
+        ],
+    )
+
+
 @pytest.fixture
 def mock_pipeline(
     mocker: MockerFixture,

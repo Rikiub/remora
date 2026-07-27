@@ -102,4 +102,4 @@ class Media(LazyMedia):
         StreamList,
         AfterValidator(lambda list: list.sorted_by("best")),
         Field(alias="formats"),
-    ]
+    ] = StreamList()
