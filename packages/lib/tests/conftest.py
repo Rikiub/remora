@@ -30,8 +30,8 @@ def ydl_data():
 def pytest_collection_modifyitems(config, items):
     # Map test path to a mark
     marks = {
-        "/integration/": pytest.mark.integration,
-        "/unit/": pytest.mark.unit,
+        "integration": pytest.mark.integration,
+        "unit": pytest.mark.unit,
     }
 
     for item in items:

@@ -1,3 +1,5 @@
+set windows-shell := ["cmd.exe", "/c"]
+
 [doc('List available recipes')]
 default:
     @just --list
@@ -6,14 +8,27 @@ default:
 # Application
 # ==============================
 
-_temp_dir := "tmp/"
+_temp_dir := "tmp"
+_run_doc := 'Run CLI app isolated in tmp/ directory'
 
+[unix]
 [positional-arguments]
-[doc('Run CLI app isolated in tmp/ directory')]
+[doc(_run_doc)]
 [group("app")]
 run *args:
-    @mkdir -p {{ _temp_dir }}
-    -@cd {{ _temp_dir }} && uv run remora "$@"
+	-@mkdir {{ _temp_dir }}
+	-@cd {{ _temp_dir }}
+	-@uv run remora "$@"
+
+[windows]
+[positional-arguments]
+[group("app")]
+[doc(_run_doc)]
+run *args:
+	#!powershell -NoProfile
+	if (!(Test-Path "{{ _temp_dir }}")) { $null = mkdir "{{ _temp_dir }}" }
+	cd "{{ _temp_dir }}"
+	uv run remora $args
 
 # ==============================
 # Environment
