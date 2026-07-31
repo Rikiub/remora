@@ -76,12 +76,12 @@ alias test := test-unit
 [doc('Run integration tests with pytest')]
 [group('test')]
 test-integration *args:
-    uv run pytest -m "integration" {{ args }}
+    uv run python -m pytest -m "integration" {{ args }}
 
 [doc('Run unit tests with pytest')]
 [group('test')]
 test-unit *args:
-    uv run pytest {{ args }}
+    uv run python -m pytest {{ args }}
 
 # ==============================
 # Code Quality & Formatting
