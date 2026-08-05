@@ -14,11 +14,11 @@ __all__ = ["LoggingLevels", "disable", "enable", "setup"]
 LoggingLevels = Literal["DEBUG", "SUCCESS", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
-def enable():
+def enable() -> None:
     logger.enable(APP_NAME)
 
 
-def disable():
+def disable() -> None:
     logger.disable(APP_NAME)
 
 
