@@ -18,7 +18,7 @@ class RemoraModel(BaseModel):
 
 
 class YDLSerializable(RemoraModel):
-    def to_ydl_dict(self) -> YDLExtractInfo:
+    def _to_ydl_dict(self) -> YDLExtractInfo:
         return self.model_dump(by_alias=True, mode="json")
 
 

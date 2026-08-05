@@ -75,8 +75,8 @@ class _BaseStream(ABC, YDLSerializable):
     size_bytes: int | None = None
 
     @override
-    def to_ydl_dict(self):
-        data = super().to_ydl_dict()
+    def _to_ydl_dict(self):
+        data = super()._to_ydl_dict()
 
         # Convert size
         name = "filesize" if self.size_type == "exact" else "filesize_approx"

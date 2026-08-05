@@ -55,7 +55,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
             path = await run_sync(
                 download_format,
                 self.file_path,
-                self.stream.to_ydl_dict(),
+                self.stream._to_ydl_dict(),
                 self._ydl_progress,
                 self.retries,
             )

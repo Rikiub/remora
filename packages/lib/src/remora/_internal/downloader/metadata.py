@@ -11,7 +11,7 @@ from remora.types import StrPath
 async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path:
     from remora._internal.ydl.downloader import download_thumbnail as ydl
 
-    path = await run_sync(ydl, output_path, thumbnail.to_ydl_dict())
+    path = await run_sync(ydl, output_path, thumbnail._to_ydl_dict())
     return path
 
 
@@ -32,9 +32,9 @@ async def download_subtitles(
     from remora._internal.ydl.downloader import download_subtitles as ydl
 
     if isinstance(subtitles, list):
-        info = SubtitleList(subtitles).to_ydl_dict()
+        info = SubtitleList(subtitles)._to_ydl_dict()
     else:
-        info = subtitles.to_ydl_dict()
+        info = subtitles._to_ydl_dict()
 
     paths = await run_sync(ydl, output_path, info)
 

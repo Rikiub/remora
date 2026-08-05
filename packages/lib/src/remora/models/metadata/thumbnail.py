@@ -19,8 +19,8 @@ class Thumbnail(Metadata, YDLSerializable):
     extractor_meta: ExtractorMeta = ExtractorMeta()
 
     @override
-    def to_ydl_dict(self):
-        data = super().to_ydl_dict()
+    def _to_ydl_dict(self):
+        data = super()._to_ydl_dict()
         data |= data.get("extractor_meta", {})
 
         if res := self.resolution:

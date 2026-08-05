@@ -48,8 +48,8 @@ class ExtractID(BaseExtract):
     metrics: Annotated[Metrics | None, EnsureNone] = None
 
     @override
-    def to_ydl_dict(self):
-        data = super().to_ydl_dict()
+    def _to_ydl_dict(self):
+        data = super()._to_ydl_dict()
 
         fields = [
             "music",

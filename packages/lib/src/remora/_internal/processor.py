@@ -43,7 +43,7 @@ class MediaProcessor:
         return self
 
     async def embed_metadata(self, media: Media) -> Self:
-        info = media.to_ydl_dict()
+        info = media._to_ydl_dict()
         if media.music:
             info |= _media_to_ydl_music(media, media.music)
 
@@ -76,7 +76,7 @@ class MediaProcessor:
                 stream: Stream
                 path: Path
 
-                fmt = {"filepath": str(path)} | stream.to_ydl_dict()
+                fmt = {"filepath": str(path)} | stream._to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
         result = await run_sync(

@@ -18,7 +18,7 @@ class _BaseSubtitle(Metadata, YDLSerializable):
     extension: Annotated[str, Field(alias="ext")]
 
     @override
-    def to_ydl_dict(self) -> dict[str, list[dict[str, str]]]:
+    def _to_ydl_dict(self) -> dict[str, list[dict[str, str]]]:
         entry = self.model_dump(
             by_alias=True,
             mode="json",
@@ -106,13 +106,13 @@ class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
         return self.__class__(list(items))
 
     @override
-    def to_ydl_dict(self):
+    def _to_ydl_dict(self):
         """Convert back into the nested yt-dlp dictionary format:"""
 
         data = {}
 
         for subtitle in self.root:
-            entry = subtitle.to_ydl_dict()
+            entry = subtitle._to_ydl_dict()
 
             for lang, sub in entry.items():
                 for value in sub:
