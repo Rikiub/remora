@@ -17,6 +17,7 @@ class _BaseSubtitle(Metadata, YDLSerializable):
     language: str
     extension: Annotated[str, Field(alias="ext")]
 
+    @override
     def to_ydl_dict(self) -> dict[str, list[dict[str, str]]]:
         entry = self.model_dump(
             by_alias=True,
