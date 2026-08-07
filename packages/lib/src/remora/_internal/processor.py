@@ -5,6 +5,7 @@ from typing import Self
 from anyio.to_thread import run_sync
 
 from remora._internal.ffmpeg import get_ffmpeg
+from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models.container.extension.audio import AudioExtensionType
@@ -12,7 +13,7 @@ from remora.models.container.extension.types import ExtensionType
 from remora.models.container.extension.video import VideoExtensionType
 from remora.models.media.item import Media
 from remora.models.metadata.music import MusicMetadata
-from remora.models.stream.item import AudioStream, Stream, VideoStream
+from remora.models.stream.item import AudioStream, VideoStream
 from remora.types import StrPath
 
 
@@ -63,26 +64,27 @@ class MediaProcessor:
 
     async def merge_streams(
         self,
-        video: tuple[VideoStream, Path],
-        audio: tuple[AudioStream, Path],
+        video: StreamContext[VideoStream],
+        audio: StreamContext[AudioStream],
         merge_format: VideoExtensionType,
     ) -> Self:
+        """
+        Merge two streams in a single file (Remuxing).
+
+        Ensure that `file_path` not exists before run this method.
+
+        Raises:
+            FileExistsError: The file path already exists.
+        """
+
         real_streams: list[RequestedFormat] = []
-
-        for fmt in (video, audio):
-            if isinstance(fmt, tuple):
-                stream, path = fmt
-
-                stream: Stream
-                path: Path
-
-                fmt = {"filepath": str(path)} | stream._to_ydl_dict()
+        for ctx in (video, audio):
+            fmt = {"filepath": str(ctx.path)} | ctx.stream._to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
         result = await run_sync(
             self._prc.merge_formats, str(merge_format), real_streams
         )
-
         self._update_file(result)
         return self
 

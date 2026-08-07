@@ -55,10 +55,10 @@ class YDLProcessor:
     @catch
     def video_remuxer(self, format: str) -> Self:
         pp = FFmpegVideoRemuxerPP(
-            None,
+            self._ydl(),
             preferedformat=format,
         )
-        _, data = pp.run(self._params)
+        _, data = pp.run(self._pp_params)
         self._update_filepath(data)
         return self
 
@@ -69,30 +69,30 @@ class YDLProcessor:
         quality: int | None = None,
     ) -> Self:
         pp = FFmpegExtractAudioPP(
-            None,
+            self._ydl(),
             nopostoverwrites=False,
             preferredcodec=format,
             preferredquality=quality,
         )
-        _, data = pp.run(self._params)
+        _, data = pp.run(self._pp_params)
         self._update_filepath(data)
         return self
 
     @catch
     def embed_metadata(self, data: YDLExtractInfo) -> Self:
         pp = FFmpegMetadataPP(
-            None,
+            self._ydl(),
             add_metadata=True,
             add_chapters=True,
         )
-        pp.run(self._params | data)
+        pp.run(self._pp_params | data)
         return self
 
     @catch
     def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
-        pp = EmbedThumbnailPP()
+        pp = EmbedThumbnailPP(self._ydl())
 
-        info = self._params | {
+        info = self._pp_params | {
             "thumbnails": [
                 {"filepath": str(thumbnail)},
             ],
@@ -119,7 +119,7 @@ class YDLProcessor:
 
     @catch
     def embed_subtitle(self, subtitles: Sequence[StrPath]) -> Self:
-        pp = FFmpegEmbedSubtitlePP()
+        pp = FFmpegEmbedSubtitlePP(self._ydl())
 
         dict_subs: dict[str, dict] = {}
         for sub in subtitles:
@@ -135,7 +135,7 @@ class YDLProcessor:
                 },
             }
 
-        pp.run(self._params | {"requested_subtitles": dict_subs})
+        pp.run(self._pp_params | {"requested_subtitles": dict_subs})
         return self
 
     @catch
@@ -145,54 +145,40 @@ class YDLProcessor:
         formats: list[RequestedFormat],
     ) -> Self:
         pp = FFmpegMergerPP(
-            YDL(
+            self._ydl(
                 {"merge_output_format": merge_format},
             )
         )
-        extensions = []
 
-        for fmt in formats:
-            ext = Path(fmt["filepath"]).suffix.lstrip(".")
-            extensions.append(ext)
-
-            if ext == "m4a":
-                fmt = self.fix_m4a(fmt)  # type: ignore
-
-        try:
-            _, data = pp.run(
-                self._params
-                | {
-                    "requested_formats": formats,
-                    "__files_to_merge": [f["filepath"] for f in formats],
-                },
-            )
-        except FFmpegPostProcessorError:
-            raise ProcessorError(
-                f"Files with extension {', '.join(extensions)} "
-                "are incompatible and can't be merged"
-            )
-
+        _, data = pp.run(
+            self._pp_params
+            | {
+                "requested_formats": formats,
+                "__files_to_merge": [f["filepath"] for f in formats],
+            },
+        )
         self._update_filepath(data)
         return self
 
     @catch
     def fix_m4a(self, _format=None) -> Self:
         if self.file_extension == AudioExtension.M4A:
-            pp_fix = FFmpegFixupM4aPP()
-            _, data = pp_fix.run(self._params | {"container": "m4a_dash"})
+            pp_fix = FFmpegFixupM4aPP(self._ydl())
+            _, data = pp_fix.run(self._pp_params | {"container": "m4a_dash"})
             self._update_filepath(data)
         return self
 
+    def _ydl(self, params: dict | None = None) -> YDL:
+        params = params or {}
+        params |= {"ffmpeg_location": str(self.ffmpeg_path)}
+        return YDL(params)
+
     @property
-    def _params(self):
+    def _pp_params(self):
         info = {
             "filepath": str(self.file_path),
             "ext": self.file_extension,
         }
-
-        if self.ffmpeg_path:
-            info |= {"ffmpeg_location": str(self.ffmpeg_path)}
-
         return info
 
     def _update_filepath(self, data: YDLExtractInfo) -> None:

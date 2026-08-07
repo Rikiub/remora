@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
+from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.downloader.selector import StreamSelector
-from remora._internal.downloader.stream.batch import BatchStreamDownloader
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.processor import MediaProcessor
 from remora.models.download_options import DownloadOptions
@@ -32,7 +32,7 @@ MODULE_PATH = "remora._internal.downloader.pipeline"
 
 
 # Fake dependencies
-class FakeBatchDownloader(BatchStreamDownloader):
+class FakeBatchDownloader(MuxedStreamDownloader):
     """Mocks the async generator for stream downloads."""
 
     def __init__(self, *args, **kwargs):
@@ -136,7 +136,7 @@ def mock_pipeline(
         # Mock the Heavy Downloaders
         mocker.patch(f"{MODULE_PATH}.{StreamDownloader.__name__}", FakeStreamDownloader)
         mocker.patch(
-            f"{MODULE_PATH}.{BatchStreamDownloader.__name__}", FakeBatchDownloader
+            f"{MODULE_PATH}.{MuxedStreamDownloader.__name__}", FakeBatchDownloader
         )
         mocker.patch(
             f"{MODULE_PATH}.download_thumbnail",

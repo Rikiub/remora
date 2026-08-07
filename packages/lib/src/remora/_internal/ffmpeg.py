@@ -1,7 +1,7 @@
-import shutil
 import subprocess
 from functools import cache
 from pathlib import Path
+from shutil import which
 
 from remora.exceptions import FFmpegNotFoundError
 from remora.types import StrPath
@@ -14,7 +14,7 @@ def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path:
         FFmpegNotFoundError: FFmpeg binary not found.
     """
 
-    ffmpeg_path = ffmpeg_path or find_global_ffmpeg()
+    ffmpeg_path = ffmpeg_path or find_internal_ffmpeg() or find_system_ffmpeg()
 
     if not ffmpeg_path:
         raise FFmpegNotFoundError("FFmpeg path not provided.")
@@ -23,11 +23,29 @@ def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path:
 
 
 @cache
-def find_global_ffmpeg() -> Path | None:
-    """Try to find FFmpeg binary from system."""
+def find_internal_ffmpeg() -> Path | None:
+    """Try find FFmpeg binary from dependency."""
 
-    path = shutil.which("ffmpeg")
-    return Path(path) if path else None
+    try:
+        from imageio_ffmpeg import get_ffmpeg_exe
+
+        ffmpeg = get_ffmpeg_exe()
+        ffmpeg = validate_ffmpeg(ffmpeg)
+        return ffmpeg
+    except ImportError:
+        return None
+
+
+@cache
+def find_system_ffmpeg() -> Path | None:
+    """Try find FFmpeg binary from system."""
+
+    try:
+        ffmpeg = which("ffmpeg")
+        ffmpeg = validate_ffmpeg(ffmpeg)
+        return ffmpeg
+    except FFmpegNotFoundError:
+        return None
 
 
 @cache

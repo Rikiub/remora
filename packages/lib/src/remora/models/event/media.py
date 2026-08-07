@@ -13,7 +13,7 @@ class _BaseMedia(BaseEventID):
 
 class MediaExtracting(_BaseMedia):
     status: Literal["extracting"] = "extracting"
-    media: LazyMedia  # type: ignore
+    media: LazyMedia
 
 
 class MediaDownloading(_BaseMedia):
@@ -34,6 +34,7 @@ class MediaCompleted(_BaseMedia, FileEvent):
 class MediaFailed(_BaseMedia):
     status: Literal["failed"] = "failed"
     message: str
+    media: LazyMedia | Media
 
 
 class MediaWarning(_BaseMedia):
@@ -43,7 +44,7 @@ class MediaWarning(_BaseMedia):
 
 class MediaCancelled(_BaseMedia):
     status: Literal["cancelled"] = "cancelled"
-    media: LazyMedia | Media  # type: ignore
+    media: LazyMedia | Media
 
 
 MediaEvent = (

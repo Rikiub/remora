@@ -7,7 +7,7 @@ from remora._internal.downloader.logs import log_event_playlist
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
-from remora.exceptions import RemoraError
+from remora.exceptions import DownloaderError, ExtractorError
 from remora.models.download_options import DownloadOptions
 from remora.models.event.playlist import (
     BatchEvent,
@@ -108,7 +108,7 @@ class DownloadBatch:
                     await self._stream.send(event)
 
                 self.success += 1
-            except* RemoraError:
+            except* (ExtractorError, DownloaderError):
                 self.failed += 1
 
             self.completed += 1

@@ -109,10 +109,17 @@ async def download(
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from remora import DownloadOptions, Remora
-        from remora.exceptions import OutputTemplateError
+        from remora._internal.ffmpeg import get_ffmpeg
+        from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.models.media.list import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
         from remora_cli.ui.progress import ProgressCallback
+
+        try:
+            ffmpeg_path = get_ffmpeg(ffmpeg_path)
+        except FFmpegNotFoundError:
+            ffmpeg_path = None
+            logger.warning("FFmpeg binary not found, post-processing disabled")
 
         try:
             config = DownloadOptions(

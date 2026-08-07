@@ -2,6 +2,7 @@ from loguru import logger
 from rich.logging import RichHandler
 
 from remora import logs
+from remora.types import APP_NAME as LIB_NAME
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -9,7 +10,6 @@ def setup_logging(level: logs.LoggingLevels) -> None:
     logs.enable()
 
     is_verbose = level != "INFO"
-
     rich_handler = RichHandler(
         level=level,
         show_level=is_verbose,
@@ -27,7 +27,10 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         backtrace=False,
         enqueue=True,
         format=get_format,
-        filter=remora_only_debug,
+        filter={
+            LIB_NAME: "DEBUG" if is_verbose else "CRITICAL",
+            "remora_cli": "DEBUG" if is_verbose else "INFO",
+        },
     )
 
     # Structured Logs
@@ -67,6 +70,7 @@ def get_format(record) -> str:
     level = record["level"]
     extra = record.get("extra", {})
     icon = extra.get("icon") or getattr(record["level"], "icon", "")
+    is_lib = record["name"].startswith(f"{LIB_NAME}.")
 
     # Prefixes
     status_prefix = ""
@@ -84,11 +88,10 @@ def get_format(record) -> str:
     # Colors
     color = LEVEL_COLORS.get(level.name, "white")
 
+    # Lib exclusive prefix
+    lib_prefix = ""
+    if is_lib:
+        lib_prefix = "[dim]\\[LIB] "
+
     # Format
-    return f"{icon} {status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
-
-
-def remora_only_debug(record) -> bool:
-    is_remora = record["name"].startswith("remora.")
-    is_debug = record["level"].name == "DEBUG"
-    return not (is_remora and not is_debug)
+    return f"{icon} {lib_prefix}{status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"

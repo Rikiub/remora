@@ -20,7 +20,9 @@ def mock_processor(mocker: MockerFixture, tmp_path: Path) -> Callable:
             return patched_modules[module]
 
         # Mock FFmpeg presence
-        mocker.patch(f"{module}.get_ffmpeg", return_value=Path("/usr/bin/ffmpeg"))
+        ffmpeg_path = Path("/usr/bin/ffmpeg")
+        mocker.patch(f"{module}.find_internal_ffmpeg", return_value=ffmpeg_path)
+        mocker.patch(f"{module}.find_system_ffmpeg", return_value=ffmpeg_path)
 
         # Mock MediaProcessor
         mock_class = mocker.patch(
