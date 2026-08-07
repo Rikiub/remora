@@ -4,7 +4,6 @@ from loguru import logger
 from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
-from typer import Exit
 
 from remora import MediaExtractor
 from remora.exceptions import RemoraError
@@ -46,7 +45,7 @@ async def extract_queries(
 
                     if not result.entries.medias():
                         logger.warning("No results found")
-                        raise Exit()
+                        raise SystemExit()
 
                 await logger.complete()
             yield target, result

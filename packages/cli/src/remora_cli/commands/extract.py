@@ -1,11 +1,10 @@
 from enum import StrEnum
 from typing import Annotated, Literal
 
+from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
-from typer import Argument, BadParameter, Option, Typer
 
-from remora_cli.completions import complete_query, complete_template_key
-from remora_cli.helpers import make_async, remove_missing
+from remora_cli.helpers import remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
 DEFAULT_EXCLUDE = {
@@ -56,7 +55,7 @@ def parse_keys(value: list[str]) -> list[str]:
                     validate_key(key, True)
                     results.append(key)
                 except OutputTemplateError as e:
-                    raise BadParameter(str(e))
+                    raise CycloptsError(str(e))
         return results
     return value
 
@@ -65,53 +64,49 @@ class HelpPanel(StrEnum):
     FORMAT = "Format"
 
 
-app = Typer()
+app = App(
+    name="extract",
+    help="Extract metadata from [green]URL[/] or search [green]service[/].",
+)
 
 
-@app.command(no_args_is_help=True)
-@make_async
+@app.command
 async def extract(
     query: Annotated[
         list[str],
-        Argument(
+        Parameter(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
             - Insert a [green]URL[/] to extract.\n
             - Insert a [green]service[/] and [green]query[/] to search and extract.
             """,
             show_default=False,
-            autocompletion=complete_query,
         ),
     ],
     format: Annotated[
         Literal["table", "json"] | None,
-        Option(
-            "--format",
-            "-f",
+        Parameter(
+            name=["--format", "-f"],
             help="Output format of data.",
-            rich_help_panel=HelpPanel.FORMAT,
+            group=HelpPanel.FORMAT,
         ),
     ] = None,
     include: Annotated[
         list[str],
-        Option(
+        Parameter(
             help="Keys to include.",
-            rich_help_panel=HelpPanel.FORMAT,
-            autocompletion=complete_template_key,
-            callback=parse_keys,
+            group=HelpPanel.FORMAT,
         ),
     ] = [],  # noqa: B006
     exclude: Annotated[
         list[str],
-        Option(
+        Parameter(
             help="Keys to exclude.",
-            rich_help_panel=HelpPanel.FORMAT,
-            autocompletion=complete_template_key,
-            callback=parse_keys,
+            group=HelpPanel.FORMAT,
         ),
     ] = [],  # noqa: B006
 ):
-    """Extract metadata from [green]URL[/] or search [green]service[/]."""
+    """Extract metadata from URL or search service."""
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
@@ -129,8 +124,8 @@ async def extract(
         sel_format = "table" if console.is_terminal else "json"
 
     # Filters
-    sel_include = set(include)
-    sel_exclude = set(exclude)
+    sel_include = set(parse_keys(include))
+    sel_exclude = set(parse_keys(exclude))
 
     if sel_format == "table" and not sel_include:
         sel_exclude |= DEFAULT_EXCLUDE

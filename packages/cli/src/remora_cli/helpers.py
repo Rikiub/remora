@@ -1,16 +1,5 @@
 import types
-from functools import partial, wraps
 from typing import Any, Literal, Union, get_args, get_origin
-
-
-def make_async(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        import anyio
-
-        return anyio.run(partial(func, *args, **kwargs))
-
-    return wrapper
 
 
 def remove_missing(data: Any) -> Any:

@@ -1,16 +1,17 @@
-from typer import Typer
+from cyclopts import CycloptsError, CycloptsPanel
+
+from remora_cli.ui.rich import CONSOLE
 
 
-def run():
-    from remora.types import APP_NAME
-    from remora_cli.commands import download, extract, main
+def run() -> None:
+    from importlib.metadata import version
 
-    app = Typer(
-        callback=main.main,
-        no_args_is_help=True,
-        rich_markup_mode="rich",
-    )
-    app.add_typer(download.app)
-    app.add_typer(extract.app)
+    from remora_cli.commands.main import create_app
 
-    app(prog_name=APP_NAME)
+    app = create_app(version=version("remora-cli"))
+
+    try:
+        app.meta()
+    except CycloptsError as error:
+        CONSOLE.print(CycloptsPanel(error))
+        raise SystemExit(1) from error

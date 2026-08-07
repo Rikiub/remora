@@ -1,63 +1,56 @@
 from enum import StrEnum
-from pathlib import Path
 from typing import Annotated
 
-from typer import Option, Typer
+from cyclopts import App, Parameter
 
 from remora_cli.config import CONFIG
-
-
-def show_version(show: bool) -> None:
-    if show:
-        from importlib.metadata import version
-
-        print(version(Path(__file__).parent.parent.name))
-
-        raise SystemExit()
+from remora_cli.ui.help import TyperFormatter
 
 
 class HelpPanel(StrEnum):
     DISPLAY = "Display"
 
 
-app = Typer()
+def create_app(version: str) -> App:
+    from remora_cli.commands import download, extract
 
+    app = App(
+        name="remora",
+        help="Fishy data extractor/downloader ✨",
+        help_format="rich",
+        help_formatter=TyperFormatter,
+        version=version,
+    )
 
-@app.command()
-def main(
-    quiet: Annotated[
-        bool,
-        Option(
-            "--quiet",
-            help="Supress screen information.",
-            rich_help_panel=HelpPanel.DISPLAY,
-        ),
-    ] = CONFIG.quiet,
-    verbose: Annotated[
-        bool,
-        Option(
-            "--verbose",
-            help="Display more information on screen.",
-            rich_help_panel=HelpPanel.DISPLAY,
-        ),
-    ] = CONFIG.verbose,
-    version: Annotated[
-        bool,
-        Option(
-            "--version",
-            help="Show current version and exit.",
-            rich_help_panel=HelpPanel.DISPLAY,
-            callback=show_version,
-            is_eager=True,
-        ),
-    ] = False,
-):
-    """Fishy data extractor/downloader ✨"""
+    app.command(download.app, name="*")
+    app.command(extract.app, name="*")
 
-    CONFIG.verbose = verbose
-    CONFIG.quiet = quiet
+    @app.meta.default
+    def launcher(
+        *tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)],
+        quiet: Annotated[
+            bool,
+            Parameter(
+                group=HelpPanel.DISPLAY,
+                help="Supress screen information.",
+            ),
+        ] = CONFIG.quiet,
+        verbose: Annotated[
+            bool,
+            Parameter(
+                group=HelpPanel.DISPLAY,
+                help="Display more information on screen.",
+            ),
+        ] = CONFIG.verbose,
+    ):
+        CONFIG.quiet = quiet
+        CONFIG.verbose = verbose
 
-    # Setup logger
-    from remora_cli.logs import setup_logging
+        # Setup logger
+        from remora_cli.logs import setup_logging
 
-    setup_logging(CONFIG.log_level)
+        setup_logging(CONFIG.log_level)
+
+        return app(tokens)
+
+    return app
