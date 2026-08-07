@@ -5,6 +5,7 @@ from loguru import logger
 from remora.models.event.media import (
     MediaCompleted,
     MediaDownloading,
+    MediaEvent,
     MediaExtracting,
     MediaFailed,
     MediaProcessing,
@@ -34,9 +35,13 @@ class ProgressCallback:
         if self.disable:
             return
 
-        name = ""
+        # Determine title
+        media_title = ""
+        if isinstance(event, MediaEvent):
+            media_title = self._media_display_name(event.media)
 
-        with logger.contextualize(media_title=name):
+        # Event Match
+        with logger.contextualize(media_title=media_title):
             match event:
                 # Playlist
                 case PlaylistStarted():
@@ -55,13 +60,13 @@ class ProgressCallback:
                 case MediaExtracting():
                     self.progress.add_task(
                         event.id,
-                        description=name or "Extracting[blink]...[/]",
+                        description=media_title or "Extracting[blink]...[/]",
                         status="Extracting[blink]...[/]",
                     )
                 case MediaDownloading():
                     self.progress.update(
                         event.id,
-                        description=name,
+                        description=media_title,
                         status="Downloading",
                         completed=event.progress.downloaded_bytes,
                         total=event.progress.total_bytes,
