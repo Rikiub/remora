@@ -8,30 +8,19 @@ from loguru import logger
 from remora.models.container.extension.audio import SafeAudioExtensionStr
 from remora.models.container.extension.video import SafeVideoExtensionStr
 from remora.models.container.format import FormatType
-from remora.types import DEFAULT_TEMPLATE
+from remora.types import DEFAULT_TEMPLATE, VideoQuality
 from remora_cli.config import CONFIG
-from remora_cli.helpers import unwrap_literals
 from remora_cli.ui.rich import CONSOLE
 
 
-class HelpPanel(StrEnum):
+class Panel(StrEnum):
     FILTERS = "Filters"
     DOWNLOADER = "Downloader"
     POST_PROCESS = "Post-processing"
     AUTH = "Authentication"
 
 
-FormatEnum = StrEnum("FormatEnum", {s: s for s in unwrap_literals(FormatType)})
-
-ExtensionEnum = StrEnum(
-    "ExtensionEnum",
-    {s: s for s in unwrap_literals(Literal[SafeVideoExtensionStr, SafeAudioExtensionStr])},
-)
-
-app = App(
-    name="download",
-    help="Download video/audio from [green]URL[/] or search [green]service[/].",
-)
+app = App(name="download")
 
 
 @app.command
@@ -41,18 +30,16 @@ async def download(
         list[str],
         Parameter(
             help="""[green]URLs[/] and [green]queries[/] to process.
-            \n
-            - Insert a [green]URL[/] to download. [grey62](Default)[/]\n
-            - Insert a [green]service[/]:[green]query[/] to search and download.
-            """,
-            show_default=False,
+- Insert a [green]URL[/] to download. [grey62](Default)[/]
+- Insert a [green]service[/]:[green]query[/] to search and download.
+"""
         ),
     ],
     # OPTIONS
     output: Annotated[
         str,
         Parameter(
-            name=["--output", "-o"],
+            short_alias=True,
             help="Path or template for the saved file.",
             show_default=True,
         ),
@@ -60,27 +47,26 @@ async def download(
     interactive: Annotated[
         bool,
         Parameter(
-            name="--interactive",
             negative="--no-interactive",
             help="Interactively select streams or playlist items.",
         ),
     ] = True,
     # FILTER
     type: Annotated[
-        FormatEnum,  # type: ignore
+        FormatType,
         Parameter(
-            name=["--type", "-t"],
+            short_alias=True,
             help="Type of stream to download (downloads best format by default).",
             show_default=False,
-            group=HelpPanel.FILTERS,
+            group=Panel.FILTERS,
         ),
-    ] = FormatEnum.video,  # type: ignore
+    ] = "video",
     quality: Annotated[
-        int | None,
+        int | VideoQuality | None,
         Parameter(
-            name=["--quality", "-q"],
+            short_alias=True,
             help="Prefered target quality.",
-            group=HelpPanel.FILTERS,
+            group=Panel.FILTERS,
         ),
     ] = None,
     video_codec: Annotated[
@@ -88,7 +74,7 @@ async def download(
         Parameter(
             name=["--video-codec", "--vcodec"],
             help="Prefered video codec.",
-            group=HelpPanel.FILTERS,
+            group=Panel.FILTERS,
         ),
     ] = None,
     audio_codec: Annotated[
@@ -96,24 +82,23 @@ async def download(
         Parameter(
             name=["--audio-codec", "--acodec"],
             help="Prefered audio codec.",
-            group=HelpPanel.FILTERS,
+            group=Panel.FILTERS,
         ),
     ] = None,
     # DOWNLOADER
     skip_duplicates: Annotated[
         bool,
         Parameter(
-            name="--skip-duplicates",
             negative="--force",
             help="Skip downloading if a file with the same name already exists, regardless of extension.",
-            group=HelpPanel.DOWNLOADER,
+            group=Panel.DOWNLOADER,
         ),
     ] = True,
     max_workers: Annotated[
         int,
         Parameter(
             help="Limit of simultaneous downloads.",
-            group=HelpPanel.DOWNLOADER,
+            group=Panel.DOWNLOADER,
         ),
     ] = 5,
     limit_rate: Annotated[
@@ -121,52 +106,49 @@ async def download(
         Parameter(
             name="--limit-rate",
             help='Maximum download rate (e.g. [green]"5M"[/] or [green]"500K"[/]).',
-            group=HelpPanel.DOWNLOADER,
+            group=Panel.DOWNLOADER,
         ),
     ] = None,
     # POST_PROCESS
     convert: Annotated[
-        ExtensionEnum | None,  # type: ignore
+        Literal[SafeVideoExtensionStr, SafeAudioExtensionStr] | None,  # type: ignore
         Parameter(
-            name=["--convert", "-c"],
             help="Convert or remux the downloaded file into a specific extension.",
+            short_alias=True,
             show_default=False,
-            group=HelpPanel.POST_PROCESS,
+            group=Panel.POST_PROCESS,
         ),
     ] = None,
     subtitles: Annotated[
         str | None,
         Parameter(
-            name=["--subtitles", "-s"],
             help='Languages of subtitles to embed (e.g. [green]"en,es"[/] or [green]"all"[/]).',
-            group=HelpPanel.POST_PROCESS,
+            short_alias=True,
+            group=Panel.POST_PROCESS,
         ),
     ] = "all",
     embed_metadata: Annotated[
         bool,
         Parameter(
-            name="--embed-metadata",
             negative="--no-metadata",
             help="Embed title, chapters, and thumbnail into the file.",
-            group=HelpPanel.POST_PROCESS,
+            group=Panel.POST_PROCESS,
         ),
     ] = True,
     sponsorblock: Annotated[
         bool,
         Parameter(
-            name="--sponsorblock",
             negative="--no-sponsorblock",
             help="Automatically remove sponsor segments and intros (YouTube only).",
-            group=HelpPanel.POST_PROCESS,
+            group=Panel.POST_PROCESS,
         ),
     ] = False,
     ffmpeg_path: Annotated[
         Path | None,
         Parameter(
-            name="--ffmpeg-path",
             help="FFmpeg executable to use.",
             show_default=False,
-            group=HelpPanel.POST_PROCESS,
+            group=Panel.POST_PROCESS,
         ),
     ] = None,
     # AUTH
@@ -174,7 +156,7 @@ async def download(
         str | None,
         Parameter(
             help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=HelpPanel.AUTH,
+            group=Panel.AUTH,
         ),
     ] = None,
     proxy: Annotated[
@@ -182,7 +164,7 @@ async def download(
         Parameter(
             name="--proxy",
             help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=HelpPanel.AUTH,
+            group=Panel.AUTH,
         ),
     ] = None,
 ):

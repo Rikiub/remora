@@ -11,7 +11,7 @@ class HelpPanel(StrEnum):
     DISPLAY = "Display"
 
 
-def create_app(version: str) -> App:
+def create_app() -> App:
     from remora_cli.commands import download, extract
 
     app = App(
@@ -19,7 +19,7 @@ def create_app(version: str) -> App:
         help="Fishy data extractor/downloader ✨",
         help_format="rich",
         help_formatter=TyperFormatter,
-        version=version,
+        help_on_error=True,
     )
 
     app.command(download.app, name="*")
@@ -27,7 +27,6 @@ def create_app(version: str) -> App:
 
     @app.meta.default
     def launcher(
-        *tokens: Annotated[str, Parameter(show=False, allow_leading_hyphen=True)],
         quiet: Annotated[
             bool,
             Parameter(
@@ -51,6 +50,6 @@ def create_app(version: str) -> App:
 
         setup_logging(CONFIG.log_level)
 
-        return app(tokens)
+        return app()
 
     return app
