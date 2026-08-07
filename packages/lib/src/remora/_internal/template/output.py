@@ -19,8 +19,6 @@ _OUTPUT_EXCLUDED_KEYS = {
     "subtitles",
     "thumbnails",
     "streams",
-    "is_cache",
-    "playlist.is_cache",
     "playlist.entries",
     "playlist.thumbnails",
 }

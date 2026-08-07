@@ -15,5 +15,5 @@ def test_ffmpeg():
 
 
 def test_format():
-    DownloadOptions(format="mp3")
-    DownloadOptions(format="mka")
+    DownloadOptions(format_type="mp3")
+    DownloadOptions(format_type="mka")

@@ -13,7 +13,7 @@ def _normalize_artists(value: str | list[str]) -> list[str]:
     if isinstance(value, str) and (values := value.split(",")):
         artists = values
 
-    if len(value) == 1 and (values := artists[0].split(",")):
+    if len(artists) == 1 and (values := artists[0].split(",")):
         artists = values
 
     # Remove duplicates

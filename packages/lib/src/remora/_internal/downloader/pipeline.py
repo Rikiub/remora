@@ -335,8 +335,8 @@ class DownloadPipeline:
         audio: StreamContext[AudioStream],
     ):
         extension = VideoExtension.MP4
-        if isinstance(self.config.format_target, VideoExtension):
-            extension = self.config.format_target
+        if isinstance(self.config.convert_to, VideoExtension):
+            extension = self.config.convert_to
 
         file_path = Path(f"{get_tempfile()}.{extension}")
         merging = MediaProcessing(
@@ -421,25 +421,22 @@ class DownloadPipeline:
                 )
 
         if isinstance(stream, VideoStream):
-            if self.config.format_target:
+            if self.config.convert_to:
                 async with track_prc("change_container"):
-                    await prc.change_container(self.config.format_target)
+                    await prc.change_container(self.config.convert_to)
 
             if subtitles:
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
         elif isinstance(stream, AudioStream):
-            if (
-                self.config.format_target
-                and self.config.format_target != stream.extension
-            ):
+            if self.config.convert_to and self.config.convert_to != stream.extension:
                 try:
                     async with track_prc("change_container", True):
-                        await prc.change_container(self.config.format_target)
+                        await prc.change_container(self.config.convert_to)
                 except ProcessorError:
                     async with track_prc("convert_audio"):
-                        await prc.convert_audio(self.config.format_target)
+                        await prc.convert_audio(self.config.convert_to)
 
         # Metadata
         # Must run before embed the thumbnail.

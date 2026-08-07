@@ -5,9 +5,8 @@ from pydantic import AfterValidator
 from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
-from remora.models.container.extension.types import ExtensionType, get_extension
+from remora.models.container.extension.types import ExtensionType
 from remora.models.container.format import FormatType
-from remora.models.container.target import FormatTargetType
 from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
 
@@ -18,7 +17,8 @@ class DownloadOptions(RemoraModel):
 
     Arguments:
         output_template: Directory where to save files.
-        format: Target file format to search or convert if is a extension.
+        format_type: Streams format to filter.
+        convert_to: Convert or remux the file by the given extension.
         quality: Target quality to try filter.
         ffmpeg_path: Path to FFmpeg executable.
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
@@ -28,7 +28,9 @@ class DownloadOptions(RemoraModel):
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
-    format: FormatTargetType = "video"
+
+    format_type: FormatType = "video"
+    convert_to: ExtensionType | None = None
     quality: StreamQuality | int | None = None
 
     ffmpeg_path: Annotated[
@@ -39,31 +41,3 @@ class DownloadOptions(RemoraModel):
 
     max_workers: int = 4
     retries: int = DEFAULT_RETRIES
-
-    @property
-    def format_type(self) -> FormatType:
-        """Determines category of the selected format.
-
-        Returns:
-            "video" or "audio".
-        """
-
-        if self.format in ("video", "audio"):
-            return self.format
-
-        target = get_extension(self.format)
-        return target.type
-
-    @property
-    def format_target(self) -> ExtensionType | None:
-        """Determines the specific extension: 'mp4', 'flac', etc.
-
-        Returns:
-            Extension if the format is a valid extension.
-            None if the format is a generic type (e.g., 'video', 'audio').
-        """
-
-        try:
-            return get_extension(self.format)
-        except ValueError:
-            return None

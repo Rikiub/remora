@@ -1,12 +1,13 @@
-import textwrap
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from loguru import logger
 from typer import Argument, BadParameter, Option, Typer
 
-from remora.models.container.target import FormatTargetType
+from remora.models.container.extension.audio import SafeAudioExtensionStr
+from remora.models.container.extension.video import SafeVideoExtensionStr
+from remora.models.container.format import FormatType
 from remora.types import DEFAULT_TEMPLATE
 from remora_cli.completions import complete_output, complete_query, complete_resolution
 from remora_cli.config import CONFIG
@@ -15,12 +16,17 @@ from remora_cli.ui.rich import CONSOLE
 
 
 class HelpPanel(StrEnum):
-    file = "File"
-    downloader = "Downloader"
+    FILTERS = "Filters"
+    DOWNLOADER = "Downloader"
+    POST_PROCESS = "Post-processing"
+    AUTH = "Authentication"
 
 
-FormatEnum = unwrap_literals(FormatTargetType)
+FormatEnum = unwrap_literals(FormatType)
 FormatEnum = StrEnum("FormatEnum", {s: s for s in FormatEnum})
+
+ExtensionEnum = unwrap_literals(Literal[SafeVideoExtensionStr, SafeAudioExtensionStr])
+ExtensionEnum = StrEnum("ExtensionEnum", {s: s for s in ExtensionEnum})
 
 app = Typer()
 
@@ -28,40 +34,46 @@ app = Typer()
 @app.command(no_args_is_help=True)
 @make_async
 async def download(
+    # ARGUMENTS
     query: Annotated[
         list[str],
         Argument(
             help="""[green]URLs[/] and [green]queries[/] to process.
             \n
             - Insert a [green]URL[/] to download. [grey62](Default)[/]\n
-            - Insert a [green]service[/] and [green]query[/] to search and download.
+            - Insert a [green]service[/]:[green]query[/] to search and download.
             """,
             show_default=False,
             autocompletion=complete_query,
         ),
     ],
-    format: Annotated[
+    # OPTIONS
+    output: Annotated[
+        str,
+        Option(
+            "--output",
+            "-o",
+            help="Path or template for the saved file.",
+            autocompletion=complete_output,
+            show_default=True,
+        ),
+    ] = DEFAULT_TEMPLATE,
+    interactive: Annotated[
+        bool,
+        Option(
+            "--interactive/--no-interactive",
+            help="Interactively select streams or playlist items.",
+        ),
+    ] = True,
+    # FILTER
+    type: Annotated[
         FormatEnum,  # type: ignore
         Option(
-            "--format",
-            "-f",
-            help="""
-                File type to request.\n
-                - To get BEST, select [green]video[/] or [green]audio[/]. [grey62](Fast)[/]\n
-                - To convert, select a file [green]extension[/]. [grey62](Slow)[/]
-                """,
-            prompt=textwrap.dedent(
-                """
-                What format you want request?
-
-                - To get BEST, select 'video' or 'audio' (Fast)
-                - To convert, select a file extension (Slow)
-                
-                """
-            ),
-            prompt_required=False,
+            "--type",
+            "-t",
+            help="Type of stream to download (downloads best format by default).",
             show_default=False,
-            rich_help_panel=HelpPanel.file,
+            rich_help_panel=HelpPanel.FILTERS,
         ),
     ] = FormatEnum.video,  # type: ignore
     quality: Annotated[
@@ -69,38 +81,114 @@ async def download(
         Option(
             "--quality",
             "-q",
-            help="Prefered video/audio quality to filter.",
-            rich_help_panel=HelpPanel.file,
+            help="Prefered target quality.",
+            rich_help_panel=HelpPanel.FILTERS,
             autocompletion=complete_resolution,
-            show_default=False,
         ),
     ] = None,
-    output: Annotated[
-        str,
+    video_codec: Annotated[
+        str | None,
         Option(
-            "--output",
-            "-o",
-            help="Directory where to save downloads.",
-            rich_help_panel=HelpPanel.file,
-            autocompletion=complete_output,
-            show_default=False,
+            "--video-codec/--vcodec",
+            help="Prefered video codec.",
+            rich_help_panel=HelpPanel.FILTERS,
         ),
-    ] = DEFAULT_TEMPLATE,
+    ] = None,
+    audio_codec: Annotated[
+        str | None,
+        Option(
+            "--audio-codec/--acodec",
+            help="Prefered audio codec.",
+            rich_help_panel=HelpPanel.FILTERS,
+        ),
+    ] = None,
+    # DOWNLOADER
+    skip_duplicates: Annotated[
+        bool,
+        Option(
+            "--skip-duplicates/--force",
+            help="Skip downloading if a file with the same name already exists, regardless of extension.",
+            rich_help_panel=HelpPanel.DOWNLOADER,
+        ),
+    ] = True,
     max_workers: Annotated[
         int,
         Option(
             help="Limit of simultaneous downloads.",
-            rich_help_panel=HelpPanel.downloader,
+            rich_help_panel=HelpPanel.DOWNLOADER,
         ),
     ] = 5,
+    limit_rate: Annotated[
+        str | None,
+        Option(
+            "--limit-rate",
+            help='Maximum download rate (e.g. [green]"5M"[/] or [green]"500K"[/]).',
+            rich_help_panel=HelpPanel.DOWNLOADER,
+        ),
+    ] = None,
+    # POST_PROCESS
+    convert: Annotated[
+        ExtensionEnum | None,  # type: ignore
+        Option(
+            "--convert",
+            "-c",
+            help="Convert or remux the downloaded file into a specific extension.",
+            show_default=False,
+            rich_help_panel=HelpPanel.POST_PROCESS,
+        ),
+    ] = None,
+    subtitles: Annotated[
+        str | None,
+        Option(
+            "--subtitles",
+            "-s",
+            help='Languages of subtitles to embed (e.g. [green]"en,es"[/] or [green]"all"[/]).',
+            rich_help_panel=HelpPanel.POST_PROCESS,
+        ),
+    ] = "all",
+    embed_metadata: Annotated[
+        bool,
+        Option(
+            "--embed-metadata/--no-metadata",
+            help="Embed title, chapters, and thumbnail into the file.",
+            rich_help_panel=HelpPanel.POST_PROCESS,
+        ),
+    ] = True,
+    sponsorblock: Annotated[
+        bool,
+        Option(
+            "--sponsorblock/--no-sponsorblock",
+            help="Automatically remove sponsor segments and intros (YouTube only).",
+            rich_help_panel=HelpPanel.POST_PROCESS,
+        ),
+    ] = False,
     ffmpeg_path: Annotated[
         Path | None,
         Option(
             help="FFmpeg executable to use.",
-            rich_help_panel=HelpPanel.downloader,
+            rich_help_panel=HelpPanel.POST_PROCESS,
             show_default=False,
             file_okay=True,
             dir_okay=False,
+        ),
+    ] = None,
+    # AUTH
+    cookies: Annotated[
+        str | None,
+        Option(
+            help="Browser name or path to a [green]cookies.txt[/] file.",
+            rich_help_panel=HelpPanel.AUTH,
+            metavar="<chrome|firefox|brave|edge|file>",
+            file_okay=True,
+        ),
+    ] = None,
+    proxy: Annotated[
+        str | None,
+        Option(
+            "--proxy",
+            help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
+            rich_help_panel=HelpPanel.AUTH,
+            metavar="<url>",
         ),
     ] = None,
 ):
@@ -124,7 +212,8 @@ async def download(
         try:
             config = DownloadOptions(
                 output_template=output,
-                format=format,  # type: ignore
+                format_type=type,  # type: ignore
+                convert_to=convert,
                 quality=quality,
                 ffmpeg_path=ffmpeg_path,
                 max_workers=max_workers,

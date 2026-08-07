@@ -17,7 +17,6 @@ DEFAULT_EXCLUDE = {
     "heatmap",
     "medias",
     "playlists",
-    "entries",
     "is_cache",
 }
 FIELDS_ORDER = [

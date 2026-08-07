@@ -17,7 +17,7 @@ async def test_single(tmp_path: Path):
     remora = Remora(
         download_options=DownloadOptions(
             output_template=tmp_path,
-            format="audio",
+            format_type="audio",
             quality=1,
         ),
     )
@@ -33,7 +33,7 @@ async def test_list(tmp_path: Path):
     remora = Remora(
         download_options=DownloadOptions(
             output_template=tmp_path,
-            format="audio",
+            format_type="audio",
             quality=1,
         ),
     )
