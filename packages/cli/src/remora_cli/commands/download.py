@@ -95,7 +95,6 @@ async def download(
     limit_rate: Annotated[
         str | None,
         Parameter(
-            name="--limit-rate",
             help="Maximum download rate (e.g. [green]5M[/] or [green]500K[/]).",
             group=Panel.DOWNLOADER,
         ),
