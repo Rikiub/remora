@@ -23,10 +23,10 @@ class Style(StrEnum):
     """Rich markup style for each help entry variation."""
 
     POSITIVE = "bold cyan"  # command names and positive flags (--output, --convert)
-    POSITIVE_SHORTS = "bold magenta"  # positive alias flags (-o, -f)
+    POSITIVE_SHORTS = "bold green"  # positive alias flags (-o, -f)
     NEGATIVE = "bold magenta"  # negated boolean flags (--force)
-    NEGATIVE_SHORTS = "bold magenta"  # negated boolean flags (-f)
-    METAVAR = "orange1"  # value placeholders (<OUTPUT>)
+    NEGATIVE_SHORTS = "bold green"  # negated boolean flags (-f)
+    METAVAR = "bold yellow"  # value placeholders (<OUTPUT>)
 
     def apply(self, text: str) -> str:
         """Wrap `text` in this style's markup."""
