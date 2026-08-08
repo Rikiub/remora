@@ -1,3 +1,4 @@
+import importlib
 import subprocess
 from functools import cache
 from pathlib import Path
@@ -27,10 +28,11 @@ def find_internal_ffmpeg() -> Path | None:
     """Try find FFmpeg binary from dependency."""
 
     try:
-        from imageio_ffmpeg import get_ffmpeg_exe
+        package = importlib.import_module("imageio_ffmpeg")
 
-        ffmpeg = get_ffmpeg_exe()
+        ffmpeg = package.get_ffmpeg_exe()
         ffmpeg = validate_ffmpeg(ffmpeg)
+
         return ffmpeg
     except ImportError:
         return None
@@ -43,6 +45,7 @@ def find_system_ffmpeg() -> Path | None:
     try:
         ffmpeg = which("ffmpeg")
         ffmpeg = validate_ffmpeg(ffmpeg)
+
         return ffmpeg
     except FFmpegNotFoundError:
         return None
