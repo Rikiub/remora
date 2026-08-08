@@ -18,6 +18,7 @@ def create_app() -> App:
             allow_leading_hyphen=True,
         ),
     )
+    app.register_install_completion_command()
 
     GROUP = "Subcommands"
     app.command(download, group=GROUP)

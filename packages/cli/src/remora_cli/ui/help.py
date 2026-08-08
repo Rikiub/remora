@@ -14,16 +14,18 @@ from cyclopts.help import (
     ColumnSpec,
     DefaultFormatter,
     HelpEntry,
+    Renderer,
 )
-from cyclopts.help.specs import AsteriskColumn, DescriptionColumn
+from cyclopts.help.specs import AsteriskColumn, DescriptionColumn, PanelSpec
 
 
 class Style(StrEnum):
     """Rich markup style for each help entry variation."""
 
     POSITIVE = "bold cyan"  # command names and positive flags (--output, --convert)
-    POSITIVE_SHORT = "bold magenta"  # positive alias flags (-o, -f)
-    NEGATIVE = "bold magenta"  # negated boolean flags (--force, --no-metadata)
+    POSITIVE_SHORTS = "bold magenta"  # positive alias flags (-o, -f)
+    NEGATIVE = "bold magenta"  # negated boolean flags (--force)
+    NEGATIVE_SHORTS = "bold magenta"  # negated boolean flags (-f)
     METAVAR = "orange1"  # value placeholders (<OUTPUT>)
 
     def apply(self, text: str) -> str:
@@ -31,77 +33,92 @@ class Style(StrEnum):
         return f"[{self}]{text}[/]"
 
 
-def _styled_names(entry: HelpEntry) -> list[str]:
-    """Style every flag of `entry` by variation, keeping display order.
+class NameRenderer(Renderer):
+    def __call__(self, entry: HelpEntry):
+        self.entry = entry
+        return self.name
 
-    Mirrors ``HelpEntry.all_options`` ordering (positive longs, positive shorts,
-    negative longs, negative shorts) while skipping cyclopts' generated
-    ``--empty-*`` names.
-    """
-    styles = (
-        (entry.positive_names, Style.POSITIVE),
-        (entry.positive_shorts, Style.POSITIVE_SHORT),
-        (entry.negative_names, Style.NEGATIVE),
-        (entry.negative_shorts, Style.NEGATIVE),
-    )
+    @property
+    def name(self) -> str:
+        """Render option/command names with colors."""
+        # Command entries carry no flags and no value type: every name is the
+        # command itself (e.g. "download", "extract").
+        if not self.entry.type and not any(
+            name.startswith("-") for name in self.entry.all_options
+        ):
+            return " ".join(self.styled_all_options)
 
-    styled: list[str] = []
-    for names, style in styles:
-        styled.extend(
-            style.apply(name)
-            for name in names
-            if name.startswith("-") and not name.startswith("--empty-")
+        # Format
+        options = self.styled_all_options
+        text = " ".join(options)
+
+        if metavar := self.metavar:
+            text = f"{text} {metavar}"
+
+        return text
+
+    @property
+    def metavar(self) -> str | None:
+        """Styled value placeholder (`<OUTPUT>`), or `None` for bare switches."""
+        if self.entry.type is bool:
+            return None
+
+        value_name = next(
+            (
+                name
+                for name in self.entry.all_options
+                if name and not name.startswith("-")
+            ),
+            None,
         )
-    return styled
+        if not value_name:
+            return None
 
+        return Style.METAVAR.apply(f"<{value_name.replace('-', '_')}>")
 
-def _metavar(entry: HelpEntry) -> str | None:
-    """Styled value placeholder (`<OUTPUT>`), or `None` for bare switches."""
-    if entry.type is bool:
-        return None
+    @property
+    def styled_all_options(self) -> list[str]:
+        return [
+            *self.styled_positive_names,
+            *self.styled_positive_shorts,
+            *self.styled_negative_names,
+            *self.styled_negative_shorts,
+        ]
 
-    value_name = next(
-        (name for name in entry.all_options if name and not name.startswith("-")),
-        None,
-    )
-    if not value_name:
-        return None
+    @property
+    def styled_positive_names(self) -> list[str]:
+        names = list(self.entry.positive_names)
 
-    return Style.METAVAR.apply(f"<{value_name.replace('-', '_')}>")
+        metavar = self.entry.positive_names[0]
+        if metavar.isupper():
+            names.remove(metavar)
 
+        return [Style.POSITIVE.apply(o) for o in names]
 
-def _names_renderer(entry: HelpEntry) -> str:
-    """Render option/command names Typer-style.
+    @property
+    def styled_positive_shorts(self) -> list[str]:
+        return [Style.POSITIVE_SHORTS.apply(o) for o in self.entry.positive_shorts]
 
-    Flags are joined in display order and each variation (positive/negative)
-    gets its own color; ``--empty-*`` flags and value metavars for bare
-    boolean switches are dropped.
-    """
-    # Command entries carry no flags and no value type: every name is the
-    # command itself (e.g. "download", "extract").
-    if not entry.type and not any(name.startswith("-") for name in entry.all_options):
-        return " ".join(
-            Style.POSITIVE.apply(name) for name in entry.all_options if name
-        )
+    @property
+    def styled_negative_names(self) -> list[str]:
+        return [Style.NEGATIVE.apply(o) for o in self.entry.negative_names]
 
-    parts = _styled_names(entry)
-    if metavar := _metavar(entry):
-        parts.append(metavar)
-
-    return " ".join(parts)
+    @property
+    def styled_negative_shorts(self) -> list[str]:
+        return [Style.NEGATIVE_SHORTS.apply(o) for o in self.entry.negative_shorts]
 
 
 def _columns_builder(console, options, entries: list[HelpEntry]):
-    """Drop the required-marker column unless an entry actually needs it.
+    name_column = ColumnSpec(renderer=NameRenderer())
 
-    ``AsteriskColumn`` is a fixed ``width=1`` cell that renders as a blank gap
-    on every row, so it is only kept when at least one entry is required.
-    """
-    name_column = ColumnSpec(renderer=_names_renderer)
-
+    # Add the required-marker column only when an entry needs it.
     if any(entry.required for entry in entries):
         return (AsteriskColumn, name_column, DescriptionColumn)
+
     return (name_column, DescriptionColumn)
 
 
-AppFormatter = DefaultFormatter(column_specs=_columns_builder)
+AppFormatter = DefaultFormatter(
+    column_specs=_columns_builder,
+    panel_spec=PanelSpec(border_style="dim"),
+)
