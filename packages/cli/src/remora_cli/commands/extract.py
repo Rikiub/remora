@@ -61,14 +61,11 @@ def parse_keys(value: list[str]) -> list[str]:
     return value
 
 
-class HelpPanel(StrEnum):
+class Panel(StrEnum):
     FORMAT = "Format"
 
 
-app = App(
-    name="*",
-    help="Extract metadata from [green]URL[/] or search [green]service[/].",
-)
+app = App(help="Extract metadata from [green]URL[/] or search [green]service[/].")
 
 
 @app.command
@@ -78,23 +75,23 @@ async def extract(
     format: Annotated[
         Literal["table", "json"] | None,
         Parameter(
-            name=["--format", "-f"],
             help="Output format of data.",
-            group=HelpPanel.FORMAT,
+            short_alias=True,
+            group=Panel.FORMAT,
         ),
     ] = None,
     include: Annotated[
         list[str] | None,
         Parameter(
             help="Keys to include.",
-            group=HelpPanel.FORMAT,
+            group=Panel.FORMAT,
         ),
     ] = None,
     exclude: Annotated[
         list[str] | None,
         Parameter(
             help="Keys to exclude.",
-            group=HelpPanel.FORMAT,
+            group=Panel.FORMAT,
         ),
     ] = None,
     # AUTH

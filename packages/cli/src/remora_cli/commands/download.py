@@ -19,7 +19,7 @@ class Panel(StrEnum):
     POST_PROCESS = "Post-processing"
 
 
-app = App(name="*")
+app = App()
 
 
 @app.command
@@ -31,8 +31,8 @@ async def download(
     output: Annotated[
         str,
         Parameter(
-            short_alias=True,
             help="Path or template for the saved file.",
+            short_alias=True,
             show_default=True,
         ),
     ] = DEFAULT_TEMPLATE,
@@ -46,8 +46,8 @@ async def download(
     type: Annotated[
         FormatType,
         Parameter(
-            short_alias=True,
             help="Type of stream to download (downloads best format by default).",
+            short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
         ),
@@ -55,8 +55,8 @@ async def download(
     quality: Annotated[
         int | VideoQuality | None,
         Parameter(
-            short_alias=True,
             help="Prefered target quality.",
+            short_alias=True,
             group=Panel.FILTERS,
         ),
     ] = None,
@@ -102,7 +102,7 @@ async def download(
     ] = None,
     # POST-PROCESS
     convert: Annotated[
-        Literal[SafeVideoExtensionStr, SafeAudioExtensionStr] | None,  # type: ignore
+        Literal[SafeVideoExtensionStr, SafeAudioExtensionStr] | None,
         Parameter(
             help="Convert or remux the downloaded file into a specific extension.",
             short_alias=True,
@@ -169,7 +169,7 @@ async def download(
         try:
             config = DownloadOptions(
                 output_template=output,
-                format_type=type,  # type: ignore
+                format_type=type,
                 convert_to=convert,
                 quality=quality,
                 ffmpeg_path=ffmpeg_path,

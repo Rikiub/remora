@@ -9,7 +9,7 @@ from cyclopts import Parameter
 from remora.logs import LoggingLevels
 
 
-class OptionsPanel(StrEnum):
+class Panel(StrEnum):
     DISPLAY = "Display"
     AUTH = "Authentication"
 
@@ -32,14 +32,14 @@ class DisplayOptions:
     quiet: Annotated[
         bool,
         Parameter(
-            group=OptionsPanel.DISPLAY,
+            group=Panel.DISPLAY,
             help="Supress screen information.",
         ),
     ] = False
     verbose: Annotated[
         bool,
         Parameter(
-            group=OptionsPanel.DISPLAY,
+            group=Panel.DISPLAY,
             help="Display more information on screen.",
         ),
     ] = False
@@ -62,19 +62,19 @@ class DisplayOptions:
 @Parameter(name="*")
 @dataclass(slots=True)
 class AuthOptions:
-    """Commons authentication options for every command."""
+    """Commons authentication options for specific commands."""
 
     cookies: Annotated[
         str | None,
         Parameter(
             help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=OptionsPanel.AUTH,
+            group=Panel.AUTH,
         ),
     ] = None
     proxy: Annotated[
         str | None,
         Parameter(
             help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=OptionsPanel.AUTH,
+            group=Panel.AUTH,
         ),
     ] = None

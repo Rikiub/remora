@@ -18,7 +18,7 @@ from cyclopts.help.specs import AsteriskColumn, DescriptionColumn
 
 class Style:
     COMMAND = "bold cyan"
-    SHORT_COMMAND = "deep_pink3"
+    SHORT_COMMAND = "magenta"
     METAVAR = "orange1"
 
 
@@ -59,7 +59,7 @@ def _names_renderer(entry: HelpEntry) -> str:
         """Highlight short aliases (`-o`) and negative boolean flags (`--force`)."""
         if is_negative:
             return f"[{Style.SHORT_COMMAND}]{name}[/]"
-        return name
+        return f"[{Style.COMMAND}]{name}[/]"
 
     negatives = (
         set(entry.negative_names) | set(entry.negative_shorts) | set(entry.shorts)
@@ -75,13 +75,35 @@ def _names_renderer(entry: HelpEntry) -> str:
     return text
 
 
+def _metavar_renderer(entry: HelpEntry):
+    flags = [
+        name
+        for name in entry.all_options
+        if name.startswith("-") and not name.startswith("--empty-")
+    ]
+
+    is_bool = entry.type is bool or not flags
+    metavar = (
+        next(
+            (name for name in entry.all_options if name and not name.startswith("-")),
+            None,
+        )
+        if not is_bool
+        else None
+    )
+    if metavar:
+        metavar = metavar.replace("-", "_")
+
+    return metavar
+
+
 def _columns_builder(console, options, entries: list[HelpEntry]):
     """Drop the required-marker column unless an entry actually needs it.
 
     `AsteriskColumn` is a fixed `width=1` cell that renders as a blank gap on
     every row, so it is only kept when at least one entry is required.
     """
-    name_column = ColumnSpec(renderer=_names_renderer, style=Style.COMMAND)
+    name_column = ColumnSpec(renderer=_names_renderer)
 
     if any(entry.required for entry in entries):
         return (AsteriskColumn, name_column, DescriptionColumn)
