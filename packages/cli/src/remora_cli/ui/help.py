@@ -21,7 +21,8 @@ from cyclopts.help.specs import AsteriskColumn, DescriptionColumn
 class Style(StrEnum):
     """Rich markup style for each help entry variation."""
 
-    POSITIVE = "bold cyan"  # command names and positive flags (--output, -o)
+    POSITIVE = "bold cyan"  # command names and positive flags (--output, --convert)
+    POSITIVE_SHORT = "bold magenta"  # positive alias flags (-o, -f)
     NEGATIVE = "bold magenta"  # negated boolean flags (--force, --no-metadata)
     METAVAR = "orange1"  # value placeholders (<OUTPUT>)
 
@@ -39,7 +40,7 @@ def _styled_names(entry: HelpEntry) -> list[str]:
     """
     styles = (
         (entry.positive_names, Style.POSITIVE),
-        (entry.positive_shorts, Style.POSITIVE),
+        (entry.positive_shorts, Style.POSITIVE_SHORT),
         (entry.negative_names, Style.NEGATIVE),
         (entry.negative_shorts, Style.NEGATIVE),
     )
