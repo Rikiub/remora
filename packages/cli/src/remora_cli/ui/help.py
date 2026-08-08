@@ -8,6 +8,8 @@ Transforms cyclopts' default help panels into the classic Typer rich layout:
 - Long option names wrap with a hanging indent rather than folding onto new rows.
 """
 
+from enum import StrEnum
+
 from cyclopts.help import (
     ColumnSpec,
     DefaultFormatter,
@@ -16,92 +18,83 @@ from cyclopts.help import (
 from cyclopts.help.specs import AsteriskColumn, DescriptionColumn
 
 
-class Style:
-    COMMAND = "bold cyan"
-    SHORT_COMMAND = "magenta"
-    METAVAR = "orange1"
+class Style(StrEnum):
+    """Rich markup style for each help entry variation."""
+
+    POSITIVE = "bold cyan"  # command names and positive flags (--output, -o)
+    NEGATIVE = "bold magenta"  # negated boolean flags (--force, --no-metadata)
+    METAVAR = "orange1"  # value placeholders (<OUTPUT>)
+
+    def apply(self, text: str) -> str:
+        """Wrap `text` in this style's markup."""
+        return f"[{self}]{text}[/]"
+
+
+def _styled_names(entry: HelpEntry) -> list[str]:
+    """Style every flag of `entry` by variation, keeping display order.
+
+    Mirrors ``HelpEntry.all_options`` ordering (positive longs, positive shorts,
+    negative longs, negative shorts) while skipping cyclopts' generated
+    ``--empty-*`` names.
+    """
+    styles = (
+        (entry.positive_names, Style.POSITIVE),
+        (entry.positive_shorts, Style.POSITIVE),
+        (entry.negative_names, Style.NEGATIVE),
+        (entry.negative_shorts, Style.NEGATIVE),
+    )
+
+    styled: list[str] = []
+    for names, style in styles:
+        styled.extend(
+            style.apply(name)
+            for name in names
+            if name.startswith("-") and not name.startswith("--empty-")
+        )
+    return styled
+
+
+def _metavar(entry: HelpEntry) -> str | None:
+    """Styled value placeholder (`<OUTPUT>`), or `None` for bare switches."""
+    if entry.type is bool:
+        return None
+
+    value_name = next(
+        (name for name in entry.all_options if name and not name.startswith("-")),
+        None,
+    )
+    if not value_name:
+        return None
+
+    return Style.METAVAR.apply(f"<{value_name.replace('-', '_')}>")
 
 
 def _names_renderer(entry: HelpEntry) -> str:
     """Render option/command names Typer-style.
 
-    Commas-joins the option aliases and drops the cyclopts-only ``--empty-*``
-    flags and the uppercase metavar prefix.
+    Flags are joined in display order and each variation (positive/negative)
+    gets its own color; ``--empty-*`` flags and value metavars for bare
+    boolean switches are dropped.
     """
-
     # Command entries carry no flags and no value type: every name is the
-    # command itself (e.g. "download", "extract"), display them joined.
-    if entry.type is None and not any(
-        name.startswith("-") for name in entry.all_options
-    ):
-        return ", ".join(name for name in entry.all_options if name)
-
-    flags = [
-        name
-        for name in entry.all_options
-        if name.startswith("-") and not name.startswith("--empty-")
-    ]
-
-    # Booleans are bare switches, they take no value, so no metavar.
-    is_bool = entry.type is bool or not flags
-    metavar = (
-        next(
-            (name for name in entry.all_options if name and not name.startswith("-")),
-            None,
+    # command itself (e.g. "download", "extract").
+    if not entry.type and not any(name.startswith("-") for name in entry.all_options):
+        return " ".join(
+            Style.POSITIVE.apply(name) for name in entry.all_options if name
         )
-        if not is_bool
-        else None
-    )
-    if metavar:
-        metavar = metavar.replace("-", "_")
 
-    def style_flag(name: str, is_negative: bool = False) -> str:
-        """Highlight short aliases (`-o`) and negative boolean flags (`--force`)."""
-        if is_negative:
-            return f"[{Style.SHORT_COMMAND}]{name}[/]"
-        return f"[{Style.COMMAND}]{name}[/]"
+    parts = _styled_names(entry)
+    if metavar := _metavar(entry):
+        parts.append(metavar)
 
-    negatives = (
-        set(entry.negative_names) | set(entry.negative_shorts) | set(entry.shorts)
-    )
-    text = " ".join(style_flag(name, name in negatives) for name in flags)
-
-    if flags and metavar:
-        text = f"{text} [{Style.METAVAR}]<{metavar}>[/]"
-    elif not flags:
-        # Pure positional with no generated flags: show the placeholder.
-        text = metavar or ""
-
-    return text
-
-
-def _metavar_renderer(entry: HelpEntry):
-    flags = [
-        name
-        for name in entry.all_options
-        if name.startswith("-") and not name.startswith("--empty-")
-    ]
-
-    is_bool = entry.type is bool or not flags
-    metavar = (
-        next(
-            (name for name in entry.all_options if name and not name.startswith("-")),
-            None,
-        )
-        if not is_bool
-        else None
-    )
-    if metavar:
-        metavar = metavar.replace("-", "_")
-
-    return metavar
+    return " ".join(parts)
 
 
 def _columns_builder(console, options, entries: list[HelpEntry]):
     """Drop the required-marker column unless an entry actually needs it.
 
-    `AsteriskColumn` is a fixed `width=1` cell that renders as a blank gap on
-    every row, so it is only kept when at least one entry is required.
+    ``AsteriskColumn`` is a fixed ``width=1`` cell that renders as a blank gap
+    on every row, so it is only kept when at least one entry is required.
     """
     name_column = ColumnSpec(renderer=_names_renderer)
 
@@ -110,6 +103,4 @@ def _columns_builder(console, options, entries: list[HelpEntry]):
     return (name_column, DescriptionColumn)
 
 
-AppFormatter = DefaultFormatter(
-    column_specs=_columns_builder,
-)
+AppFormatter = DefaultFormatter(column_specs=_columns_builder)
