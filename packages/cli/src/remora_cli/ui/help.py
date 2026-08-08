@@ -8,10 +8,6 @@ Transforms cyclopts' default help panels into the classic Typer rich layout:
 - Long option names wrap with a hanging indent rather than folding onto new rows.
 """
 
-import math
-import textwrap
-from typing import TYPE_CHECKING
-
 from cyclopts.help import (
     ColumnSpec,
     DefaultFormatter,
@@ -19,69 +15,79 @@ from cyclopts.help import (
 )
 from cyclopts.help.specs import AsteriskColumn, DescriptionColumn
 
-if TYPE_CHECKING:
-    from rich.console import Console, ConsoleOptions
+
+class Style:
+    COMMAND = "bold cyan"
+    SHORT_COMMAND = "deep_pink3"
+    METAVAR = "orange1"
 
 
-class TyperNameRenderer:
+def _names_renderer(entry: HelpEntry) -> str:
     """Render option/command names Typer-style.
 
     Commas-joins the option aliases and drops the cyclopts-only ``--empty-*``
     flags and the uppercase metavar prefix.
     """
 
-    def __init__(self, max_width: int | None = None) -> None:
-        self.max_width = max_width
+    # Command entries carry no flags and no value type: every name is the
+    # command itself (e.g. "download", "extract"), display them joined.
+    if entry.type is None and not any(
+        name.startswith("-") for name in entry.all_options
+    ):
+        return ", ".join(name for name in entry.all_options if name)
 
-    def __call__(self, entry: HelpEntry) -> str:
-        flags = [
-            name
-            for name in entry.all_options
-            if name.startswith("-") and not name.startswith("--empty-")
-        ]
+    flags = [
+        name
+        for name in entry.all_options
+        if name.startswith("-") and not name.startswith("--empty-")
+    ]
 
-        if not flags:
-            # Pure positional argument, no flag aliases: keep the display name.
-            flags = [
-                name
-                for name in entry.all_options
-                if name and not name.startswith("--empty-")
-            ][:1]
-
-        text = ", ".join(flags)
-
-        if self.max_width is None:
-            return text
-
-        return "\n".join(
-            textwrap.wrap(
-                text,
-                self.max_width,
-                subsequent_indent="  ",
-                break_on_hyphens=False,
-                tabsize=4,
-            )
+    # Booleans are bare switches, they take no value, so no metavar.
+    is_bool = entry.type is bool or not flags
+    metavar = (
+        next(
+            (name for name in entry.all_options if name and not name.startswith("-")),
+            None,
         )
-
-
-def typer_columns(
-    console: "Console",
-    options: "ConsoleOptions",
-    entries: list[HelpEntry],
-) -> tuple[ColumnSpec, ...]:
-    """Build the columns used by the Typer-style help panels."""
-    max_width = math.ceil(console.width * 0.4)
-    name_column = ColumnSpec(
-        renderer=TyperNameRenderer(max_width=max_width),
-        header="Option",
-        justify="left",
-        style="bold cyan",
-        max_width=max_width,
+        if not is_bool
+        else None
     )
+    if metavar:
+        metavar = metavar.replace("-", "_")
+
+    def style_flag(name: str, is_negative: bool = False) -> str:
+        """Highlight short aliases (`-o`) and negative boolean flags (`--force`)."""
+        if is_negative:
+            return f"[{Style.SHORT_COMMAND}]{name}[/]"
+        return name
+
+    negatives = (
+        set(entry.negative_names) | set(entry.negative_shorts) | set(entry.shorts)
+    )
+    text = " ".join(style_flag(name, name in negatives) for name in flags)
+
+    if flags and metavar:
+        text = f"{text} [{Style.METAVAR}]<{metavar}>[/]"
+    elif not flags:
+        # Pure positional with no generated flags: show the placeholder.
+        text = metavar or ""
+
+    return text
+
+
+def _columns_builder(console, options, entries: list[HelpEntry]):
+    """Drop the required-marker column unless an entry actually needs it.
+
+    `AsteriskColumn` is a fixed `width=1` cell that renders as a blank gap on
+    every row, so it is only kept when at least one entry is required.
+    """
+    name_column = ColumnSpec(renderer=_names_renderer, style=Style.COMMAND)
 
     if any(entry.required for entry in entries):
         return (AsteriskColumn, name_column, DescriptionColumn)
     return (name_column, DescriptionColumn)
 
 
-TyperFormatter = DefaultFormatter(column_specs=typer_columns)
+AppFormatter = DefaultFormatter(
+    column_specs=_columns_builder,
+)

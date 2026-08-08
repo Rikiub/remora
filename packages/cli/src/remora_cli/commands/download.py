@@ -9,7 +9,7 @@ from remora.models.container.extension.audio import SafeAudioExtensionStr
 from remora.models.container.extension.video import SafeVideoExtensionStr
 from remora.models.container.format import FormatType
 from remora.types import DEFAULT_TEMPLATE, VideoQuality
-from remora_cli.config import CONFIG
+from remora_cli.options import AuthOptions, DisplayOptions, QueryParameter
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -17,24 +17,16 @@ class Panel(StrEnum):
     FILTERS = "Filters"
     DOWNLOADER = "Downloader"
     POST_PROCESS = "Post-processing"
-    AUTH = "Authentication"
 
 
-app = App(name="download")
+app = App(name="*")
 
 
 @app.command
 async def download(
     # ARGUMENTS
-    query: Annotated[
-        list[str],
-        Parameter(
-            help="""[green]URLs[/] and [green]queries[/] to process.
-- Insert a [green]URL[/] to download. [grey62](Default)[/]
-- Insert a [green]service[/]:[green]query[/] to search and download.
-"""
-        ),
-    ],
+    query: QueryParameter,
+    /,
     # OPTIONS
     output: Annotated[
         str,
@@ -47,7 +39,6 @@ async def download(
     interactive: Annotated[
         bool,
         Parameter(
-            negative="--no-interactive",
             help="Interactively select streams or playlist items.",
         ),
     ] = True,
@@ -105,11 +96,11 @@ async def download(
         str | None,
         Parameter(
             name="--limit-rate",
-            help='Maximum download rate (e.g. [green]"5M"[/] or [green]"500K"[/]).',
+            help="Maximum download rate (e.g. [green]5M[/] or [green]500K[/]).",
             group=Panel.DOWNLOADER,
         ),
     ] = None,
-    # POST_PROCESS
+    # POST-PROCESS
     convert: Annotated[
         Literal[SafeVideoExtensionStr, SafeAudioExtensionStr] | None,  # type: ignore
         Parameter(
@@ -122,7 +113,7 @@ async def download(
     subtitles: Annotated[
         str | None,
         Parameter(
-            help='Languages of subtitles to embed (e.g. [green]"en,es"[/] or [green]"all"[/]).',
+            help="Languages of subtitles to embed (e.g. [green]en,es[/] or [green]all[/]).",
             short_alias=True,
             group=Panel.POST_PROCESS,
         ),
@@ -151,24 +142,14 @@ async def download(
             group=Panel.POST_PROCESS,
         ),
     ] = None,
-    # AUTH
-    cookies: Annotated[
-        str | None,
-        Parameter(
-            help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=Panel.AUTH,
-        ),
-    ] = None,
-    proxy: Annotated[
-        str | None,
-        Parameter(
-            name="--proxy",
-            help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=Panel.AUTH,
-        ),
-    ] = None,
+    # SHARED
+    auth: AuthOptions | None = None,
+    display: DisplayOptions | None = None,
 ):
     """Download video/audio from URL or search service."""
+
+    auth = auth or AuthOptions()
+    display = display or DisplayOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
@@ -206,6 +187,6 @@ async def download(
         if isinstance(result, SearchList):
             result = result.entries.medias()[0]
 
-        async with ProgressCallback(CONFIG.quiet) as progress:
+        async with ProgressCallback(display.quiet) as progress:
             async for event in remora.download_batch(result):
                 await progress.playlist_callback(event)

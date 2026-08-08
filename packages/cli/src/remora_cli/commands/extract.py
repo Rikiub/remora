@@ -5,6 +5,7 @@ from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
 from remora_cli.helpers import remove_missing
+from remora_cli.options import AuthOptions, QueryParameter
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
 DEFAULT_EXCLUDE = {
@@ -65,24 +66,15 @@ class HelpPanel(StrEnum):
 
 
 app = App(
-    name="extract",
+    name="*",
     help="Extract metadata from [green]URL[/] or search [green]service[/].",
 )
 
 
 @app.command
 async def extract(
-    query: Annotated[
-        list[str],
-        Parameter(
-            help="""[green]URLs[/] and [green]queries[/] to process.
-            \n
-            - Insert a [green]URL[/] to extract.\n
-            - Insert a [green]service[/] and [green]query[/] to search and extract.
-            """,
-            show_default=False,
-        ),
-    ],
+    query: QueryParameter,
+    /,
     format: Annotated[
         Literal["table", "json"] | None,
         Parameter(
@@ -92,19 +84,21 @@ async def extract(
         ),
     ] = None,
     include: Annotated[
-        list[str],
+        list[str] | None,
         Parameter(
             help="Keys to include.",
             group=HelpPanel.FORMAT,
         ),
-    ] = [],  # noqa: B006
+    ] = None,
     exclude: Annotated[
-        list[str],
+        list[str] | None,
         Parameter(
             help="Keys to exclude.",
             group=HelpPanel.FORMAT,
         ),
-    ] = [],  # noqa: B006
+    ] = None,
+    # AUTH
+    auth: AuthOptions | None = None,
 ):
     """Extract metadata from URL or search service."""
 
@@ -124,8 +118,8 @@ async def extract(
         sel_format = "table" if console.is_terminal else "json"
 
     # Filters
-    sel_include = set(parse_keys(include))
-    sel_exclude = set(parse_keys(exclude))
+    sel_include = set(parse_keys(include or []))
+    sel_exclude = set(parse_keys(exclude or []))
 
     if sel_format == "table" and not sel_include:
         sel_exclude |= DEFAULT_EXCLUDE

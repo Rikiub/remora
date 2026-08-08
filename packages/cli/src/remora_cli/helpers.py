@@ -1,5 +1,4 @@
-import types
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any
 
 
 def remove_missing(data: Any) -> Any:
@@ -15,20 +14,3 @@ def remove_missing(data: Any) -> Any:
     elif isinstance(data, list):
         return [v_clean for v in data if (v_clean := remove_missing(v)) is not None]
     return data
-
-
-def unwrap_literals(literals: Any) -> tuple[Any, ...]:
-    origin = get_origin(literals)
-
-    if origin is Literal:
-        return get_args(literals)
-
-    if origin is Union or origin is types.UnionType:
-        values = []
-
-        for arg in get_args(literals):
-            values.extend(unwrap_literals(arg))
-
-        return tuple(values)
-
-    return ()
