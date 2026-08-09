@@ -29,7 +29,7 @@ class DownloadOptions(RemoraModel):
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
 
-    format_type: FormatType = "video"
+    format_type: FormatType | None = None
     convert_to: ExtensionType | None = None
     quality: StreamQuality | int | None = None
 

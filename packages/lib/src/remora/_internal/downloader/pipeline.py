@@ -96,19 +96,20 @@ class DownloadPipeline:
                     media = await self.resolve_media()
 
                     with logger.contextualize(media_title=media.title):
-                        # Select Streams
-                        video_stream, audio_stream = StreamSelector(
-                            self.config
-                        ).resolve(media)
+                        # Select Best Streams
+                        selected = StreamSelector(self.config).resolve(media)
 
-                        if not self.ffmpeg_path:
-                            if self.config.format_type == "video":
-                                audio_stream = None
-                            elif self.config.format_type == "audio":
-                                video_stream = None
+                        # If there isn't FFmpeg, then remove
+                        if not self.ffmpeg_path and (selected.video and selected.audio):
+                            if self.config.format_type in ("video", "video-only", None):
+                                selected.audio = None
+                            elif self.config.format_type in ("audio", "audio-only"):
+                                selected.video = None
 
-                        stream = video_stream or audio_stream
-                        if not stream:
+                        metadata_stream = (
+                            selected.muxed or selected.video or selected.audio
+                        )
+                        if not metadata_stream:
                             error = "Streams not found"
                             await self._stream.send(
                                 MediaFailed(
@@ -122,7 +123,7 @@ class DownloadPipeline:
                         # Calculate Path & Check Existence
                         output = format_template(
                             self.config.output_template,
-                            stream=stream,
+                            stream=metadata_stream,
                             media=media,
                             default_missing="NA",
                         )
@@ -135,7 +136,9 @@ class DownloadPipeline:
                         # Download resources like streams, subtitles and thumbnail
                         with logger.contextualize(status="downloading"):
                             results = await self.download_resources(
-                                media, video_stream, audio_stream
+                                media,
+                                selected.video,
+                                selected.audio,
                             )
 
                         # Determine stable file
@@ -156,7 +159,7 @@ class DownloadPipeline:
                             with logger.contextualize(status="processing"):
                                 file_path = await self.process(
                                     file_path,
-                                    stream,
+                                    metadata_stream,
                                     results.thumbnail,
                                     results.subtitles,
                                 )

@@ -32,14 +32,14 @@ async def download(
     query: QueryParameter,
     # FILTER
     type: Annotated[
-        FormatType,
+        FormatType | None,
         Parameter(
             help="Type of stream to download (downloads best by default).",
             short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
         ),
-    ] = "video",
+    ] = None,
     quality: Annotated[
         int | VideoQuality | None,
         Parameter(
