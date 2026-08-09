@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from remora._internal.ffmpeg import (
+    _validate_ffmpeg,
     find_internal_ffmpeg,
     find_system_ffmpeg,
     validate_ffmpeg,
@@ -17,7 +18,7 @@ def clear_caches():
     """Clears functools caches before every test to prevent state leakage."""
     find_internal_ffmpeg.cache_clear()
     find_system_ffmpeg.cache_clear()
-    validate_ffmpeg.cache_clear()
+    _validate_ffmpeg.cache_clear()
 
 
 def test_validate_ffmpeg_none():

@@ -16,10 +16,6 @@ def get_ffmpeg(ffmpeg_path: StrPath | None = None) -> Path:
     """
 
     ffmpeg_path = ffmpeg_path or find_internal_ffmpeg() or find_system_ffmpeg()
-
-    if not ffmpeg_path:
-        raise FFmpegNotFoundError("FFmpeg path not provided.")
-
     return validate_ffmpeg(ffmpeg_path)
 
 
@@ -51,7 +47,6 @@ def find_system_ffmpeg() -> Path | None:
         return None
 
 
-@cache
 def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
     """Validate provided FFmpeg binary.
 
@@ -63,7 +58,16 @@ def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
     if not ffmpeg_path:
         raise FFmpegNotFoundError("FFmpeg executable not found.")
 
-    ffmpeg_path = Path(ffmpeg_path)
+    return _validate_ffmpeg(Path(ffmpeg_path))
+
+
+@cache
+def _validate_ffmpeg(ffmpeg_path: Path | None) -> Path:
+    """Validate provided FFmpeg binary."""
+
+    # Ensure the path is not None
+    if not ffmpeg_path:
+        raise FFmpegNotFoundError("FFmpeg executable not found.")
 
     # Run it and check the output.
     try:
