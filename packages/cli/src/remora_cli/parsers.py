@@ -30,25 +30,19 @@ def parse_queries(
         yield target, entry
 
 
-def parse_keys(value: Iterable[str]) -> set[str]:
-    if value:
-        from remora._internal.template.key import validate_key
-        from remora.exceptions import OutputTemplateError
+def parse_keys(keys: Iterable[str]) -> set[str]:
+    from remora._internal.template.key import validate_key
+    from remora.exceptions import OutputTemplateError
 
-        results = set()
+    results = set()
+    for key in keys:
+        try:
+            validate_key(key, True)
+            results.add(key)
+        except OutputTemplateError as e:
+            raise CycloptsError(str(e))
 
-        for item in value:
-            # Split by comma and strip whitespace
-            keys = [k.strip() for k in item.split(",") if k.strip()]
-
-            for key in keys:
-                try:
-                    validate_key(key, True)
-                    results.update(key)
-                except OutputTemplateError as e:
-                    raise CycloptsError(str(e))
-        return results
-    return set(value)
+    return results
 
 
 def remove_missing(data: Any) -> Any:

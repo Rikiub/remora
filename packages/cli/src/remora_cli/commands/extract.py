@@ -50,7 +50,6 @@ app = App()
 @app.command
 async def extract(
     query: QueryParameter,
-    /,
     format: Annotated[
         Literal["table", "json"] | None,
         Parameter(
@@ -64,6 +63,7 @@ async def extract(
         Parameter(
             help="Keys to include.",
             group=Panel.FORMAT,
+            negative=False,
         ),
     ] = None,
     exclude: Annotated[
@@ -71,6 +71,7 @@ async def extract(
         Parameter(
             help="Keys to exclude.",
             group=Panel.FORMAT,
+            negative=False,
         ),
     ] = None,
     # AUTH

@@ -9,7 +9,11 @@ from remora.models.container.extension.audio import SafeAudioExtensionStr
 from remora.models.container.extension.video import SafeVideoExtensionStr
 from remora.models.container.format import FormatType
 from remora.types import DEFAULT_TEMPLATE, VideoQuality
-from remora_cli.options import DisplayOptions, ExtractorOptions, QueryParameter
+from remora_cli.options import (
+    DisplayOptions,
+    ExtractorOptions,
+    QueryParameter,
+)
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -26,27 +30,11 @@ app = App()
 async def download(
     # ARGUMENTS
     query: QueryParameter,
-    /,
-    # OPTIONS
-    output: Annotated[
-        str | Path,
-        Parameter(
-            help="Path or template for the saved file.",
-            short_alias=True,
-            show_default=True,
-        ),
-    ] = DEFAULT_TEMPLATE,
-    interactive: Annotated[
-        bool,
-        Parameter(
-            help="Interactively select streams or playlist items.",
-        ),
-    ] = True,
     # FILTER
     type: Annotated[
         FormatType,
         Parameter(
-            help="Type of stream to download (downloads best format by default).",
+            help="Type of stream to download (downloads best by default).",
             short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
@@ -77,12 +65,21 @@ async def download(
         ),
     ] = None,
     # DOWNLOADER
-    skip_duplicates: Annotated[
+    output: Annotated[
+        str | Path,
+        Parameter(
+            help="Path or template for the saved file.",
+            short_alias=True,
+            group=Panel.DOWNLOADER,
+        ),
+    ] = DEFAULT_TEMPLATE,
+    skip_existing: Annotated[
         bool,
         Parameter(
-            negative="--force",
             help="Skip downloading if a file with the same name already exists, regardless of extension.",
             group=Panel.DOWNLOADER,
+            negative=False,
+            negative_alias="--overwrite",
         ),
     ] = True,
     max_workers: Annotated[

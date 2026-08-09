@@ -7,22 +7,22 @@ from typing import Annotated
 from cyclopts import Parameter
 
 from remora.logs import LoggingLevels
-from remora_cli.parsers import SearchTarget
+from remora.models.search import SearchService
 
 
-class Panel(StrEnum):
+class OptionsPanel(StrEnum):
     DISPLAY = "Display"
     EXTRACTOR = "Extractor"
 
 
 QueryParameter = Annotated[
-    list[str | SearchTarget],
+    list[str | SearchService],
     Parameter(
         help="""[green]URLs[/] and [green]queries[/] to process.
 - Insert a [green]URL[/] to process.
-- Insert a [green]service[/] and [green]query[/] to search and process.
+- Insert a [green]service[/]:[green]query[/] to search and process.
 """,
-        show_default=False,
+        negative=False,
     ),
 ]
 
@@ -35,15 +35,17 @@ class DisplayOptions:
     quiet: Annotated[
         bool,
         Parameter(
-            group=Panel.DISPLAY,
+            group=OptionsPanel.DISPLAY,
             help="Supress screen information.",
+            negative=False,
         ),
     ] = False
     verbose: Annotated[
         bool,
         Parameter(
-            group=Panel.DISPLAY,
+            group=OptionsPanel.DISPLAY,
             help="Display more information on screen.",
+            negative=False,
         ),
     ] = False
 
@@ -71,13 +73,13 @@ class ExtractorOptions:
         str | None,
         Parameter(
             help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=Panel.EXTRACTOR,
+            group=OptionsPanel.EXTRACTOR,
         ),
     ] = None
     proxy: Annotated[
         str | None,
         Parameter(
             help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=Panel.EXTRACTOR,
+            group=OptionsPanel.EXTRACTOR,
         ),
     ] = None

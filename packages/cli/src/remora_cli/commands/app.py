@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from cyclopts import App, CycloptsError, CycloptsPanel
+from cyclopts import App, CycloptsError, CycloptsPanel, Parameter
 from rich import traceback
 
 from remora_cli.commands.download import download
@@ -18,6 +18,9 @@ def create() -> App:
         help_formatter=AppFormatter,
         help_on_error=True,
         error_console=CONSOLE,
+        default_parameter=Parameter(
+            consume_multiple=True,  # Allow pass multiple arguments to a list parameter
+        ),
     )
 
     # Setup Rich Traceback for better debugging experience
