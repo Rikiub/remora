@@ -17,7 +17,7 @@ from remora.models.event.playlist import (
     PlaylistStarted,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.media.list import EntriesList, LazyPlaylist, Playlist
+from remora.models.media.list import EntriesList, LazyPlaylist, Playlist, _BaseList
 from remora.models.media.types import AnyExtractResult
 
 
@@ -123,7 +123,7 @@ class DownloadBatch:
     async def _setup(self):
         item = self.medias or self._item
 
-        # Get real data
+        # Determine if is a playlist
         playlist = None
 
         if type(item) is LazyPlaylist:
@@ -131,9 +131,12 @@ class DownloadBatch:
         elif isinstance(item, Playlist):
             playlist = item
 
+        # Unpack and get the list
         match item:
             case LazyMedia():
-                medias: list[LazyMedia] = [item]
+                medias = [item]
+            case _BaseList():  # Playlist and SearchList
+                medias = list(item.entries)
             case EntriesList():
                 medias = list(item.medias())
             case list():
@@ -159,7 +162,9 @@ class DownloadBatch:
                 self.config.output_template,
                 playlist=playlist,
             )
-            self.config = self.config.model_copy(update={"output_template": template})
+            self.config = self.config.model_copy(
+                update={"output_template": template},
+            )
         else:
             import secrets
 
