@@ -109,7 +109,7 @@ class DownloadPipeline:
 
                         stream = video_stream or audio_stream
                         if not stream:
-                            error = "Streams not founded"
+                            error = "Streams not found"
                             await self._stream.send(
                                 MediaFailed(
                                     id=self.id,
