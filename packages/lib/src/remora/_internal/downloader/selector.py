@@ -3,7 +3,7 @@ from typing import TypeVar, cast
 
 from remora.models.download_options import DownloadOptions
 from remora.models.media.item import Media
-from remora.models.stream._filters.rank import get_audio_rank, get_video_rank
+from remora.models.rank import get_audio_rank, get_video_rank
 from remora.models.stream.item import (
     AudioStream,
     MuxedStream,
