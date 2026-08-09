@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from cyclopts import App, CycloptsError, CycloptsPanel
 from rich import traceback
 
@@ -33,12 +35,12 @@ def create() -> App:
     return app
 
 
-def run():
+def run(*tokens: None | str | Iterable[str]):
     """Run app and handle exceptions."""
     app = create()
 
     try:
-        app()
+        app(*tokens)
     except CycloptsError as e:
         app.error_console.print(CycloptsPanel(e))
         raise SystemExit(1) from e
