@@ -985,13 +985,20 @@ dependencies = [
     { name = "rich" },
 ]
 
+[package.optional-dependencies]
+ffmpeg = [
+    { name = "remora", extra = ["ffmpeg"] },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "cyclopts", specifier = ">=4.22.5" },
     { name = "remora", editable = "packages/lib" },
+    { name = "remora", extras = ["ffmpeg"], marker = "extra == 'ffmpeg'", editable = "packages/lib" },
     { name = "rich", specifier = ">=14.0.0" },
 ]
+provides-extras = ["ffmpeg"]
 
 [[package]]
 name = "remora-docs"
