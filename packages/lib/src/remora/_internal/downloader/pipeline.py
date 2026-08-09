@@ -74,12 +74,25 @@ class DownloadPipeline:
         self.ffmpeg_path = self.get_ffmpeg_binary()
 
     async def download(self) -> AsyncIterator[MediaEvent]:
+        """Entry point to start the pipeline."""
         self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
 
+        # Producer
+        async def producer():
+            with logger.contextualize(media_id=self.id):
+                async with self._stream:
+                    try:
+                        await self.pipeline()
+                    except* (DownloaderError, ExtractorError, ProcessorError) as eg:
+                        # Catch expected errors to avoid crashes
+                        error = eg.exceptions[0]
+                        logger.error(str(error))
+
+        # Consumer
         async with receive_stream:
             try:
                 async with anyio.create_task_group() as tg:
-                    tg.start_soon(self._producer)
+                    tg.start_soon(producer)
 
                     async for event in receive_stream:
                         await log_event_media(event)
@@ -88,87 +101,85 @@ class DownloadPipeline:
                 yield MediaCancelled(id=self.id, media=self.media)
                 raise
 
-    async def _producer(self):
-        with logger.contextualize(media_id=self.id):
-            async with self._stream:
-                try:
-                    # Resolve Media
-                    media = await self.resolve_media()
+    async def pipeline(self):
+        """The one who orchestrate the jobs."""
 
-                    with logger.contextualize(media_title=media.title):
-                        # Select Best Streams
-                        selected = StreamSelector(self.config).resolve(media)
+        # Resolve Media
+        media = await self.resolve_media()
 
-                        # If there isn't FFmpeg, then remove
-                        if not self.ffmpeg_path and (selected.video and selected.audio):
-                            if self.config.format_type in ("video", "video-only", None):
-                                selected.audio = None
-                            elif self.config.format_type in ("audio", "audio-only"):
-                                selected.video = None
+        with logger.contextualize(media_title=media.title):
+            # Select Best Streams
+            selected = StreamSelector(
+                self.config,
+                merge_available=bool(self.ffmpeg_path),
+            ).resolve(media)
 
-                        metadata_stream = (
-                            selected.muxed or selected.video or selected.audio
-                        )
-                        if not metadata_stream:
-                            error = "Streams not found"
-                            await self._stream.send(
-                                MediaFailed(
-                                    id=self.id,
-                                    media=self.media,
-                                    message=error,
-                                )
-                            )
-                            raise DownloaderError(error)
+            metadata_stream = selected.muxed or selected.video or selected.audio
+            if not metadata_stream:
+                error = "Streams not found"
+                await self._stream.send(
+                    MediaFailed(
+                        id=self.id,
+                        media=self.media,
+                        message=error,
+                    )
+                )
+                raise DownloaderError(error)
 
-                        # Calculate Path & Check Existence
-                        output = format_template(
-                            self.config.output_template,
-                            stream=metadata_stream,
-                            media=media,
-                            default_missing="NA",
-                        )
-                        output = anyio.Path(output)
-                        await output.parent.mkdir(parents=True, exist_ok=True)
+            # Calculate Path & Check Existence
+            output = format_template(
+                self.config.output_template,
+                stream=metadata_stream,
+                media=media,
+                default_missing="NA",
+            )
+            output = anyio.Path(output)
+            await output.parent.mkdir(parents=True, exist_ok=True)
 
-                        if await self.check_output_duplicate(output):
-                            return
+            if await self.check_output_duplicate(output):
+                return
 
-                        # Download resources like streams, subtitles and thumbnail
-                        with logger.contextualize(status="downloading"):
-                            results = await self.download_resources(
-                                media,
-                                selected.video,
-                                selected.audio,
-                            )
+            # Download resources like streams, subtitles and thumbnail
+            with logger.contextualize(status="downloading"):
+                results = await self.download_resources(
+                    media,
+                    selected.muxed or selected.video,
+                    selected.audio,
+                )
 
-                        # Determine stable file
-                        if self.ffmpeg_path and (results.video and results.audio):
-                            file_path = await self.process_merge(
-                                video=results.video,
-                                audio=results.audio,
-                            )
-                        elif results.video:
-                            file_path = results.video.path
-                        elif results.audio:
-                            file_path = results.audio.path
-                        else:
-                            raise ValueError("Neither video or audio was downloaded")
+            # Determine stable file
+            if self.ffmpeg_path and (results.video and results.audio):
+                file_path = await self.process_merge(
+                    video=results.video,
+                    audio=results.audio,
+                )
+            elif results.video:
+                file_path = results.video.path
+            elif results.audio:
+                file_path = results.audio.path
+            else:
+                raise ValueError("Neither video or audio was downloaded")
 
-                        # Post-process file
-                        if self.ffmpeg_path:
-                            with logger.contextualize(status="processing"):
-                                file_path = await self.process(
-                                    file_path,
-                                    metadata_stream,
-                                    results.thumbnail,
-                                    results.subtitles,
-                                )
+            # Post-process file
+            if self.ffmpeg_path:
+                with logger.contextualize(status="processing"):
+                    file_path = await self.post_process(
+                        file_path,
+                        metadata_stream,
+                        results.thumbnail,
+                        results.subtitles,
+                    )
+            else:
+                await self._stream.send(
+                    MediaWarning(
+                        id=self.id,
+                        media=self.media,
+                        message="FFmpeg unavailable, skipping post-processing",
+                    )
+                )
 
-                        # Complete (Move file to target)
-                        await self.move_to_final(file_path, output)
-                except* (DownloaderError, ExtractorError, ProcessorError) as eg:
-                    error = eg.exceptions[0]
-                    logger.error(str(error))
+            # Complete (Move file to target)
+            await self.move_to_final(file_path, output)
 
     async def resolve_media(self) -> Media:
         await self._stream.send(MediaExtracting(id=self.id, media=self.media))
@@ -344,7 +355,7 @@ class DownloadPipeline:
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
-    ):
+    ) -> Path:
         extension = VideoExtension.MP4
         if isinstance(self.config.convert_to, VideoExtension):
             extension = self.config.convert_to
@@ -386,7 +397,7 @@ class DownloadPipeline:
 
         return Path(prc.file_path)
 
-    async def process(
+    async def post_process(
         self,
         file_path: Path,
         stream: Stream | None = None,

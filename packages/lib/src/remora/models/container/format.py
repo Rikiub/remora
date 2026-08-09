@@ -1,8 +1,3 @@
 from typing import Literal
 
-FormatType = Literal[
-    "video",
-    "audio",
-    "video-only",
-    "audio-only",
-]
+FormatType = Literal["video", "audio"]

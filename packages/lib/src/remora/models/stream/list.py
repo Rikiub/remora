@@ -55,9 +55,9 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
 
     def filter(
         self,
-        quality: int | StreamQuality | None = None,
-        extension: str | ExtensionType | None = None,
-        protocol: str | ProtocolType | None = None,
+        quality: StreamQuality | int | None = None,
+        extension: ExtensionType | None = None,
+        protocol: ProtocolType | None = None,
         language: str | None = None,
         video_codec: str | None = None,
         audio_codec: str | None = None,

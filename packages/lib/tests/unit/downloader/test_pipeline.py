@@ -6,7 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from remora._internal.downloader.pipeline import DownloadPipeline
-from remora._internal.downloader.selector import StreamSelector
+from remora._internal.downloader.selector import SelectorContext, StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora._internal.processor import MediaProcessor
@@ -131,7 +131,10 @@ def mock_pipeline(
         audio = media.streams[1] if 0 <= 1 < len(media.streams) else None  # noqa: PLR0133
 
         mock_selector = mocker.patch(f"{MODULE_PATH}.{StreamSelector.__name__}")
-        mock_selector.return_value.resolve.return_value = (video, audio)
+        mock_selector.return_value.resolve.return_value = SelectorContext(
+            video=video,
+            audio=audio,
+        )
 
         # Mock the Heavy Downloaders
         mocker.patch(f"{MODULE_PATH}.{StreamDownloader.__name__}", FakeStreamDownloader)

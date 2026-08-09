@@ -91,7 +91,7 @@ def get_protocol_rank(protocol: Protocol | None) -> int:
     return _rank(protocol, RANK["protocol"])
 
 
-def _rank(value: str | None, rank_list: list[str]):
+def _rank(value: str | None, rank_list: list[str]) -> int:
     """
     Helper to calculate the rank of a value from a list.
     The list must be sorted from worst to best.

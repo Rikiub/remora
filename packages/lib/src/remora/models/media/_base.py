@@ -47,6 +47,14 @@ class ExtractID(BaseExtract):
     channel: Annotated[Channel | None, EnsureNone] = None
     metrics: Annotated[Metrics | None, EnsureNone] = None
 
+    @property
+    def _is_audio_only(self) -> bool:
+        """Determine if the media only provides audio (like music or podcasts sites).
+
+        This uses a very fixed list and shouldn't be used as source of truth for everything.
+        """
+        return self.url.host in ("music.youtube.com", "soundcloud.com")
+
     @override
     def _to_ydl_dict(self):
         data = super()._to_ydl_dict()
