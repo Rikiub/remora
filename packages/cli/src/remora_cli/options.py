@@ -12,7 +12,7 @@ from remora_cli.parsers import SearchTarget
 
 class Panel(StrEnum):
     DISPLAY = "Display"
-    AUTH = "Authentication"
+    EXTRACTOR = "Extractor"
 
 
 QueryParameter = Annotated[
@@ -64,20 +64,20 @@ class DisplayOptions:
 
 @Parameter(name="*")
 @dataclass(slots=True)
-class AuthOptions:
+class ExtractorOptions:
     """Commons authentication options for specific commands."""
 
     cookies: Annotated[
         str | None,
         Parameter(
             help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=Panel.AUTH,
+            group=Panel.EXTRACTOR,
         ),
     ] = None
     proxy: Annotated[
         str | None,
         Parameter(
             help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=Panel.AUTH,
+            group=Panel.EXTRACTOR,
         ),
     ] = None

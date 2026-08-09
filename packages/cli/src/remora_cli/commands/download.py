@@ -9,7 +9,7 @@ from remora.models.container.extension.audio import SafeAudioExtensionStr
 from remora.models.container.extension.video import SafeVideoExtensionStr
 from remora.models.container.format import FormatType
 from remora.types import DEFAULT_TEMPLATE, VideoQuality
-from remora_cli.options import AuthOptions, DisplayOptions, QueryParameter
+from remora_cli.options import DisplayOptions, ExtractorOptions, QueryParameter
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -142,12 +142,12 @@ async def download(
         ),
     ] = None,
     # SHARED
-    auth: AuthOptions | None = None,
+    auth: ExtractorOptions | None = None,
     display: DisplayOptions | None = None,
 ):
     """Download video/audio from [green]URL[/] or search [green]service[/]."""
 
-    auth = auth or AuthOptions()
+    auth = auth or ExtractorOptions()
     display = display or DisplayOptions()
 
     # Lazy startup
