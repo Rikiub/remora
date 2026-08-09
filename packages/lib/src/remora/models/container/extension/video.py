@@ -63,7 +63,6 @@ class VideoExtension(BaseExtension, StrEnum):
         return self in {VideoExtension.MKV, VideoExtension.MP4, VideoExtension.WEBM}
 
 
-SafeVideoExtensionStr = Literal["mp4", "mkv"]
 VideoExtensionStr = Literal[
     # Common
     "avi",
@@ -83,4 +82,5 @@ VideoExtensionStr = Literal[
     "m4v",
     "wmv",
 ]
+SafeVideoExtensionStr = Literal["mp4", "mkv"]
 VideoExtensionType = VideoExtension | VideoExtensionStr
