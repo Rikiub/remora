@@ -45,6 +45,7 @@ def test_founded_system_ffmpeg(mocker):
 
     BINARY = "ffmpeg"
     mocker.patch(f"{MODULE}.which", return_value=BINARY)
+    mocker.patch("subprocess.run", return_value="ffmpeg version")
 
     ffmpeg_path = find_system_ffmpeg()
     compare_path = Path(BINARY)
