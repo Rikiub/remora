@@ -2,7 +2,7 @@ from loguru import logger
 from rich.logging import RichHandler
 
 from remora import logs
-from remora.types import APP_NAME as LIB_NAME
+from remora.types import LIBRAY_NAME
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -28,7 +28,7 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         enqueue=True,
         format=get_format,
         filter={
-            LIB_NAME: "DEBUG" if is_verbose else "CRITICAL",
+            LIBRAY_NAME: "DEBUG" if is_verbose else "CRITICAL",
             "remora_cli": "DEBUG" if is_verbose else "INFO",
         },
     )
@@ -70,7 +70,7 @@ def get_format(record) -> str:
     level = record["level"]
     extra = record.get("extra", {})
     icon = extra.get("icon") or getattr(record["level"], "icon", "")
-    is_lib = record["name"].startswith(f"{LIB_NAME}.")
+    is_lib = record["name"].startswith(f"{LIBRAY_NAME}.")
 
     # Prefixes
     status_prefix = ""

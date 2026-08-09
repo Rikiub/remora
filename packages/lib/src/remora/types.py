@@ -13,6 +13,6 @@ StrPath = PathLike[str] | str
 StrUrl = HttpUrl | str
 
 # Extra
-APP_NAME = "remora"
+LIBRAY_NAME = "remora"
 DEFAULT_TEMPLATE = "{uploader.name} - {title}"
 DEFAULT_RETRIES = 3

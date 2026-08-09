@@ -7,7 +7,7 @@ from typing import Literal
 
 from loguru import logger
 
-from remora.types import APP_NAME
+from remora.types import LIBRAY_NAME
 
 __all__ = ["LoggingLevels", "disable", "enable", "setup"]
 
@@ -15,11 +15,11 @@ LoggingLevels = Literal["DEBUG", "SUCCESS", "INFO", "WARNING", "ERROR", "CRITICA
 
 
 def enable() -> None:
-    logger.enable(APP_NAME)
+    logger.enable(LIBRAY_NAME)
 
 
 def disable() -> None:
-    logger.disable(APP_NAME)
+    logger.disable(LIBRAY_NAME)
 
 
 def setup(level: LoggingLevels = "DEBUG") -> None:

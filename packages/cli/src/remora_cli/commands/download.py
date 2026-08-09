@@ -156,8 +156,8 @@ async def download(
         from remora._internal.ffmpeg import get_ffmpeg
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.models.media.list import Playlist, SearchList
+        from remora_cli.ui.download_handler import ProgressCallback
         from remora_cli.ui.extractor import extract_queries
-        from remora_cli.ui.progress import ProgressCallback
 
         try:
             ffmpeg_path = get_ffmpeg(ffmpeg_path)

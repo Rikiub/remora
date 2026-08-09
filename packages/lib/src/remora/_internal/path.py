@@ -3,13 +3,13 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from remora.types import APP_NAME
+from remora.types import LIBRAY_NAME
 
-TMP_DIR = Path(tempfile.mkdtemp(prefix=f"{APP_NAME}-"))
+TMP_DIR = Path(tempfile.mkdtemp(prefix=f"{LIBRAY_NAME}-"))
 
 
 def get_cache_dir() -> Path:
-    dir = Path(tempfile.gettempdir(), APP_NAME)
+    dir = Path(tempfile.gettempdir(), LIBRAY_NAME)
     dir.mkdir(parents=True, exist_ok=True)
     return dir
 
