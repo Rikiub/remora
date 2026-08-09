@@ -82,14 +82,6 @@ class StreamSelector:
         if not candidates:
             return None
 
-        # Filter by extension
-        """
-        if self.config.convert_to and (
-            filtered := candidates.filter(extension=self.config.convert_to)
-        ):
-            candidates = filtered
-        """
-
         # Default candidate
         result = candidates[0]
 
