@@ -1,6 +1,3 @@
-from remora.models.container.format import FormatType
-
-
 class BaseExtension:
     @classmethod
     def get_safe_extensions(cls):
@@ -13,10 +10,6 @@ class BaseExtension:
     @property
     def is_common(self) -> bool:
         return False
-
-    @property
-    def type(self) -> FormatType:
-        raise NotImplementedError()
 
     @property
     def supports_thumbnails(self) -> bool:

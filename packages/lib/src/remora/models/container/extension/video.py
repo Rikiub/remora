@@ -4,7 +4,6 @@ from typing import Literal
 from typing_extensions import override
 
 from remora.models.container.extension._base import BaseExtension
-from remora.models.container.format import FormatType
 
 
 class VideoExtension(BaseExtension, StrEnum):
@@ -26,10 +25,6 @@ class VideoExtension(BaseExtension, StrEnum):
     OGV = "ogv"
     M4V = "m4v"
     WMV = "wmv"
-
-    @property
-    def type(self) -> FormatType:
-        return "video"
 
     @property
     def is_safe(self) -> bool:
@@ -88,5 +83,4 @@ VideoExtensionStr = Literal[
     "m4v",
     "wmv",
 ]
-
 VideoExtensionType = VideoExtension | VideoExtensionStr
