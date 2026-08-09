@@ -20,7 +20,7 @@ from remora.models.event.playlist import (
 )
 from remora.models.event.process import Processing
 from remora.models.media.item import LazyMedia
-from remora_cli.ui.rich_progress import DownloadProgress
+from remora_cli.ui.download_progress import DownloadProgress
 
 
 class ProgressCallback:

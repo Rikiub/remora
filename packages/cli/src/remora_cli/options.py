@@ -7,6 +7,7 @@ from typing import Annotated
 from cyclopts import Parameter
 
 from remora.logs import LoggingLevels
+from remora_cli.parsers import SearchTarget
 
 
 class Panel(StrEnum):
@@ -15,7 +16,7 @@ class Panel(StrEnum):
 
 
 QueryParameter = Annotated[
-    list[str],
+    list[str | SearchTarget],
     Parameter(
         help="""[green]URLs[/] and [green]queries[/] to process.
 - Insert a [green]URL[/] to process.
@@ -29,6 +30,8 @@ QueryParameter = Annotated[
 @Parameter(name="*")
 @dataclass(slots=True)
 class DisplayOptions:
+    """Commons options for the display of logs and visuals."""
+
     quiet: Annotated[
         bool,
         Parameter(

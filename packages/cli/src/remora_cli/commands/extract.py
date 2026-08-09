@@ -1,11 +1,11 @@
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from cyclopts import App, CycloptsError, Parameter
+from cyclopts import App, Parameter
 from loguru import logger
 
-from remora_cli.helpers import remove_missing
 from remora_cli.options import AuthOptions, QueryParameter
+from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
 DEFAULT_EXCLUDE = {
@@ -40,32 +40,11 @@ FIELDS_ORDER = [
 ]
 
 
-def parse_keys(value: list[str]) -> list[str]:
-    if value:
-        from remora._internal.template.key import validate_key
-        from remora.exceptions import OutputTemplateError
-
-        results = []
-
-        for item in value:
-            # Split by comma and strip whitespace
-            keys = [k.strip() for k in item.split(",") if k.strip()]
-
-            for key in keys:
-                try:
-                    validate_key(key, True)
-                    results.append(key)
-                except OutputTemplateError as e:
-                    raise CycloptsError(str(e))
-        return results
-    return value
-
-
 class Panel(StrEnum):
     FORMAT = "Format"
 
 
-app = App(help="Extract metadata from [green]URL[/] or search [green]service[/].")
+app = App()
 
 
 @app.command
@@ -81,14 +60,14 @@ async def extract(
         ),
     ] = None,
     include: Annotated[
-        list[str] | None,
+        set[str] | None,
         Parameter(
             help="Keys to include.",
             group=Panel.FORMAT,
         ),
     ] = None,
     exclude: Annotated[
-        list[str] | None,
+        set[str] | None,
         Parameter(
             help="Keys to exclude.",
             group=Panel.FORMAT,
@@ -97,7 +76,7 @@ async def extract(
     # AUTH
     auth: AuthOptions | None = None,
 ):
-    """Extract metadata from URL or search service."""
+    "Extract metadata from [green]URL[/] or search [green]service[/]."
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
@@ -115,8 +94,8 @@ async def extract(
         sel_format = "table" if console.is_terminal else "json"
 
     # Filters
-    sel_include = set(parse_keys(include or []))
-    sel_exclude = set(parse_keys(exclude or []))
+    sel_include = parse_keys(include or {})
+    sel_exclude = parse_keys(exclude or {})
 
     if sel_format == "table" and not sel_include:
         sel_exclude |= DEFAULT_EXCLUDE

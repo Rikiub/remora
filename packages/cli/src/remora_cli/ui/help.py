@@ -19,7 +19,7 @@ from cyclopts.help import (
 from cyclopts.help.specs import AsteriskColumn, DescriptionColumn, PanelSpec
 
 
-class Style(StrEnum):
+class HelpStyle(StrEnum):
     """Rich markup style for each help entry variation."""
 
     POSITIVE = "bold cyan"  # command names and positive flags (--output, --convert)
@@ -33,7 +33,7 @@ class Style(StrEnum):
         return f"[{self}]{text}[/]"
 
 
-class NameRenderer(Renderer):
+class _NameRenderer(Renderer):
     def __call__(self, entry: HelpEntry):
         self.entry = entry
         return self.name
@@ -74,7 +74,7 @@ class NameRenderer(Renderer):
         if not value_name:
             return None
 
-        return Style.METAVAR.apply(f"<{value_name.replace('-', '_')}>")
+        return HelpStyle.METAVAR.apply(f"<{value_name.replace('-', '_')}>")
 
     @property
     def styled_all_options(self) -> list[str]:
@@ -93,23 +93,23 @@ class NameRenderer(Renderer):
         if metavar.isupper():
             names.remove(metavar)
 
-        return [Style.POSITIVE.apply(o) for o in names]
+        return [HelpStyle.POSITIVE.apply(o) for o in names]
 
     @property
     def styled_positive_shorts(self) -> list[str]:
-        return [Style.POSITIVE_SHORTS.apply(o) for o in self.entry.positive_shorts]
+        return [HelpStyle.POSITIVE_SHORTS.apply(o) for o in self.entry.positive_shorts]
 
     @property
     def styled_negative_names(self) -> list[str]:
-        return [Style.NEGATIVE.apply(o) for o in self.entry.negative_names]
+        return [HelpStyle.NEGATIVE.apply(o) for o in self.entry.negative_names]
 
     @property
     def styled_negative_shorts(self) -> list[str]:
-        return [Style.NEGATIVE_SHORTS.apply(o) for o in self.entry.negative_shorts]
+        return [HelpStyle.NEGATIVE_SHORTS.apply(o) for o in self.entry.negative_shorts]
 
 
 def _columns_builder(console, options, entries: list[HelpEntry]):
-    name_column = ColumnSpec(renderer=NameRenderer())
+    name_column = ColumnSpec(renderer=_NameRenderer())
 
     # Add the required-marker column only when an entry needs it.
     if any(entry.required for entry in entries):

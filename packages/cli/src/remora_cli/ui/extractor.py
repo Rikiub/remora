@@ -9,7 +9,7 @@ from remora import MediaExtractor
 from remora.exceptions import RemoraError
 from remora.models.media.list import SearchList
 from remora.models.media.types import ExtractResult
-from remora_cli.completions import SearchTarget, parse_queries
+from remora_cli.parsers import SearchTarget, parse_queries
 from remora_cli.ui.rich import CONSOLE
 
 

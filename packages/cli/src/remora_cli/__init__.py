@@ -1,5 +1,4 @@
-def run() -> None:
-    from remora_cli.commands import create_app
+# ruff: noqa: F401
+# pyright: reportUnusedImport=false
 
-    app = create_app()
-    app()
+from remora_cli.commands.app import create, run

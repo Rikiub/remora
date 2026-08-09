@@ -29,7 +29,7 @@ async def download(
     /,
     # OPTIONS
     output: Annotated[
-        str,
+        str | Path,
         Parameter(
             help="Path or template for the saved file.",
             short_alias=True,
@@ -145,7 +145,7 @@ async def download(
     auth: AuthOptions | None = None,
     display: DisplayOptions | None = None,
 ):
-    """Download video/audio from URL or search service."""
+    """Download video/audio from [green]URL[/] or search [green]service[/]."""
 
     auth = auth or AuthOptions()
     display = display or DisplayOptions()
