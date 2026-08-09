@@ -109,7 +109,15 @@ class DownloadPipeline:
 
                         stream = video_stream or audio_stream
                         if not stream:
-                            raise DownloaderError("Streams not founded")
+                            error = "Streams not founded"
+                            await self._stream.send(
+                                MediaFailed(
+                                    id=self.id,
+                                    media=self.media,
+                                    message=error,
+                                )
+                            )
+                            raise DownloaderError(error)
 
                         # Calculate Path & Check Existence
                         output = format_template(
@@ -141,7 +149,7 @@ class DownloadPipeline:
                         elif results.audio:
                             file_path = results.audio.path
                         else:
-                            raise DownloaderError("Streams not founded")
+                            raise ValueError("Neither video or audio was downloaded")
 
                         # Post-process file
                         if self.ffmpeg_path:
@@ -207,7 +215,7 @@ class DownloadPipeline:
 
         async def format():
             if not (video_stream or audio_stream):
-                raise ValueError("Streams not found")
+                raise ValueError("At least one stream type must be provided")
 
             try:
                 if video_stream and audio_stream:
