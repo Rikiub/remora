@@ -192,7 +192,7 @@ class DownloadPipeline:
                             id=self.id,
                             media=self.media,
                             file_path=path,
-                            result="duplicate",
+                            result="skipped",
                         )
                     )
                     return path

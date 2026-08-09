@@ -28,7 +28,7 @@ class MediaProcessing(_BaseMedia):
 
 class MediaCompleted(_BaseMedia, FileEvent):
     status: Literal["completed"] = "completed"
-    result: Literal["success", "partial", "duplicate"]
+    result: Literal["success", "partial", "skipped"]
 
 
 class MediaFailed(_BaseMedia):

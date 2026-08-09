@@ -66,7 +66,7 @@ async def log_event_media(event: MediaEvent):
                         log.success("Completed")
                     case "partial":
                         log.success("Completed (Some data missed)")
-                    case "duplicate":
+                    case "skipped":
                         log.success(
                             'Skipped (Exists as "{file_extension}")',
                             file_extension=event.file_extension,

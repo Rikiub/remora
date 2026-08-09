@@ -86,7 +86,7 @@ class ProgressCallback:
                         case "partial":
                             logger.success("Completed (Some data missed)")
                             self.progress.update(event.id, status="Completed")
-                        case "duplicate":
+                        case "skipped":
                             logger.success(
                                 'Skipped (Exists as "{file_extension}")',
                                 file_extension=event.file_extension,
