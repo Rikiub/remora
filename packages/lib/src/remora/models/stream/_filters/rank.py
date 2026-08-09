@@ -14,67 +14,69 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
     # Get general ranks
     has_video = 0
 
-    video_codec = 0
     video_ext = 0
-
-    audio_codec = 0
     audio_ext = 0
 
     protocol = get_protocol_rank(stream.protocol)
 
     if isinstance(stream, VideoStream):
-        video_codec = get_codec_rank(stream.video.codec, "video")
         video_ext = get_extension_rank(stream.extension, "video")
         has_video = 1
     if isinstance(stream, AudioStream):
-        audio_codec = get_codec_rank(stream.audio.codec, "audio")
         audio_ext = get_extension_rank(stream.extension, "audio")
 
     # Calculate total rank
     match stream:
         case MuxedStream():
-            video = stream.video
-            audio = stream.audio
-
             return (
                 has_video,
-                video.resolution.height if video.resolution else 0,
-                video.fps or 0,
-                video_codec,
-                audio.channels or 0,
-                audio_codec,
-                audio.sample_rate or 0,
+                *get_video_rank(stream),
+                *get_audio_rank(stream),
                 stream.size_bytes or 0,
                 protocol,
                 video_ext,
             )
         case VideoStream():
-            video = stream.video
-
             return (
                 has_video,
-                video.resolution.height if video.resolution else 0,
-                video.fps or 0,
-                video_codec,
+                *get_video_rank(stream),
                 stream.size_bytes or 0,
                 protocol,
                 video_ext,
             )
         case AudioStream():
-            audio = stream.audio
-
             return (
                 has_video,
                 stream.size_bytes or 0,
-                audio.channels or 0,
-                audio_codec,
-                audio.bitrate or 0,
-                audio.sample_rate or 0,
+                *get_audio_rank(stream),
                 protocol,
                 audio_ext,
             )
         case _:
             raise ValueError("Unable to sort streams. The stream type don't match.")
+
+
+def get_video_rank(stream: VideoStream) -> tuple[float, ...]:
+    """Rank the video part of a stream to compare quality between types."""
+    video = stream.video
+
+    return (
+        video.resolution.height if video.resolution else 0,
+        video.fps or 0,
+        get_codec_rank(video.codec, "video"),
+    )
+
+
+def get_audio_rank(stream: AudioStream) -> tuple[float, ...]:
+    """Rank the audio part of a stream to compare quality between types."""
+    audio = stream.audio
+
+    return (
+        audio.channels or 0,
+        get_codec_rank(audio.codec, "audio"),
+        audio.bitrate or 0,
+        audio.sample_rate or 0,
+    )
 
 
 def get_codec_rank(codec: str | None, type: StreamType) -> int:

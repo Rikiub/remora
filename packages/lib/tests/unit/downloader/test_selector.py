@@ -42,8 +42,8 @@ def test_prefers_muxed_when_better_than_pair():
     assert not result.audio
 
 
-def test_prefers_muxed_when_audio_is_equal():
-    """A pair must be strictly better on both streams to be preferred."""
+def test_prefers_pair_when_muxed_not_strictly_better():
+    """The muxed stream must be strictly better on both parts to win."""
     media = make_media(
         muxed_stream(height=1080, audio_bitrate=128),
         video_stream(height=1080),
@@ -51,7 +51,9 @@ def test_prefers_muxed_when_audio_is_equal():
     )
 
     result = resolve(media)
-    assert result.muxed
+    assert not result.muxed
+    assert result.video
+    assert result.audio
 
 
 def test_prefers_muxed_when_merge_not_available():

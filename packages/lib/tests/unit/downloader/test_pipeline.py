@@ -132,8 +132,8 @@ def mock_pipeline(
 
         mock_selector = mocker.patch(f"{MODULE_PATH}.{StreamSelector.__name__}")
         mock_selector.return_value.resolve.return_value = SelectorContext(
-            video=video,
-            audio=audio,
+            video=video,  # ty: ignore[invalid-argument-type]
+            audio=audio,  # ty: ignore[invalid-argument-type]
         )
 
         # Mock the Heavy Downloaders

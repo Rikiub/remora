@@ -3,7 +3,7 @@ from typing import TypeVar, cast
 
 from remora.models.download_options import DownloadOptions
 from remora.models.media.item import Media
-from remora.models.stream._filters.rank import get_codec_rank
+from remora.models.stream._filters.rank import get_audio_rank, get_video_rank
 from remora.models.stream.item import (
     AudioStream,
     MuxedStream,
@@ -52,7 +52,14 @@ class StreamSelector:
             self.merge_available
             and video
             and audio
-            and (not muxed or self._is_pair_better(video, audio, muxed))
+            and (
+                not muxed
+                or not self.is_muxed_better(
+                    muxed=muxed,
+                    video=video,
+                    audio=audio,
+                )
+            )
         ):
             return SelectorContext(video=video, audio=audio)
 
@@ -107,37 +114,14 @@ class StreamSelector:
 
         return cast(_T, result)
 
-    def _is_pair_better(
+    def is_muxed_better(
         self,
+        muxed: MuxedStream,
         video: VideoStream,
         audio: AudioStream,
-        muxed: MuxedStream,
     ) -> bool:
-        """Checks if the separate pair is better than the complete muxed stream."""
+        """Checks if the complete muxed stream is better than the separate pair."""
         return bool(
-            _video_rank(video) > _video_rank(muxed)
-            and _audio_rank(audio) > _audio_rank(muxed)
+            get_video_rank(muxed) > get_video_rank(video)
+            and get_audio_rank(muxed) > get_audio_rank(audio)
         )
-
-
-def _video_rank(stream: VideoStream) -> tuple[float, ...]:
-    """Rank the video part of a stream to compare quality between types."""
-    video = stream.video
-
-    return (
-        video.resolution.height if video.resolution else 0,
-        video.fps or 0,
-        get_codec_rank(video.codec, "video"),
-    )
-
-
-def _audio_rank(stream: AudioStream) -> tuple[float, ...]:
-    """Rank the audio part of a stream to compare quality between types."""
-    audio = stream.audio
-
-    return (
-        audio.channels or 0,
-        audio.bitrate or 0,
-        get_codec_rank(audio.codec, "audio"),
-        audio.sample_rate or 0,
-    )
