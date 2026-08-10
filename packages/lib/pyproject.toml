@@ -7,11 +7,11 @@ dependencies = [
     "yt-dlp[default]>=2026.07.04",
     "pydantic>=2.9.2",
     "typing-extensions>=4.12.2",
-    "lazy-imports>=1.0.0",
     "pathvalidate>=3.2.1",
     "loguru>=0.7.3",
     "httpx>=0.28.1",
     "anyio>=4.12.1",
+    "lazy-loader>=0.5",
 ]
 
 [project.optional-dependencies]
