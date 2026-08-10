@@ -26,8 +26,8 @@ from remora.exceptions import (
     MetadataDownloaderError,
     ProcessorError,
 )
+from remora.models.container.extension import get_extension
 from remora.models.container.extension.audio import AudioExtension
-from remora.models.container.extension.types import get_extension
 from remora.models.container.extension.video import VideoExtension
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (

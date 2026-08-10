@@ -15,10 +15,13 @@ from remora.models.media._base import (
     TypeField,
     is_ydl_media,
 )
-from remora.models.metadata.music import MusicMetadata
-from remora.models.metadata.playback import Chapter, Heatmap
-from remora.models.metadata.subtitle import SubtitleList
-from remora.models.metadata.thumbnail import ThumbnailList
+from remora.models.metadata import (
+    Chapter,
+    Heatmap,
+    MusicMetadata,
+    SubtitleList,
+    ThumbnailList,
+)
 from remora.models.stream.list import StreamList
 
 

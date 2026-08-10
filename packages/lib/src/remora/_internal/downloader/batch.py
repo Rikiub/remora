@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Iterable
 
 import anyio
 from loguru import logger
@@ -16,9 +16,14 @@ from remora.models.event.playlist import (
     PlaylistInProgress,
     PlaylistStarted,
 )
-from remora.models.media.item import LazyMedia
-from remora.models.media.list import EntriesList, LazyPlaylist, Playlist, _BaseList
-from remora.models.media.types import AnyExtractResult
+from remora.models.media import (
+    AnyExtractResult,
+    EntriesList,
+    LazyMedia,
+    LazyPlaylist,
+    Playlist,
+)
+from remora.models.media.list import _BaseList
 
 
 class DownloadBatch:
@@ -139,8 +144,8 @@ class DownloadBatch:
                 medias = list(item.entries)
             case EntriesList():
                 medias = list(item.medias())
-            case list():
-                medias = item
+            case Iterable():
+                medias = list(item)
             case _:
                 raise TypeError("Unable to unpack media.")
 

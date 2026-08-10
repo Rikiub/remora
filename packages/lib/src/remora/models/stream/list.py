@@ -10,7 +10,7 @@ from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
 from remora.models._base import BaseList
-from remora.models.container.extension.types import ExtensionType
+from remora.models.container.extension import ExtensionType
 from remora.models.protocol import ProtocolType
 from remora.models.rank import get_codec_rank, get_stream_rank
 from remora.models.stream.item import (

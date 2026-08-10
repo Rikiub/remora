@@ -5,9 +5,9 @@ from typing import Annotated, Literal
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
+from remora.models.container import FormatType
 from remora.models.container.extension.audio import SafeAudioExtensionStr
 from remora.models.container.extension.video import SafeVideoExtensionStr
-from remora.models.container.format import FormatType
 from remora.types import DEFAULT_TEMPLATE, VideoQuality
 from remora_cli.options import (
     DisplayOptions,

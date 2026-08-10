@@ -5,7 +5,7 @@ from pydantic import AliasChoices, Field, HttpUrl, model_validator
 from typing_extensions import override
 
 from remora.models._base import EnsureNone, YDLSerializable
-from remora.models.metadata.social import Channel, Metrics, Uploader
+from remora.models.metadata import Channel, Metrics, Uploader
 
 # Types
 PLAYLIST_EXTRACTORS = ["YoutubeTab"]

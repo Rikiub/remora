@@ -7,11 +7,10 @@ from remora.models.download_options import DownloadOptions
 from remora.models.event.media import MediaEvent
 from remora.models.event.playlist import BatchEvent
 from remora.models.event.stream import StreamEvent
+from remora.models.media import AnyExtractResult
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import LazyPlaylist, Playlist
-from remora.models.media.types import AnyExtractResult
-from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
-from remora.models.metadata.thumbnail import Thumbnail
+from remora.models.metadata import ExternalSubtitle, SubtitleList, Thumbnail
 from remora.models.search import SearchService
 from remora.models.stream.item import Stream
 from remora.types import StrPath, StrUrl

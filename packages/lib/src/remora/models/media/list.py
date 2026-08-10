@@ -13,7 +13,7 @@ from remora.models.media._base import (
     ExtractorField,
 )
 from remora.models.media.item import LazyMedia
-from remora.models.metadata.thumbnail import ThumbnailList
+from remora.models.metadata import ThumbnailList
 
 # Entries List
 _Entry = TypeVar("_Entry", LazyMedia, "LazyPlaylist")
