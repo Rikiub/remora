@@ -8,7 +8,7 @@ from remora._internal.ffmpeg import get_ffmpeg
 from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
-from remora.models.container.extension import (
+from remora.models.container import (
     AudioExtensionType,
     ExtensionType,
     VideoExtensionType,

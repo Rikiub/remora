@@ -12,8 +12,7 @@ from pydantic import (
 from typing_extensions import override
 
 from remora.models._base import RemoraModel, YDLSerializable
-from remora.models.container.extension.audio import AudioExtension
-from remora.models.container.extension.video import VideoExtension
+from remora.models.container import AudioExtension, VideoExtension
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 

@@ -19,7 +19,7 @@ from remora._internal.ydl.messages import sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ProcessorError
-from remora.models.container.extension.audio import AudioExtension
+from remora.models.container import AudioExtension
 from remora.types import StrPath
 
 

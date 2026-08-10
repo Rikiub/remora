@@ -10,7 +10,7 @@ ExtractResult = Media | Playlist
 ExtractAdapter = TypeAdapter[ExtractResult](ExtractResult)
 
 AnyExtractResult = (
-    SearchList | ExtractResult | LazyExtractResult | EntriesList | Iterable[LazyMedia]
+    LazyExtractResult | ExtractResult | SearchList | EntriesList | Iterable[LazyMedia]
 )
 
 __all__ = [

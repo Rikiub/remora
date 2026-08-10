@@ -1,5 +1,13 @@
-from remora.models.container.extension.audio import AudioExtension, AudioExtensionType
-from remora.models.container.extension.video import VideoExtension, VideoExtensionType
+from remora.models.container.extension.audio import (
+    AudioExtension,
+    AudioExtensionType,
+    SafeAudioExtensionStr,  # noqa: F401
+)
+from remora.models.container.extension.video import (
+    SafeVideoExtensionStr,  # noqa: F401
+    VideoExtension,
+    VideoExtensionType,
+)
 
 ExtensionType = VideoExtensionType | AudioExtensionType
 """Collection of video and audio extension formats."""
@@ -13,13 +21,3 @@ def get_extension(
         return VideoExtension(extension)
     except ValueError:
         return AudioExtension(extension)
-
-
-__all__ = [
-    "AudioExtension",
-    "AudioExtensionType",
-    "ExtensionType",
-    "VideoExtension",
-    "VideoExtensionType",
-    "get_extension",
-]
