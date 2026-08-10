@@ -4,17 +4,19 @@ from typing import overload
 
 from remora._internal.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
-from remora.models.event.media import MediaEvent
-from remora.models.event.playlist import BatchEvent
-from remora.models.event.stream import StreamEvent
-from remora.models.media import AnyExtractResult
-from remora.models.media.item import LazyMedia, Media
-from remora.models.media.list import LazyPlaylist, Playlist
+from remora.models.event import BatchEvent, MediaEvent, StreamEvent
+from remora.models.media import (
+    AnyExtractResult,
+    LazyMedia,
+    LazyPlaylist,
+    Media,
+    Playlist,
+    SearchList,
+)
 from remora.models.metadata import ExternalSubtitle, SubtitleList, Thumbnail
 from remora.models.search import SearchService
-from remora.models.stream.item import Stream
+from remora.models.stream import Stream
 from remora.types import StrPath, StrUrl
-from remora_cli.ui.extractor import SearchList
 
 
 class Remora:

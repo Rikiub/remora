@@ -2,8 +2,7 @@ from pydantic import BaseModel
 
 from remora._internal.template.generator import get_keys as _get_keys
 from remora.exceptions import OutputTemplateError
-from remora.models.media.item import Media
-from remora.models.media.list import Playlist
+from remora.models.media import Media, Playlist
 
 
 class PlaylistNested(BaseModel):

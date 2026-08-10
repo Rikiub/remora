@@ -24,7 +24,6 @@ from remora.models.event.stream import (
     StreamCompleted,
     StreamContinuous,
     StreamEvent,
-    StreamProgress,
     StreamProgressEvent,
     StreamSegmented,
 )
@@ -52,7 +51,6 @@ __all__ = [
     "StreamCompleted",
     "StreamContinuous",
     "StreamEvent",
-    "StreamProgress",
     "StreamProgressEvent",
     "StreamSegmented",
 ]

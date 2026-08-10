@@ -6,8 +6,8 @@ from typing_extensions import override
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.event.stream import StreamEvent
-from remora.models.stream.item import Stream
+from remora.models.event import StreamEvent
+from remora.models.stream import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 

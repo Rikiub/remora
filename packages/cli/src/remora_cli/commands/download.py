@@ -152,7 +152,7 @@ async def download(
         from remora import DownloadOptions, Remora
         from remora._internal.ffmpeg import get_ffmpeg
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
-        from remora.models.media.list import Playlist, SearchList
+        from remora.models.media import Playlist, SearchList
         from remora_cli.ui.download_handler import ProgressCallback
         from remora_cli.ui.extractor import extract_queries
 

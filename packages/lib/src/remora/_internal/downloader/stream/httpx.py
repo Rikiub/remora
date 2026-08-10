@@ -10,14 +10,14 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.event.stream import (
+from remora.models.event import (
     StreamCompleted,
     StreamContinuous,
     StreamEvent,
     StreamSegmented,
 )
 from remora.models.protocol import Protocol
-from remora.models.stream.item import SizeType, Stream
+from remora.models.stream import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 

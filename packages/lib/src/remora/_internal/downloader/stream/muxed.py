@@ -7,13 +7,13 @@ import anyio
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.types import StreamContext
 from remora.exceptions import DownloaderError
-from remora.models.event.stream import (
+from remora.models.event import (
     BatchStreamCompleted,
     BatchStreamDownloading,
     BatchStreamEvent,
     StreamProgressEvent,
 )
-from remora.models.stream.item import AudioStream, VideoStream
+from remora.models.stream import AudioStream, VideoStream
 from remora.types import DEFAULT_RETRIES
 
 

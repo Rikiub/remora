@@ -3,8 +3,6 @@ from typing import Literal
 
 from remora.models.event._base import BaseEvent, FileEvent
 
-StreamProgress = Literal["continuous", "segmented"]
-
 
 # Progress Types
 class _BaseStream(BaseEvent):

@@ -7,9 +7,8 @@ from remora._internal.template.generator import flatten_dict
 from remora._internal.template.key import PlaylistNested
 from remora._internal.template.key import get_keys as _get_keys
 from remora.exceptions import OutputTemplateError
-from remora.models.media.item import Media
-from remora.models.media.list import Playlist
-from remora.models.stream.item import Stream
+from remora.models.media import Media, Playlist
+from remora.models.stream import Stream
 from remora.types import DEFAULT_TEMPLATE, StrPath
 
 _OUTPUT_EXCLUDED_KEYS = {

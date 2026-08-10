@@ -2,7 +2,8 @@ import anyio
 from anyio.abc import TaskGroup
 from loguru import logger
 
-from remora.models.event.media import (
+from remora.models.event import (
+    BatchEvent,
     MediaCompleted,
     MediaDownloading,
     MediaEvent,
@@ -10,16 +11,13 @@ from remora.models.event.media import (
     MediaFailed,
     MediaProcessing,
     MediaWarning,
-)
-from remora.models.event.playlist import (
-    BatchEvent,
     PlaylistCancelled,
     PlaylistCompleted,
     PlaylistInProgress,
     PlaylistStarted,
+    Processing,
 )
-from remora.models.event.process import Processing
-from remora.models.media.item import LazyMedia
+from remora.models.media import LazyMedia
 from remora_cli.ui.download_progress import DownloadProgress
 
 
