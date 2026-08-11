@@ -11,24 +11,24 @@ default:
 _temp_dir := "tmp"
 _run_doc := 'Run CLI app isolated in tmp/ directory'
 
+[doc(_run_doc)]
+[group("app")]
+[positional-arguments]
 [unix]
-[positional-arguments]
-[doc(_run_doc)]
-[group("app")]
 run *args:
-	-@mkdir {{ _temp_dir }}
-	-@cd {{ _temp_dir }}
-	-@uv run remora "$@"
+    -@mkdir {{ _temp_dir }}
+    -@cd {{ _temp_dir }}
+    -@uv run remora "$@"
 
-[windows]
-[positional-arguments]
-[group("app")]
 [doc(_run_doc)]
+[group("app")]
+[positional-arguments]
+[windows]
 run *args:
-	#!powershell -NoProfile
-	if (!(Test-Path "{{ _temp_dir }}")) { $null = mkdir "{{ _temp_dir }}" }
-	cd "{{ _temp_dir }}"
-	uv run remora $args
+    #!powershell -NoProfile
+    if (!(Test-Path "{{ _temp_dir }}")) { $null = mkdir "{{ _temp_dir }}" }
+    cd "{{ _temp_dir }}"
+    uv run remora $args
 
 # ==============================
 # Environment
@@ -55,17 +55,16 @@ clean:
     # Clean tool caches
     -rm -rf .ruff_cache/
     -rm -rf .pytest_cache/
-    
+
     # Clean project temp folders
     -rm -rf tmp/
-    
+
     # Clean build artifacts
     -rm -rf build/ dist/ *.egg-info/
-    
+
     # Clean Python bytecode 
     -find . -type d -name "__pycache__" -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
-
 
 # ==============================
 # Testing
