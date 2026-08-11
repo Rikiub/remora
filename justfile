@@ -89,7 +89,7 @@ test-unit *args:
 [doc('Format code with Ruff')]
 [group('quality')]
 format *args:
-    uv run ruff format . {{ args }}
+    -uv run ruff format . {{ args }}
 
 [doc('Lint code with Ruff')]
 [group('quality')]
