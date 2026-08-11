@@ -3,6 +3,11 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
+__all__ = [
+    "Protocol",
+    "ProtocolType",
+]
+
 
 class Protocol(StrEnum):
     HTTP = "http"

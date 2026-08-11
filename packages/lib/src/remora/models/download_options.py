@@ -8,6 +8,8 @@ from remora.models._base import RemoraModel
 from remora.models.container import ExtensionType, FormatType
 from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
 
+__all__ = ["DownloadOptions"]
+
 
 class DownloadOptions(RemoraModel):
     """Configuration to shape the streams to download.
