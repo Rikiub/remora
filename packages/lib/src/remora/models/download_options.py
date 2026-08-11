@@ -6,7 +6,13 @@ from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
 from remora.models.container import ExtensionType, FormatType
-from remora.types import DEFAULT_RETRIES, DEFAULT_TEMPLATE, StreamQuality, StrPath
+from remora.types import (
+    DEFAULT_RETRIES,
+    DEFAULT_TEMPLATE,
+    DEFAULT_WORKERS,
+    StreamQuality,
+    StrPath,
+)
 
 __all__ = ["DownloadOptions"]
 
@@ -14,31 +20,38 @@ __all__ = ["DownloadOptions"]
 class DownloadOptions(RemoraModel):
     """Configuration to shape the streams to download.
 
-    If FFmpeg is not installed, options marked with (FFmpeg) will not be available.
+    If FFmpeg is not installed, options marked as *[FFmpeg]* will not be available.
 
     Arguments:
-        output_template: Directory where to save files.
-        format_type: Streams format to filter.
-        convert_to: Convert or remux the file by the given extension.
-        quality: Target quality to try filter.
-        ffmpeg_path: Path to FFmpeg executable.
-        embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. (FFmpeg)
+        output_template: Path or template for the saved file(s).
+        skip_existing: Skip downloading if a file with the same name already exists, regardless of extension.
+
+        format_type: Target stream type to filter.
+        quality: Target quality to filter.
+            If `format_type` is not defined, then will filter only on videos by default.
+
+        convert_to: Convert or remux the file by the given extension. *[FFmpeg]*
+        embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. *[FFmpeg]*
+        ffmpeg_path: Path to custom FFmpeg executable. *[FFmpeg]*
+
+        max_workers: Limit of simultaneous downloads.
     """
 
     output_template: Annotated[
         StrPath,
         AfterValidator(validate_template),
     ] = DEFAULT_TEMPLATE
+    skip_existing: bool = True
 
     format_type: FormatType | None = None
-    convert_to: ExtensionType | None = None
     quality: StreamQuality | int | None = None
 
+    convert_to: ExtensionType | None = None
+    embed_metadata: bool = True
     ffmpeg_path: Annotated[
         StrPath | None,
         AfterValidator(lambda v: validate_ffmpeg(v) if v else v),
     ] = None
-    embed_metadata: bool = True
 
-    max_workers: int = 4
+    max_workers: int = DEFAULT_WORKERS
     retries: int = DEFAULT_RETRIES

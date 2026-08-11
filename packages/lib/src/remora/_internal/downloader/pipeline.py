@@ -139,7 +139,8 @@ class DownloadPipeline:
             output = anyio.Path(output)
             await output.parent.mkdir(parents=True, exist_ok=True)
 
-            if await self.check_output_duplicate(output):
+            # Skip if option is enabled and a duplicate is found
+            if self.config.skip_existing and await self.check_output_duplicate(output):
                 return
 
             # Download resources like streams, subtitles and thumbnail

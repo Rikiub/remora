@@ -10,7 +10,7 @@ from remora.models.container import (
     SafeAudioExtensionStr,
     SafeVideoExtensionStr,
 )
-from remora.types import DEFAULT_TEMPLATE, VideoQuality
+from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
     DisplayOptions,
     ExtractorOptions,
@@ -90,7 +90,7 @@ async def download(
             help="Limit of simultaneous downloads.",
             group=Panel.DOWNLOADER,
         ),
-    ] = 5,
+    ] = DEFAULT_WORKERS,
     limit_rate: Annotated[
         str | None,
         Parameter(
@@ -115,7 +115,7 @@ async def download(
             short_alias=True,
             group=Panel.POST_PROCESS,
         ),
-    ] = "all",
+    ] = None,
     embed_metadata: Annotated[
         bool,
         Parameter(
@@ -167,11 +167,13 @@ async def download(
         try:
             config = DownloadOptions(
                 output_template=output,
+                skip_existing=skip_existing,
                 format_type=type,
                 convert_to=convert,
                 quality=quality,
                 ffmpeg_path=ffmpeg_path,
                 max_workers=max_workers,
+                embed_metadata=embed_metadata,
             )
         except OutputTemplateError as error:
             raise CycloptsError(str(error))
