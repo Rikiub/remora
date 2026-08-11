@@ -13,9 +13,7 @@ ExtensionType = VideoExtensionType | AudioExtensionType
 """Collection of video and audio extension formats."""
 
 
-def get_extension(
-    extension: str | ExtensionType,
-) -> VideoExtension | AudioExtension:
+def get_extension(extension: ExtensionType | str) -> VideoExtension | AudioExtension:
     """Get extension enum from a string."""
     try:
         return VideoExtension(extension)

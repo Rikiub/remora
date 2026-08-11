@@ -25,7 +25,6 @@ def _is_ydl_format(value: dict) -> bool:
     return isinstance(value, dict) and bool(value.get("format_id"))
 
 
-StreamType = Literal["muxed", "video", "audio"]
 SizeType = Literal["exact", "estimated", "unknown"]
 
 
@@ -63,7 +62,6 @@ class ExtractorMeta(RemoraModel):
 class _BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 
-    type: StreamType
     id: Annotated[str, Field(alias="format_id")]
 
     protocol: Protocol
@@ -209,21 +207,25 @@ class VideoStream(_BaseStream):
 
 
 class MuxedStream(VideoStream, AudioStream):
-    type: Literal[StreamType] = "muxed"  # type: ignore
-    extension: Annotated[VideoExtension, Field(alias="ext")]  # type: ignore
+    type: Literal["muxed"] = "muxed"
+    extension: Annotated[VideoExtension, Field(alias="ext")]
 
 
-def _infer_stream_type(data) -> StreamType:
+def _infer_stream_type(data) -> str:
     video = None
     audio = None
 
     if isinstance(data, dict):
-        video = _normalize_value(data.get("video") or data.get("vcodec"))
-        audio = _normalize_value(data.get("audio") or data.get("acodec"))
+        if _is_ydl_format(data):
+            video = _normalize_value(data.get("vcodec"))
+            audio = _normalize_value(data.get("acodec"))
+        else:
+            video = data.get("video")
+            audio = data.get("audio")
     if isinstance(data, VideoStream):
-        video = _normalize_value(data.video.codec)
+        video = data.video.codec
     if isinstance(data, AudioStream):
-        audio = _normalize_value(data.audio.codec)
+        audio = data.audio.codec
 
     if video and audio:
         return "muxed"

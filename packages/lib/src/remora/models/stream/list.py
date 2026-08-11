@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import bisect
-from functools import cached_property
 from typing import Annotated, Generic, Literal
 
 from loguru import logger
@@ -17,7 +16,6 @@ from remora.models.stream.item import (
     AudioStream,
     MuxedStream,
     Stream,
-    StreamType,
     VideoStream,
     _DiscriminatedStream,
 )
@@ -120,20 +118,6 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
     def audio_only(self) -> StreamList[AudioStream]:
         """Get strictly audio-only streams (excluding muxed streams)."""
         return StreamList[AudioStream]([s for s in self.root if type(s) is AudioStream])
-
-    @cached_property
-    def type(self) -> StreamType:
-        """
-        Determine main stream type.
-        It will check if is 'video' or 'audio'.
-        """
-
-        if self.videos():
-            return "video"
-        elif self.audios():
-            return "audio"
-        else:
-            return "video"
 
     def sorted_by(
         self,
