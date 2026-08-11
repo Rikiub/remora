@@ -114,6 +114,6 @@ class StreamSelector:
     ) -> bool:
         """Checks if the complete muxed stream is better than the separate pair."""
         return bool(
-            get_video_rank(muxed) > get_video_rank(video)
-            and get_audio_rank(muxed) > get_audio_rank(audio)
+            get_video_rank(muxed.video) > get_video_rank(video.video)
+            and get_audio_rank(muxed.audio) > get_audio_rank(audio.audio)
         )

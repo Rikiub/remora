@@ -12,6 +12,7 @@ from remora.models._base import BaseList
 from remora.models.container import ExtensionType
 from remora.models.protocol import ProtocolType
 from remora.models.rank import get_codec_rank, get_stream_rank
+from remora.models.stream import AudioInfo, VideoInfo
 from remora.models.stream.item import (
     AudioStream,
     MuxedStream,
@@ -136,9 +137,9 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
         if attribute == "best":
             filter = get_stream_rank
         elif attribute == "video_codec":
-            filter = lambda codec: get_codec_rank(codec, "video")
+            filter = lambda codec: get_codec_rank(VideoInfo(codec=codec))
         elif attribute == "audio_codec":
-            filter = lambda codec: get_codec_rank(codec, "audio")
+            filter = lambda codec: get_codec_rank(AudioInfo(codec=codec))
         else:
             filter = lambda s: getattr(s, attribute)
 
