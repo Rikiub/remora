@@ -53,16 +53,16 @@ async def download(
     video_codec: Annotated[
         str | None,
         Parameter(
-            name=["--video-codec", "--vcodec"],
             help="Prefered video codec.",
+            alias="--vcodec",
             group=Panel.FILTERS,
         ),
     ] = None,
     audio_codec: Annotated[
         str | None,
         Parameter(
-            name=["--audio-codec", "--acodec"],
             help="Prefered audio codec.",
+            alias="--acodec",
             group=Panel.FILTERS,
         ),
     ] = None,
