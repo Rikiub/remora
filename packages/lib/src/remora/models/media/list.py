@@ -21,12 +21,10 @@ _Entry = TypeVar("_Entry", LazyMedia, "LazyPlaylist")
 
 class EntriesList(BaseList[_Entry]):
     def medias(self) -> EntriesList[LazyMedia]:
-        return EntriesList([item for item in self.root if isinstance(item, LazyMedia)])
+        return EntriesList(item for item in self.root if isinstance(item, LazyMedia))
 
     def playlists(self) -> EntriesList[LazyPlaylist]:
-        return EntriesList(
-            [item for item in self.root if isinstance(item, LazyPlaylist)]
-        )
+        return EntriesList(item for item in self.root if isinstance(item, LazyPlaylist))
 
 
 class _BaseList(ABC, BaseExtract):

@@ -97,28 +97,28 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
     def muxed(self) -> StreamList[MuxedStream]:
         """Get strictly muxed streams."""
         return StreamList[MuxedStream](
-            [s for s in self.root if isinstance(s, MuxedStream)]
+            s for s in self.root if isinstance(s, MuxedStream)
         )
 
     def videos(self) -> StreamList[VideoStream]:
         """Get all streams that contain video (including muxed streams)."""
         return StreamList[VideoStream](
-            [s for s in self.root if isinstance(s, VideoStream)]
+            s for s in self.root if isinstance(s, VideoStream)
         )
 
     def audios(self) -> StreamList[AudioStream]:
         """Get all streams that contain audio (including muxed streams)."""
         return StreamList[AudioStream](
-            [s for s in self.root if isinstance(s, AudioStream)]
+            s for s in self.root if isinstance(s, AudioStream)
         )
 
     def video_only(self) -> StreamList[VideoStream]:
         """Get strictly video-only streams (excluding muxed streams)."""
-        return StreamList[VideoStream]([s for s in self.root if type(s) is VideoStream])
+        return StreamList[VideoStream](s for s in self.root if type(s) is VideoStream)
 
     def audio_only(self) -> StreamList[AudioStream]:
         """Get strictly audio-only streams (excluding muxed streams)."""
-        return StreamList[AudioStream]([s for s in self.root if type(s) is AudioStream])
+        return StreamList[AudioStream](s for s in self.root if type(s) is AudioStream)
 
     def sorted_by(
         self,

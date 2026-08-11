@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Generic, Self, TypeVar, overload
 
 from pydantic import (
@@ -25,7 +25,7 @@ class YDLSerializable(RemoraModel):
 _T = TypeVar("_T")
 
 
-class BaseList(RootModel[list[_T]], Generic[_T]):
+class BaseList(RootModel[Iterable[_T]], Generic[_T]):
     root: list[_T] = []
 
     def __contains__(self, other) -> bool:

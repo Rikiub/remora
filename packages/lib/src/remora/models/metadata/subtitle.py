@@ -80,13 +80,13 @@ class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
     def externals(self) -> SubtitleList[ExternalSubtitle]:
         """Subtitles hosted on a URL."""
         return SubtitleList[ExternalSubtitle](  # type: ignore
-            [item for item in self if isinstance(item, ExternalSubtitle)],
+            (item for item in self if isinstance(item, ExternalSubtitle)),
         )
 
     def embedded(self) -> SubtitleList[EmbeddedSubtitle]:
         """Subtitles found inside the media file."""
         return SubtitleList[EmbeddedSubtitle](  # type: ignore
-            [item for item in self if isinstance(item, EmbeddedSubtitle)],
+            (item for item in self if isinstance(item, EmbeddedSubtitle)),
         )
 
     def filter(self, language: str | None = None, extension: str | None = None) -> Self:
