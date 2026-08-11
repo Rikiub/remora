@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -63,13 +63,22 @@ class _BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 
     id: Annotated[str, Field(alias="format_id")]
-
     protocol: Protocol
     url: HttpUrl
     extractor_meta: ExtractorMeta = ExtractorMeta()
 
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
+
+    @property
+    def quality(self) -> float:
+        """Stream quality."""
+        return self._quality()
+
+    @abstractmethod
+    def _quality(self) -> float:
+        """Stream quality implementation."""
+        raise NotImplementedError()
 
     @override
     def _to_ydl_dict(self):
@@ -179,15 +188,11 @@ class AudioStream(_BaseStream):
     extension: Annotated[AudioExtension, Field(alias="ext")]
     audio: AudioInfo
 
-    @property
-    def quality(self) -> float:
+    @override
+    def _quality(self) -> float:
         if b := self.audio.bitrate:
             return b
         return 0
-
-    @property
-    def display_quality(self) -> str:
-        return f"{round(self.quality)}kbps"
 
 
 class VideoStream(_BaseStream):
@@ -195,15 +200,11 @@ class VideoStream(_BaseStream):
     extension: Annotated[VideoExtension, Field(alias="ext")]
     video: VideoInfo
 
-    @property
-    def quality(self) -> float:
+    @override
+    def _quality(self) -> float:
         if res := self.video.resolution:
             return res.height
         return 0
-
-    @property
-    def display_quality(self) -> str:
-        return f"{self.quality}p"
 
 
 class MuxedStream(VideoStream, AudioStream):

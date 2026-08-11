@@ -71,9 +71,7 @@ async def test_video_streams_validation(streams: StreamList):
         assert video.video.resolution is not None
 
         # Check calculated quality properties
-        expected_height = video.video.resolution.height
-        assert video.quality == expected_height
-        assert video.display_quality == f"{expected_height}p"
+        assert video.quality == video.video.resolution.height
 
     # Specific check against known video format from your JSON (itag 135 -> 480p)
     itag_135 = next((s for s in videos if s.id == "135"), None)
@@ -81,7 +79,6 @@ async def test_video_streams_validation(streams: StreamList):
         assert isinstance(itag_135, VideoStream)
         assert itag_135.video.codec == "avc1.4d401e"
         assert itag_135.quality == 480
-        assert itag_135.display_quality == "480p"
 
 
 # MUXED STREAMS VALIDATION
@@ -103,16 +100,13 @@ async def test_muxed_streams_validation(streams: StreamList):
 
         # MuxedStream inherits quality from VideoStream
         if muxed.video.resolution:
-            expected_height = muxed.video.resolution.height
-            assert muxed.quality == expected_height
-            assert muxed.display_quality == f"{expected_height}p"
+            assert muxed.quality == muxed.video.resolution.height
 
     # Specific check against known muxed format from your JSON (itag 18)
     itag_18 = next((s for s in muxeds if s.id == "18"), None)
     if itag_18:
         assert itag_18.video.codec == "avc1.42001E"
         assert itag_18.audio.codec == "mp4a.40.2"
-        assert itag_18.display_quality == "360p"
 
 
 # EDGE CASES & SIZE TYPE INFERENCE
