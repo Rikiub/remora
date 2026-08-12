@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Annotated, Literal
 
 from pydantic import (
-    BeforeValidator,
     Discriminator,
     Field,
     HttpUrl,
@@ -12,7 +11,13 @@ from pydantic import (
 from typing_extensions import override
 
 from remora.models._base import RemoraModel, YDLSerializable
-from remora.models.container import AudioExtension, VideoExtension
+from remora.models.container import (
+    AudioCodecFamily,
+    AudioExtension,
+    CodecInfo,
+    VideoCodecFamily,
+    VideoExtension,
+)
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
@@ -30,11 +35,7 @@ SizeType = Literal["exact", "estimated", "unknown"]
 
 # INFO
 class AudioInfo(RemoraModel):
-    codec: Annotated[
-        str,
-        BeforeValidator(_normalize_value),
-        Field(alias="acodec"),
-    ]
+    codec: CodecInfo[AudioCodecFamily]
     bitrate: Annotated[float | None, Field(alias="abr")] = None
     channels: Annotated[int | None, Field(alias="audio_channels")] = None
     sample_rate: Annotated[float | None, Field(alias="asr")] = None
@@ -42,14 +43,11 @@ class AudioInfo(RemoraModel):
 
 
 class VideoInfo(RemoraModel):
-    codec: Annotated[
-        str,
-        BeforeValidator(_normalize_value),
-        Field(alias="vcodec"),
-    ]
+    codec: CodecInfo[VideoCodecFamily]
     bitrate: Annotated[float | None, Field(alias="vbr")] = None
     resolution: Resolution | None = None
     fps: float | None = None
+    dynamic_range: str | None = None
 
 
 # STREAMS
@@ -167,14 +165,14 @@ class _BaseStream(ABC, YDLSerializable):
             if is_muxed or audio_codec:
                 data["audio"] = {
                     **data,
+                    "codec": {"original": audio_codec},
                     "audio_ext": audio_ext or ext,
-                    "acodec": audio_codec,
                 }
             if is_muxed or video_codec:
                 data["video"] = {
                     **data,
+                    "codec": {"original": video_codec},
                     "video_ext": video_ext or ext,
-                    "vcodec": video_codec,
                     "resolution": resolution,
                 }
 

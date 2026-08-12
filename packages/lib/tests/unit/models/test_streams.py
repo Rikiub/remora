@@ -153,7 +153,8 @@ def test_filter_video_codec(streams: StreamList):
 
     assert len(filtered) > 0
     assert all(
-        isinstance(s, VideoStream) and s.video.codec.startswith(codec) for s in filtered
+        isinstance(s, VideoStream) and s.video.codec.original.startswith(codec)
+        for s in filtered
     )
 
 
@@ -165,7 +166,8 @@ def test_filter_audio_codec(streams: StreamList):
 
     assert len(filtered) > 0
     assert all(
-        isinstance(s, AudioStream) and s.audio.codec.startswith(codec) for s in filtered
+        isinstance(s, AudioStream) and s.audio.codec.original.startswith(codec)
+        for s in filtered
     )
 
 
