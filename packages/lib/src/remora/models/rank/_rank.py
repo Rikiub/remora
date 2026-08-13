@@ -63,6 +63,7 @@ def get_video_rank(video: VideoInfo) -> tuple[float, ...]:
     return (
         video.resolution.height if video.resolution else 0,
         video.fps or 0,
+        get_dynamic_range_rank(video.dynamic_range),
         get_codec_rank(video),
     )
 
@@ -77,7 +78,7 @@ def get_audio_rank(audio: AudioInfo) -> tuple[float, ...]:
     )
 
 
-def get_dynamic_range_rank(value: DynamicRange) -> int:
+def get_dynamic_range_rank(value: DynamicRange | str) -> int:
     return _rank(value, RANK["dynamic_range"])
 
 
