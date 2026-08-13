@@ -78,34 +78,30 @@ def get_audio_rank(audio: AudioInfo) -> tuple[float, ...]:
     )
 
 
+def get_protocol_rank(protocol: Protocol) -> int:
+    return _rank(protocol, RANK["protocol"])
+
+
 def get_dynamic_range_rank(value: DynamicRange | str) -> int:
     return _rank(value, RANK["dynamic_range"])
 
 
-def get_codec_rank(info: VideoInfo | AudioInfo | None) -> int:
+def get_codec_rank(info: VideoInfo | AudioInfo) -> int:
     match info:
         case VideoInfo():
             rank = RANK["video_codec"]
         case AudioInfo():
             rank = RANK["audio_codec"]
-        case _:
-            raise ValueError(info)
-    return _rank(info.codec.normalized if info else None, rank)
+    return _rank(info.codec.normalized, rank)
 
 
-def get_extension_rank(extension: Extension | None) -> int:
+def get_extension_rank(extension: Extension) -> int:
     match extension:
         case VideoExtension():
             rank = RANK["video_extension"]
         case AudioExtension():
             rank = RANK["audio_extension"]
-        case _:
-            raise ValueError(extension)
     return _rank(extension, rank)
-
-
-def get_protocol_rank(protocol: Protocol | None) -> int:
-    return _rank(protocol, RANK["protocol"])
 
 
 def _rank(value: str | None, rank_list: Sequence[str]) -> int:
@@ -114,12 +110,13 @@ def _rank(value: str | None, rank_list: Sequence[str]) -> int:
     The list must be sorted from worst to best.
     """
 
+    DEFAULT = -1
     if not value:
-        return -1
+        return DEFAULT
 
     # Invert the list for calculate ranks from worst to best
     for index, name in enumerate(reversed(rank_list)):
         if name in value:
             return index
 
-    return -1
+    return DEFAULT
