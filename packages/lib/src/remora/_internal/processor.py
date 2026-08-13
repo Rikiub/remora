@@ -9,9 +9,9 @@ from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models.container import (
-    AudioExtensionType,
-    ExtensionType,
-    VideoExtensionType,
+    AudioExtensionLike,
+    ExtensionLike,
+    VideoExtensionLike,
 )
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
@@ -31,14 +31,14 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, format: str | ExtensionType) -> Self:
+    async def change_container(self, format: str | ExtensionLike) -> Self:
         result = await run_sync(self._prc.video_remuxer, str(format))
         self._update_file(result)
         return self
 
     async def convert_audio(
         self,
-        format: str | AudioExtensionType | None = None,
+        format: str | AudioExtensionLike | None = None,
         quality: int | None = None,
     ) -> Self:
         result = await run_sync(self._prc.extract_audio, str(format), quality)
@@ -68,7 +68,7 @@ class MediaProcessor:
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
-        merge_format: VideoExtensionType,
+        merge_format: VideoExtensionLike,
     ) -> Self:
         """
         Merge two streams in a single file (Remuxing).

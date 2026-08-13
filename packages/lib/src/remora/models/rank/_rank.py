@@ -1,8 +1,14 @@
-from remora.models.container import AudioExtension, VideoExtension
+from remora.models.container import AudioExtension, Extension, VideoExtension
 from remora.models.protocol import Protocol
 from remora.models.rank._config import RANK
-from remora.models.stream import AudioInfo, VideoInfo
-from remora.models.stream.item import AudioStream, MuxedStream, Stream, VideoStream
+from remora.models.stream import (
+    AudioInfo,
+    AudioStream,
+    MuxedStream,
+    Stream,
+    VideoInfo,
+    VideoStream,
+)
 
 
 def get_stream_rank(stream: Stream) -> tuple[float, ...]:
@@ -47,8 +53,6 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
                 protocol,
                 audio_ext,
             )
-        case _:
-            raise ValueError("Unable to sort streams. The stream type don't match.")
 
 
 def get_video_rank(video: VideoInfo) -> tuple[float, ...]:
@@ -71,16 +75,24 @@ def get_audio_rank(audio: AudioInfo) -> tuple[float, ...]:
 
 
 def get_codec_rank(info: VideoInfo | AudioInfo | None) -> int:
-    rank = RANK["audio_codec"] if isinstance(info, AudioInfo) else RANK["video_codec"]
-    return _rank(info.codec if info else None, rank)
+    match info:
+        case VideoInfo():
+            rank = RANK["video_codec"]
+        case AudioInfo():
+            rank = RANK["audio_codec"]
+        case _:
+            raise ValueError(info)
+    return _rank(info.codec.normalized if info else None, rank)
 
 
-def get_extension_rank(extension: VideoExtension | AudioExtension | None) -> int:
-    rank = (
-        RANK["audio_extension"]
-        if isinstance(extension, AudioExtension)
-        else RANK["video_extension"]
-    )
+def get_extension_rank(extension: Extension | None) -> int:
+    match extension:
+        case VideoExtension():
+            rank = RANK["video_extension"]
+        case AudioExtension():
+            rank = RANK["audio_extension"]
+        case _:
+            raise ValueError(extension)
     return _rank(extension, rank)
 
 

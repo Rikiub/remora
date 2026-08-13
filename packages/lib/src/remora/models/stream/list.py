@@ -9,8 +9,12 @@ from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
 from remora.models._base import BaseList
-from remora.models.container import ExtensionType
-from remora.models.protocol import ProtocolType
+from remora.models.container import (
+    AudioCodec,
+    ExtensionLike,
+    VideoCodec,
+)
+from remora.models.protocol import ProtocolLike
 from remora.models.rank import get_codec_rank, get_stream_rank
 from remora.models.stream import AudioInfo, VideoInfo
 from remora.models.stream.item import (
@@ -55,11 +59,11 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
     def filter(
         self,
         quality: StreamQuality | int | None = None,
-        extension: ExtensionType | None = None,
-        protocol: ProtocolType | None = None,
+        extension: ExtensionLike | None = None,
+        protocol: ProtocolLike | None = None,
+        video_codec: VideoCodec | None = None,
+        audio_codec: AudioCodec | None = None,
         language: str | None = None,
-        video_codec: str | None = None,
-        audio_codec: str | None = None,
     ) -> Self:
         """Get filtered streams by options."""
 
@@ -77,8 +81,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
                 for s in items
                 if isinstance(s, VideoStream)
                 and (codec := s.video.codec)
-                and codec.family.match(video_codec)
-                or codec.original.startswith(video_codec)
+                and codec.normalized.startswith(video_codec)
             )
         if audio_codec:
             items = (
@@ -86,8 +89,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
                 for s in items
                 if isinstance(s, AudioStream)
                 and (codec := s.audio.codec)
-                and codec.family.match(audio_codec)
-                or codec.original.startswith(audio_codec)
+                and codec.normalized.startswith(audio_codec)
             )
         if language:
             items = (

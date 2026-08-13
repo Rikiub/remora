@@ -5,7 +5,7 @@ from pydantic import AfterValidator
 from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
-from remora.models.container import ExtensionType, FormatType
+from remora.models.container import ContainerFormat, ExtensionLike
 from remora.types import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
@@ -13,8 +13,6 @@ from remora.types import (
     StreamQuality,
     StrPath,
 )
-
-__all__ = ["DownloadOptions"]
 
 
 class DownloadOptions(RemoraModel):
@@ -43,10 +41,10 @@ class DownloadOptions(RemoraModel):
     ] = DEFAULT_TEMPLATE
     skip_existing: bool = True
 
-    format_type: FormatType | None = None
+    format_type: ContainerFormat | None = None
     quality: StreamQuality | int | None = None
 
-    convert_to: ExtensionType | None = None
+    convert_to: ExtensionLike | None = None
     embed_metadata: bool = True
     ffmpeg_path: Annotated[
         StrPath | None,
@@ -55,3 +53,6 @@ class DownloadOptions(RemoraModel):
 
     max_workers: int = DEFAULT_WORKERS
     retries: int = DEFAULT_RETRIES
+
+
+__all__ = ["DownloadOptions"]

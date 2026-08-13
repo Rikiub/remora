@@ -1,38 +1,41 @@
 from typing import Literal
 
-from remora.models.container.codec import (
-    AudioCodecFamily,
-    CodecFamilyType,
-    CodecInfo,
-    VideoCodecFamily,
-)
+from remora.models.container.codec import Codec, CodecFamily
+from remora.models.container.codec.audio import AudioCodec, AudioCodecFamily
+from remora.models.container.codec.info import CodecInfo
+from remora.models.container.codec.video import VideoCodec, VideoCodecFamily
 from remora.models.container.extension import (
     AudioExtension,
-    AudioExtensionType,
-    ExtensionType,
-    SafeAudioExtensionStr,
-    SafeVideoExtensionStr,
+    AudioExtensionLike,
+    Extension,
+    ExtensionLike,
+    SafeAudioExtension,
+    SafeExtension,
+    SafeVideoExtension,
     VideoExtension,
-    VideoExtensionType,
+    VideoExtensionLike,
     get_extension,
 )
 
-FormatType = Literal["video", "audio"]
+ContainerFormat = Literal["video", "audio"]
 
 __all__ = [
+    "AudioCodec",
     "AudioCodecFamily",
-    "AudioCodecFamilyStr",
     "AudioExtension",
-    "AudioExtensionType",
-    "CodecFamilyType",
+    "AudioExtensionLike",
+    "Codec",
+    "CodecFamily",
     "CodecInfo",
-    "ExtensionType",
-    "FormatType",
-    "SafeAudioExtensionStr",
-    "SafeVideoExtensionStr",
+    "ContainerFormat",
+    "Extension",
+    "ExtensionLike",
+    "SafeAudioExtension",
+    "SafeExtension",
+    "SafeVideoExtension",
+    "VideoCodec",
     "VideoCodecFamily",
-    "VideoCodecFamilyStr",
     "VideoExtension",
-    "VideoExtensionType",
+    "VideoExtensionLike",
     "get_extension",
 ]

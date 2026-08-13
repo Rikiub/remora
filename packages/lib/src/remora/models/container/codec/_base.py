@@ -5,11 +5,10 @@ from typing import Self
 
 class BaseCodecFamily(StrEnum):
     @classmethod
-    def from_str(cls, value: str) -> Self:
-        """Parse string and get codec family."""
-        if cls.match(value):
-            return value  # ty: ignore[invalid-return-type]
-        raise ValueError(value)
+    def __missing__(cls, value: str) -> Self | None:
+        if isinstance(value, str) and (match := cls.match(value)):
+            return match
+        return None
 
     @classmethod
     @abstractmethod

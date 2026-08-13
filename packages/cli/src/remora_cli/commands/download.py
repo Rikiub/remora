@@ -1,15 +1,13 @@
+from __future__ import annotations
+
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
-from remora.models.container import (
-    FormatType,
-    SafeAudioExtensionStr,
-    SafeVideoExtensionStr,
-)
+from remora.models.container import ContainerFormat, SafeExtension
 from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
     DisplayOptions,
@@ -34,7 +32,7 @@ async def download(
     query: QueryParameter,
     # FILTER
     type: Annotated[
-        FormatType | None,
+        ContainerFormat | None,
         Parameter(
             help="Type of stream to download (downloads best by default).",
             short_alias=True,
@@ -100,7 +98,7 @@ async def download(
     ] = None,
     # POST-PROCESS
     convert: Annotated[
-        Literal[SafeVideoExtensionStr, SafeAudioExtensionStr] | None,
+        SafeExtension | None,
         Parameter(
             help="Convert or remux the downloaded file into a specific extension.",
             short_alias=True,

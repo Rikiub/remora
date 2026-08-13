@@ -38,7 +38,7 @@ class VideoCodecFamily(BaseCodecFamily):
         return None
 
 
-VideoCodecFamilyStr = Literal[
+VideoCodec = Literal[
     "av1",
     "vp9",
     "vp8",
@@ -47,4 +47,3 @@ VideoCodecFamilyStr = Literal[
     "h263",
     "theora",
 ]
-VideoCodecFamilyType = VideoCodecFamily | VideoCodecFamilyStr

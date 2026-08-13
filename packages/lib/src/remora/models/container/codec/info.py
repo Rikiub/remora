@@ -19,20 +19,19 @@ class CodecInfo(RemoraModel, Generic[_T]):
     def normalized(self) -> str:
         parts = self.original.split(".")
 
-        if member := VideoCodecFamily.match(parts[0]) or AudioCodecFamily.match(
-            parts[0]
+        if member := (
+            VideoCodecFamily.match(parts[0]) or AudioCodecFamily.match(parts[0])
         ):
-            parts[0] = member.lower().replace(".", "")
+            parts[0] = member.lower().translate(str.maketrans("", "", "._-"))
 
         return ".".join(parts)
 
     @computed_field
     @property
     def family(self) -> _T:
-        codec = VideoCodecFamily.match(self.original) or AudioCodecFamily.match(
-            self.original
-        )
-
-        if codec:
+        if codec := (
+            VideoCodecFamily.match(self.original)
+            or AudioCodecFamily.match(self.original)
+        ):
             return codec  # ty: ignore[invalid-return-type]
         raise ValueError(self.original)

@@ -72,7 +72,7 @@ class AudioExtension(BaseExtension, StrEnum):
         }
 
 
-AudioExtensionStr = Literal[
+_AudioExtensionLiteral = Literal[
     # Common
     "aiff",
     "alac",
@@ -99,5 +99,5 @@ AudioExtensionStr = Literal[
     "wma",
     "weba",
 ]
-SafeAudioExtensionStr = Literal["m4a", "mp3", "mka", "flac"]
-AudioExtensionType = AudioExtension | AudioExtensionStr
+AudioExtensionLike = AudioExtension | _AudioExtensionLiteral
+SafeAudioExtension = Literal["m4a", "mp3", "mka", "flac"]

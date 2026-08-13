@@ -45,7 +45,7 @@ class AudioCodecFamily(BaseCodecFamily):
         return None
 
 
-AudioCodecFamilyStr = Literal[
+AudioCodec = Literal[
     # Common
     "pcm",
     "alac",
@@ -60,4 +60,3 @@ AudioCodecFamilyStr = Literal[
     "eac3",
     "dts",
 ]
-AudioCodecFamilyType = AudioCodecFamily | AudioCodecFamilyStr
