@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from cyclopts import App, Parameter
 from loguru import logger
 
-from remora_cli.options import ExtractorOptions, QueryParameter
+from remora_cli.options import DisplayOptions, ExtractorOptions, QueryParameter
 from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
@@ -74,10 +74,14 @@ async def extract(
             negative=False,
         ),
     ] = None,
-    # AUTH
+    # SHARED
+    display: DisplayOptions | None = None,
     auth: ExtractorOptions | None = None,
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
+
+    display or DisplayOptions()
+    auth or ExtractorOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):

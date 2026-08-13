@@ -1,5 +1,3 @@
-import pytest
-
 from remora._internal.extractor import MediaExtractor
 
 
@@ -15,11 +13,8 @@ async def test_soundcloud(extractor: MediaExtractor):
     await extractor.extract("https://api.soundcloud.com/tracks/1269676381")
 
 
-@pytest.mark.skip("Sign In required")
 async def test_facebook(extractor: MediaExtractor):
-    await extractor.extract(
-        "https://www.facebook.com/share/v/wfwaBTuUg2eWpd6m/?mibextid=rS40aB7S9Ucbxw6v"
-    )
+    await extractor.extract("https://www.facebook.com/reel/2171191926967927")
 
 
 async def test_tiktok(extractor: MediaExtractor):
