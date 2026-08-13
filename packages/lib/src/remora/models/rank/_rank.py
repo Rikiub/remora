@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from remora.models.container import AudioExtension, Extension, VideoExtension
 from remora.models.protocol import Protocol
 from remora.models.rank._config import RANK
@@ -9,6 +11,7 @@ from remora.models.stream import (
     VideoInfo,
     VideoStream,
 )
+from remora.models.stream.item import DynamicRange
 
 
 def get_stream_rank(stream: Stream) -> tuple[float, ...]:
@@ -74,6 +77,10 @@ def get_audio_rank(audio: AudioInfo) -> tuple[float, ...]:
     )
 
 
+def get_dynamic_range_rank(value: DynamicRange) -> int:
+    return _rank(value, RANK["dynamic_range"])
+
+
 def get_codec_rank(info: VideoInfo | AudioInfo | None) -> int:
     match info:
         case VideoInfo():
@@ -100,7 +107,7 @@ def get_protocol_rank(protocol: Protocol | None) -> int:
     return _rank(protocol, RANK["protocol"])
 
 
-def _rank(value: str | None, rank_list: list[str]) -> int:
+def _rank(value: str | None, rank_list: Sequence[str]) -> int:
     """
     Helper to calculate the rank of a value from a list.
     The list must be sorted from worst to best.
@@ -109,7 +116,8 @@ def _rank(value: str | None, rank_list: list[str]) -> int:
     if not value:
         return -1
 
-    for index, name in enumerate(rank_list):
+    # Invert the list for calculate ranks from worst to best
+    for index, name in enumerate(reversed(rank_list)):
         if name in value:
             return index
 

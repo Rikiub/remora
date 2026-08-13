@@ -1,7 +1,9 @@
+import re
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal
 
 from pydantic import (
+    AfterValidator,
     Discriminator,
     Field,
     HttpUrl,
@@ -30,6 +32,25 @@ def _is_ydl_format(value: dict) -> bool:
     return isinstance(value, dict) and bool(value.get("format_id"))
 
 
+def _normalize_dynamic_range(value: str) -> str:
+    matchs: dict[DynamicRange, str] = {
+        "DV": "dv",
+        "HDR12": "(hdr)?12",
+        "HDR10+": r"(hdr)?10\+",
+        "HDR10": "(hdr)?10",
+        "HLG": "hlg",
+        "SDR": "sdr",
+    }
+    for key, pattern in matchs.items():
+        if re.match(pattern, value.lower()):
+            value = key
+    return value
+
+
+DynamicRange = Annotated[
+    Literal["DV", "HDR12", "HDR10+", "HDR10", "HLG", "SDR"],
+    AfterValidator(_normalize_dynamic_range),
+]
 SizeType = Literal["exact", "estimated", "unknown"]
 
 
@@ -47,7 +68,7 @@ class VideoInfo(RemoraModel):
     bitrate: Annotated[float | None, Field(alias="vbr")] = None
     resolution: Resolution | None = None
     fps: float | None = None
-    dynamic_range: str | None = None
+    dynamic_range: DynamicRange | str = "SDR"
 
 
 # STREAMS

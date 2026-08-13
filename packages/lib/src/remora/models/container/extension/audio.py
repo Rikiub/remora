@@ -95,8 +95,8 @@ _AudioExtensionLiteral = Literal[
     "ogx",
     "spx",
     "vorbis",
-    "webm",
     "wma",
+    "webm",
     "weba",
 ]
 AudioExtensionLike = AudioExtension | _AudioExtensionLiteral
