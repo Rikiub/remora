@@ -1,4 +1,5 @@
 from remora._internal.downloader.selector import SelectorContext, StreamSelector
+from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
 from remora.models.media.item import Media
 from remora.models.metadata.size import Resolution
@@ -159,7 +160,7 @@ def video_stream(
         extension="mp4",
         size_type="unknown",
         video=VideoInfo(
-            codec=codec,
+            codec=CodecInfo(original=codec),
             resolution=Resolution(
                 width=int(height * 16 / 9),
                 height=height,
@@ -183,7 +184,7 @@ def audio_stream(
         extension="m4a",
         size_type="unknown",
         audio=AudioInfo(
-            codec=codec,
+            codec=CodecInfo(original=codec),
             bitrate=bitrate,
             channels=channels,
             sample_rate=sample_rate,
@@ -205,14 +206,14 @@ def muxed_stream(
         extension="mp4",
         size_type="unknown",
         video=VideoInfo(
-            codec=video_codec,
+            codec=CodecInfo(original=video_codec),
             resolution=Resolution(
                 width=int(height * 16 / 9),
                 height=height,
             ),
         ),
         audio=AudioInfo(
-            codec=audio_codec,
+            codec=CodecInfo(original=audio_codec),
             bitrate=audio_bitrate,
             channels=2,
             sample_rate=44100,

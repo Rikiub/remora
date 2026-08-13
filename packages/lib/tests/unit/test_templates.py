@@ -1,6 +1,7 @@
 import pytest
 
 from remora._internal.template.output import format_template
+from remora.models.container import CodecInfo
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 from remora.models.metadata.social import Channel, Metrics, Uploader
@@ -18,7 +19,7 @@ def dummy_video_stream() -> VideoStream:
         size_bytes=50000,
         extension="mp4",
         video=VideoInfo(
-            codec="vp9",
+            codec=CodecInfo(original="vp9"),
             bitrate=300,
         ),
     )

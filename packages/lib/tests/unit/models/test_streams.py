@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from remora.models.container import CodecInfo
 from remora.models.metadata.size import Resolution
 from remora.models.stream.item import (
     AudioInfo,
@@ -30,13 +31,13 @@ def streams() -> StreamList:
                 size_type="estimated",
                 size_bytes=11832459,
                 video=VideoInfo(
-                    codec="avc1.42001E",
+                    codec=CodecInfo(original="avc1.42001E"),
                     resolution=Resolution(width=1280, height=720),  # Gives quality=720
                     bitrate=444.226,
                     fps=25,
                 ),
                 audio=AudioInfo(
-                    codec="mp4a.40.2",
+                    codec=CodecInfo(original="mp4a.40.2"),
                     bitrate=128.0,
                     channels=2,
                     sample_rate=44100,
@@ -50,7 +51,7 @@ def streams() -> StreamList:
                 protocol="m3u8",
                 extension="webm",
                 video=VideoInfo(
-                    codec="vp9",
+                    codec=CodecInfo(original="vp9"),
                     resolution=Resolution(width=1920, height=1080),
                 ),
             ),
@@ -61,7 +62,7 @@ def streams() -> StreamList:
                 protocol="https",
                 extension="webm",
                 audio=AudioInfo(
-                    codec="opus",
+                    codec=CodecInfo(original="opus"),
                     bitrate=160.0,
                     language="es-419",
                 ),
@@ -73,7 +74,7 @@ def streams() -> StreamList:
                 protocol="m3u8",
                 extension="m4a",
                 audio=AudioInfo(
-                    codec="mp4a.40.5",
+                    codec=CodecInfo(original="mp4a.40.5"),
                     bitrate=64.0,
                     language=None,
                 ),

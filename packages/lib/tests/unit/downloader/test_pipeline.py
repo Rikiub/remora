@@ -10,6 +10,7 @@ from remora._internal.downloader.selector import SelectorContext, StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora._internal.processor import MediaProcessor
+from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
 from remora.models.event.media import (
     MediaCompleted,
@@ -93,7 +94,7 @@ def dummy_media() -> Media:
                 size_type="exact",
                 size_bytes=50000,
                 extension="mp4",
-                video=VideoInfo(codec="vp9"),
+                video=VideoInfo(codec=CodecInfo(original="vp9")),
             ),
             AudioStream(
                 id="2",
@@ -102,7 +103,7 @@ def dummy_media() -> Media:
                 size_type="exact",
                 size_bytes=4000,
                 extension="m4a",
-                audio=AudioInfo(codec="m4a"),
+                audio=AudioInfo(codec=CodecInfo(original="m4a")),
             ),
         ],
     )

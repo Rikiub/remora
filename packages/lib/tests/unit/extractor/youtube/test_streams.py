@@ -49,7 +49,7 @@ async def test_audio_streams_validation(streams: StreamList):
     itag_140 = next((s for s in audios if s.id == "140"), None)
     if itag_140:
         assert isinstance(itag_140, AudioStream)
-        assert itag_140.audio.codec == "mp4a.40.2"
+        assert itag_140.audio.codec.original == "mp4a.40.2"
         assert itag_140.size_type == "exact"
         assert itag_140.size_bytes == 3449447
 
@@ -77,7 +77,7 @@ async def test_video_streams_validation(streams: StreamList):
     itag_135 = next((s for s in videos if s.id == "135"), None)
     if itag_135:
         assert isinstance(itag_135, VideoStream)
-        assert itag_135.video.codec == "avc1.4d401e"
+        assert itag_135.video.codec.original == "avc1.4d401e"
         assert itag_135.quality == 480
 
 
@@ -105,8 +105,8 @@ async def test_muxed_streams_validation(streams: StreamList):
     # Specific check against known muxed format from your JSON (itag 18)
     itag_18 = next((s for s in muxeds if s.id == "18"), None)
     if itag_18:
-        assert itag_18.video.codec == "avc1.42001E"
-        assert itag_18.audio.codec == "mp4a.40.2"
+        assert itag_18.video.codec.original == "avc1.42001E"
+        assert itag_18.audio.codec.original == "mp4a.40.2"
 
 
 # EDGE CASES & SIZE TYPE INFERENCE
