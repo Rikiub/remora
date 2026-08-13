@@ -229,7 +229,7 @@ class DownloadPipeline:
         video_stream: VideoStream | None,
         audio_stream: AudioStream | None,
     ) -> DownloadContext:
-        results = DownloadContext()
+        context = DownloadContext()
 
         async def format():
             if not (video_stream or audio_stream):
@@ -258,11 +258,11 @@ class DownloadPipeline:
                         elif event.status == "completed":
                             completed_event = event
 
-                            results.video = StreamContext(
+                            context.video = StreamContext(
                                 stream=video_stream,
                                 path=completed_event.video_path,
                             )
-                            results.audio = StreamContext(
+                            context.audio = StreamContext(
                                 stream=audio_stream,
                                 path=completed_event.audio_path,
                             )
@@ -281,25 +281,25 @@ class DownloadPipeline:
                             )
                         elif event.status == "completed":
                             if video_stream:
-                                results.video = StreamContext(
+                                context.video = StreamContext(
                                     stream=video_stream,
                                     path=event.file_path,
                                 )
                             elif audio_stream:
-                                results.audio = StreamContext(
+                                context.audio = StreamContext(
                                     stream=audio_stream,
                                     path=event.file_path,
                                 )
 
-                if results.video:
+                if context.video:
                     logger.debug(
                         'Video stream downloaded: "{path}"',
-                        path=results.video.path,
+                        path=context.video.path,
                     )
-                elif results.audio:
+                elif context.audio:
                     logger.debug(
                         'Audio stream downloaded: "{path}"',
-                        path=results.audio.path,
+                        path=context.audio.path,
                     )
             except* DownloaderError as eg:
                 error = eg.exceptions[0]
@@ -316,7 +316,7 @@ class DownloadPipeline:
             if media.thumbnails:
                 try:
                     logger.debug("Downloading thumbnail")
-                    results.thumbnail = await download_thumbnail(
+                    context.thumbnail = await download_thumbnail(
                         media.thumbnails[0],
                         get_tempfile(),
                     )
@@ -334,7 +334,7 @@ class DownloadPipeline:
             if media.subtitles:
                 try:
                     logger.debug("Downloading subtitles")
-                    results.subtitles = await download_subtitles(
+                    context.subtitles = await download_subtitles(
                         media.subtitles,
                         get_tempfile(),
                     )
@@ -353,7 +353,7 @@ class DownloadPipeline:
             tg.start_soon(thumbnail)
             tg.start_soon(subtitles)
 
-        return results
+        return context
 
     async def process_merge(
         self,
@@ -412,6 +412,7 @@ class DownloadPipeline:
             file_path=file_path,
             ffmpeg_path=self.ffmpeg_path,
         )
+        extension = get_extension(prc.file_path.suffix.lstrip("."))
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
@@ -451,7 +452,7 @@ class DownloadPipeline:
                 async with track_prc("change_container"):
                     await prc.change_container(self.config.convert_to)
 
-            if subtitles:
+            if subtitles and extension.supports_subtitles:
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
@@ -470,12 +471,9 @@ class DownloadPipeline:
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
-        if thumbnail:
-            extension = get_extension(prc.file_path.suffix.lstrip("."))
-
-            if extension.supports_thumbnails:
-                async with track_prc("embed_thumbnail"):
-                    await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
+        if thumbnail and extension.supports_thumbnails:
+            async with track_prc("embed_thumbnail"):
+                await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
         return Path(prc.file_path)
 

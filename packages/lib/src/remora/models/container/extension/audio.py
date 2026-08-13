@@ -35,30 +35,6 @@ class AudioExtension(BaseExtension, StrEnum):
     WEBA = "weba"
 
     @property
-    def is_safe(self) -> bool:
-        return self in {
-            AudioExtension.M4A,
-            AudioExtension.MP3,
-            AudioExtension.MKA,
-            AudioExtension.FLAC,
-        }
-
-    @property
-    @override
-    def is_common(self) -> bool:
-        return self in {
-            AudioExtension.AIFF,
-            AudioExtension.ALAC,
-            AudioExtension.FLAC,
-            AudioExtension.M4A,
-            AudioExtension.MKA,
-            AudioExtension.MP3,
-            AudioExtension.OGG,
-            AudioExtension.OPUS,
-            AudioExtension.WAV,
-        }
-
-    @property
     @override
     def supports_thumbnails(self) -> bool:
         """Checks if the container reliably supports embedded cover art."""

@@ -27,25 +27,6 @@ class VideoExtension(BaseExtension, StrEnum):
     WMV = "wmv"
 
     @property
-    def is_safe(self) -> bool:
-        return self in {
-            VideoExtension.MP4,
-            VideoExtension.MKV,
-        }
-
-    @property
-    @override
-    def is_common(self) -> bool:
-        return self in {
-            VideoExtension.AVI,
-            VideoExtension.FLV,
-            VideoExtension.MKV,
-            VideoExtension.MOV,
-            VideoExtension.MP4,
-            VideoExtension.WEBM,
-        }
-
-    @property
     @override
     def supports_thumbnails(self) -> bool:
         """Checks if the container reliably supports embedded cover art."""
@@ -60,7 +41,13 @@ class VideoExtension(BaseExtension, StrEnum):
     @override
     def supports_subtitles(self) -> bool:
         """Checks if the container supports internal subtitles."""
-        return self in {VideoExtension.MKV, VideoExtension.MP4, VideoExtension.WEBM}
+        return self in {
+            VideoExtension.MKV,
+            VideoExtension.MP4,
+            VideoExtension.M4V,
+            VideoExtension.MOV,
+            VideoExtension.WEBM,
+        }
 
 
 _VideoExtensionLiteral = Literal[
