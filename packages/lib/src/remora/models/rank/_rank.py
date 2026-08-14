@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+from collections.abc import Iterator
+from functools import cache
 
 from remora.models.container import AudioExtension, Extension, VideoExtension
 from remora.models.protocol import Protocol
@@ -104,7 +105,7 @@ def get_extension_rank(extension: Extension) -> int:
     return _rank(extension, rank)
 
 
-def _rank(value: str | None, rank_list: Sequence[str]) -> int:
+def _rank(value: str | None, ranks: tuple) -> int:
     """
     Helper to calculate the rank of a value from a list.
     The list must be sorted from worst to best.
@@ -115,8 +116,13 @@ def _rank(value: str | None, rank_list: Sequence[str]) -> int:
         return DEFAULT
 
     # Invert the list for calculate ranks from worst to best
-    for index, name in enumerate(reversed(rank_list)):
+    for index, name in enumerate(_reversed_rank_list(ranks)):
         if name in value:
             return index
 
     return DEFAULT
+
+
+@cache
+def _reversed_rank_list(ranks: tuple) -> Iterator[str]:
+    return reversed(ranks)

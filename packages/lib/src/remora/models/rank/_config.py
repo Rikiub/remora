@@ -2,26 +2,26 @@ from typing import TypedDict
 
 from remora.models.container import (
     AudioCodec,
-    AudioExtensionLike,
+    AudioExtension,
     VideoCodec,
-    VideoExtensionLike,
+    VideoExtension,
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import DynamicRange
 
 
 class _RankDict(TypedDict):
-    protocol: list[Protocol]
-    video_codec: list[VideoCodec]
-    audio_codec: list[AudioCodec]
-    video_extension: list[VideoExtensionLike]
-    audio_extension: list[AudioExtensionLike]
-    dynamic_range: list[DynamicRange]
+    protocol: tuple[Protocol, ...]
+    video_extension: tuple[VideoExtension, ...]
+    audio_extension: tuple[AudioExtension, ...]
+    video_codec: tuple[VideoCodec, ...]
+    audio_codec: tuple[AudioCodec, ...]
+    dynamic_range: tuple[DynamicRange, ...]
 
 
 # Ranks sorted from best to worst
 RANK: _RankDict = {
-    "protocol": [
+    "protocol": (
         Protocol.HTTPS,
         Protocol.FTPS,
         Protocol.HTTP,
@@ -34,8 +34,23 @@ RANK: _RankDict = {
         Protocol.RTSP,
         Protocol.F4F,
         Protocol.F4M,
-    ],
-    "video_codec": [
+    ),
+    "video_extension": (
+        VideoExtension.MP4,
+        VideoExtension.MOV,
+        VideoExtension.WEBM,
+        VideoExtension.FLV,
+    ),
+    "audio_extension": (
+        AudioExtension.M4A,
+        AudioExtension.AAC,
+        AudioExtension.MP3,
+        AudioExtension.OGG,
+        AudioExtension.OPUS,
+        AudioExtension.WEBM,
+        AudioExtension.WEBA,
+    ),
+    "video_codec": (
         "av1",
         "vp9",
         "h265",
@@ -43,8 +58,8 @@ RANK: _RankDict = {
         "h264",
         "h263",
         "theora",
-    ],
-    "audio_codec": [
+    ),
+    "audio_codec": (
         "pcm",
         "alac",
         "flac",
@@ -56,8 +71,6 @@ RANK: _RankDict = {
         "dts",
         "eac3",
         "ac3",
-    ],
-    "video_extension": ["mp4", "mov", "webm", "flv"],
-    "audio_extension": ["m4a", "aac", "mp3", "ogg", "opus", "webm", "weba"],
-    "dynamic_range": ["DV", "HDR12", "HDR10+", "HDR10", "HLG", "SDR"],
+    ),
+    "dynamic_range": ("DV", "HDR12", "HDR10+", "HDR10", "HLG", "SDR"),
 }

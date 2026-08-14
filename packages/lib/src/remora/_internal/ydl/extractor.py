@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import cast
 
 from yt_dlp.utils import DownloadError as YDLDownloadError
+from yt_dlp.utils._utils import determine_protocol
 
 from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
@@ -51,6 +52,7 @@ def extract_info(query: str) -> YDLExtractInfo:
             auto_init=True,
         )
         info = ydl.extract_info(query, download=False)
+        info["protocol"] = determine_protocol(info)  # Infer protocol if missing
     except YDLDownloadError as error:
         raise ExtractorError(
             message=sanitize_ydl_error(error),
