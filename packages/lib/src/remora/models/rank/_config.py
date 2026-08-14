@@ -10,7 +10,7 @@ from remora.models.protocol import Protocol
 from remora.models.stream import DynamicRange
 
 
-class _RankDict(TypedDict):
+class RankDict(TypedDict):
     protocol: tuple[Protocol, ...]
     video_extension: tuple[VideoExtension, ...]
     audio_extension: tuple[AudioExtension, ...]
@@ -20,7 +20,7 @@ class _RankDict(TypedDict):
 
 
 # Ranks sorted from best to worst
-RANK: _RankDict = {
+RANK: RankDict = {
     "protocol": (
         Protocol.HTTPS,
         Protocol.FTPS,
