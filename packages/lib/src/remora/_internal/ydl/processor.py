@@ -91,13 +91,11 @@ class YDLProcessor:
     @catch
     def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
         pp = EmbedThumbnailPP(self._ydl())
-
         info = self._pp_params | {
             "thumbnails": [
                 {"filepath": str(thumbnail)},
             ],
         }
-
         if square:
             info |= {
                 "postprocessor_args": {
