@@ -30,6 +30,6 @@ class BaseStreamDownloader(ABC):
             stream_id=self.stream.id,
             stream_type=stream_type,
             quality=self.stream.quality,
-            extension=self.stream.extension,
+            extension=self.stream.container,
             downloader=self.__class__.__name__,
         )

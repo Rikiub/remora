@@ -3,10 +3,10 @@ from typing import Literal
 
 from typing_extensions import override
 
-from remora.models.container.extension._base import BaseExtension
+from remora.models.container.extension._base import BaseContainer
 
 
-class VideoExtension(BaseExtension, StrEnum):
+class VideoContainer(BaseContainer, StrEnum):
     # Common
     AVI = "avi"
     FLV = "flv"
@@ -31,10 +31,10 @@ class VideoExtension(BaseExtension, StrEnum):
     def supports_thumbnails(self) -> bool:
         """Checks if container reliably supports embedded cover art."""
         return self in {
-            VideoExtension.MKV,
-            VideoExtension.MP4,
-            VideoExtension.M4V,
-            VideoExtension.MOV,
+            VideoContainer.MKV,
+            VideoContainer.MP4,
+            VideoContainer.M4V,
+            VideoContainer.MOV,
         }
 
     @property
@@ -42,15 +42,15 @@ class VideoExtension(BaseExtension, StrEnum):
     def supports_subtitles(self) -> bool:
         """Checks if container reliably supports embedded subtitles."""
         return self in {
-            VideoExtension.MKV,
-            VideoExtension.MP4,
-            VideoExtension.M4V,
-            VideoExtension.MOV,
-            VideoExtension.WEBM,
+            VideoContainer.MKV,
+            VideoContainer.MP4,
+            VideoContainer.M4V,
+            VideoContainer.MOV,
+            VideoContainer.WEBM,
         }
 
 
-_VideoExtensionLiteral = Literal[
+_VideoContainerLiteral = Literal[
     # Common
     "avi",
     "flv",
@@ -69,5 +69,5 @@ _VideoExtensionLiteral = Literal[
     "m4v",
     "wmv",
 ]
-SafeVideoExtension = Literal["mp4", "mkv"]
-VideoExtensionLike = VideoExtension | _VideoExtensionLiteral
+SafeVideoContainer = Literal["mp4", "mkv"]
+VideoContainerLike = VideoContainer | _VideoContainerLiteral

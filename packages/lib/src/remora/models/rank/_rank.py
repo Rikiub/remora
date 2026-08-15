@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from functools import cache
 
-from remora.models.container import AudioExtension, Extension, VideoExtension
+from remora.models.container import AudioContainer, StreamContainer, VideoContainer
 from remora.models.protocol import Protocol
 from remora.models.rank._config import RANK
 from remora.models.stream import (
@@ -25,10 +25,10 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
     protocol = get_protocol_rank(stream.protocol)
 
     if isinstance(stream, VideoStream):
-        video_ext = get_extension_rank(stream.extension)
+        video_ext = get_extension_rank(stream.container)
         has_video = 1
     if isinstance(stream, AudioStream):
-        audio_ext = get_extension_rank(stream.extension)
+        audio_ext = get_extension_rank(stream.container)
 
     # Calculate total rank
     match stream:
@@ -99,11 +99,11 @@ def get_codec_rank(info: VideoInfo | AudioInfo) -> int:
     )
 
 
-def get_extension_rank(extension: Extension) -> int:
+def get_extension_rank(extension: StreamContainer) -> int:
     match extension:
-        case VideoExtension():
+        case VideoContainer():
             rank = RANK["video_extension"]
-        case AudioExtension():
+        case AudioContainer():
             rank = RANK["audio_extension"]
     return _rank(extension, rank)
 

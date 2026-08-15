@@ -5,7 +5,7 @@ from pydantic import AfterValidator
 from remora._internal.ffmpeg import validate_ffmpeg
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
-from remora.models.container import ContainerFormat, SafeExtension
+from remora.models.container import ContainerFormat, SafeContainer
 from remora.types import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
@@ -44,7 +44,7 @@ class DownloadOptions(RemoraModel):
     format_type: ContainerFormat | None = None
     quality: StreamQuality | int | None = None
 
-    convert_to: SafeExtension | None = None
+    convert_to: SafeContainer | None = None
     embed_metadata: bool = True
     ffmpeg_path: Annotated[
         StrPath | None,

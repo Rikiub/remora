@@ -19,7 +19,7 @@ from remora._internal.ydl.messages import sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ProcessorError
-from remora.models.container import AudioExtension
+from remora.models.container import AudioContainer
 from remora.types import StrPath
 
 
@@ -160,7 +160,7 @@ class YDLProcessor:
 
     @catch
     def fix_m4a(self, _format=None) -> Self:
-        if self.file_extension == AudioExtension.M4A:
+        if self.file_extension == AudioContainer.M4A:
             pp_fix = FFmpegFixupM4aPP(self._ydl())
             _, data = pp_fix.run(self._pp_params | {"container": "m4a_dash"})
             self._update_filepath(data)

@@ -157,7 +157,7 @@ def video_stream(
         id=id,
         url=URL,
         protocol="https",
-        extension="mp4",
+        container="mp4",
         size_type="unknown",
         video=VideoInfo(
             codec=CodecInfo(original=codec),
@@ -181,7 +181,7 @@ def audio_stream(
         id=id,
         url=URL,
         protocol="https",
-        extension="m4a",
+        container="m4a",
         size_type="unknown",
         audio=AudioInfo(
             codec=CodecInfo(original=codec),
@@ -203,7 +203,7 @@ def muxed_stream(
         id=id,
         url=URL,
         protocol="https",
-        extension="mp4",
+        container="mp4",
         size_type="unknown",
         video=VideoInfo(
             codec=CodecInfo(original=video_codec),

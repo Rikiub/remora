@@ -7,7 +7,7 @@ from typing import Annotated
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
-from remora.models.container import ContainerFormat, SafeExtension
+from remora.models.container import ContainerFormat, SafeContainer
 from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
     DisplayOptions,
@@ -98,9 +98,9 @@ async def download(
     ] = None,
     # POST-PROCESS
     convert: Annotated[
-        SafeExtension | None,
+        SafeContainer | None,
         Parameter(
-            help="Convert or remux the downloaded file into a specific extension.",
+            help="Remux or recode the downloaded file into a specific container.",
             short_alias=True,
             show_default=False,
             group=Panel.POST_PROCESS,
@@ -109,7 +109,7 @@ async def download(
     subtitles: Annotated[
         str | None,
         Parameter(
-            help="Languages of subtitles to embed (e.g. [green]en,es[/] or [green]all[/]).",
+            help="Languages of subtitles to embed (e.g. [green]en[/] and [green]es[/]).",
             short_alias=True,
             group=Panel.POST_PROCESS,
         ),

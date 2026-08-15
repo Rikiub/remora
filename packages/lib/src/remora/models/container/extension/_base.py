@@ -1,4 +1,4 @@
-class BaseExtension:
+class BaseContainer:
     @property
     def supports_thumbnails(self) -> bool:
         return False

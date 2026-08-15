@@ -15,11 +15,11 @@ from typing_extensions import override
 from remora.models._base import RemoraModel, YDLSerializable
 from remora.models.container import (
     AudioCodecFamily,
-    AudioExtension,
+    AudioContainer,
     CodecInfo,
     VideoCodecFamily,
-    VideoExtension,
-    get_extension,
+    VideoContainer,
+    get_stream_container,
 )
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
@@ -82,7 +82,7 @@ class ExtractorMeta(RemoraModel):
 class _BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 
-    id: Annotated[str, Field(alias="format_id")]
+    id: str
     protocol: Protocol
     url: HttpUrl
     extractor_meta: ExtractorMeta = ExtractorMeta()
@@ -140,6 +140,7 @@ class _BaseStream(ABC, YDLSerializable):
     @classmethod
     def _validate_ydl_base(cls, data) -> dict:
         if _is_ydl_format(data):
+            data["id"] = data.get("format_id")
             data["extractor_meta"] = {
                 "downloader": data.get("downloader_options", {}),
                 "headers": data.get("http_headers", {}),
@@ -205,7 +206,7 @@ class _BaseStream(ABC, YDLSerializable):
 
 class AudioStream(_BaseStream):
     type: Literal["audio"] = "audio"
-    extension: Annotated[AudioExtension, Field(alias="ext")]
+    container: Annotated[AudioContainer, Field(alias="ext")]
     audio: AudioInfo = AudioInfo()
 
     @override
@@ -217,7 +218,7 @@ class AudioStream(_BaseStream):
 
 class VideoStream(_BaseStream):
     type: Literal["video"] = "video"
-    extension: Annotated[VideoExtension, Field(alias="ext")]
+    container: Annotated[VideoContainer, Field(alias="ext")]
     video: VideoInfo = VideoInfo()
 
     @override
@@ -229,16 +230,16 @@ class VideoStream(_BaseStream):
 
 class MuxedStream(VideoStream, AudioStream):
     type: Literal["muxed"] = "muxed"
-    extension: Annotated[VideoExtension, Field(alias="ext")]
+    container: Annotated[VideoContainer, Field(alias="ext")]
 
 
 def _infer_stream_type(data) -> str:
-    extension = None
+    container = None
     video = None
     audio = None
 
     if isinstance(data, dict):
-        extension = data.get("ext") or data.get("extension")
+        container = data.get("ext") or data.get("extension")
 
         if _is_ydl_format(data):
             video = _normalize_value(data.get("vcodec"))
@@ -247,10 +248,10 @@ def _infer_stream_type(data) -> str:
             video = data.get("video")
             audio = data.get("audio")
     if isinstance(data, VideoStream):
-        extension = data.extension
+        container = data.container
         video = data.video.codec
     if isinstance(data, AudioStream):
-        extension = data.extension
+        container = data.container
         audio = data.audio.codec
 
     # Determine from codec
@@ -262,12 +263,12 @@ def _infer_stream_type(data) -> str:
         return "audio"
 
     # Determine from extension as fallback
-    elif extension:
-        extension = get_extension(extension)
+    elif container:
+        container = get_stream_container(container)
 
-        if isinstance(extension, VideoExtension):
+        if isinstance(container, VideoContainer):
             return "video"
-        elif isinstance(extension, AudioExtension):
+        elif isinstance(container, AudioContainer):
             return "audio"
 
     # Else raise error

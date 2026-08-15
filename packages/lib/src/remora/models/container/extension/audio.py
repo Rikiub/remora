@@ -3,10 +3,10 @@ from typing import Literal
 
 from typing_extensions import override
 
-from remora.models.container.extension._base import BaseExtension
+from remora.models.container.extension._base import BaseContainer
 
 
-class AudioExtension(BaseExtension, StrEnum):
+class AudioContainer(BaseContainer, StrEnum):
     # Common
     AIFF = "aiff"
     ALAC = "alac"
@@ -39,16 +39,16 @@ class AudioExtension(BaseExtension, StrEnum):
     def supports_thumbnails(self) -> bool:
         """Checks if container reliably supports embedded cover art."""
         return self in {
-            AudioExtension.M4A,
-            AudioExtension.MP3,
-            AudioExtension.MKA,
-            AudioExtension.OGG,
-            AudioExtension.OPUS,
-            AudioExtension.FLAC,
+            AudioContainer.M4A,
+            AudioContainer.MP3,
+            AudioContainer.MKA,
+            AudioContainer.OGG,
+            AudioContainer.OPUS,
+            AudioContainer.FLAC,
         }
 
 
-_AudioExtensionLiteral = Literal[
+_AudioContainerLiteral = Literal[
     # Common
     "aiff",
     "alac",
@@ -75,5 +75,5 @@ _AudioExtensionLiteral = Literal[
     "webm",
     "weba",
 ]
-AudioExtensionLike = AudioExtension | _AudioExtensionLiteral
-SafeAudioExtension = Literal["m4a", "mp3", "mka", "flac"]
+AudioContainerLike = AudioContainer | _AudioContainerLiteral
+SafeAudioContainer = Literal["m4a", "mp3", "mka", "flac"]

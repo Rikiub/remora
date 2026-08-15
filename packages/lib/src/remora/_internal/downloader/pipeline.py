@@ -27,9 +27,9 @@ from remora.exceptions import (
     ProcessorError,
 )
 from remora.models.container import (
-    AudioExtension,
-    VideoExtension,
-    get_extension,
+    AudioContainer,
+    VideoContainer,
+    get_stream_container,
 )
 from remora.models.download_options import DownloadOptions
 from remora.models.event import (
@@ -209,9 +209,9 @@ class DownloadPipeline:
 
         async for path in output.parent.iterdir():
             if await path.is_file() and path.stem == output.name:
-                extension = get_extension(path.suffix.lstrip("."))
+                extension = get_stream_container(path.suffix.lstrip("."))
 
-                if isinstance(extension, (VideoExtension, AudioExtension)):
+                if isinstance(extension, (VideoContainer, AudioContainer)):
                     path = Path(path)
                     await self._stream.send(
                         MediaCompleted(
@@ -360,8 +360,8 @@ class DownloadPipeline:
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
     ) -> Path:
-        extension = VideoExtension.MP4
-        if isinstance(self.config.convert_to, VideoExtension):
+        extension = VideoContainer.MP4
+        if isinstance(self.config.convert_to, VideoContainer):
             extension = self.config.convert_to
 
         file_path = Path(f"{get_tempfile()}.{extension}")
@@ -393,7 +393,7 @@ class DownloadPipeline:
             prc = await prc.merge_streams(
                 video=video,
                 audio=audio,
-                merge_format=VideoExtension.MKV,
+                merge_format=VideoContainer.MKV,
             )
 
         merging.progress.status = "completed"
@@ -412,7 +412,7 @@ class DownloadPipeline:
             file_path=file_path,
             ffmpeg_path=self.ffmpeg_path,
         )
-        extension = get_extension(prc.file_path.suffix.lstrip("."))
+        extension = get_stream_container(prc.file_path.suffix.lstrip("."))
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
@@ -457,7 +457,7 @@ class DownloadPipeline:
                     await prc.embed_subtitles(subtitles)
 
         elif isinstance(stream, AudioStream):
-            if self.config.convert_to and self.config.convert_to != stream.extension:
+            if self.config.convert_to and self.config.convert_to != stream.container:
                 try:
                     async with track_prc("change_container", True):
                         await prc.change_container(self.config.convert_to)

@@ -1,26 +1,26 @@
 from remora.models.container.extension.audio import (
-    AudioExtension,
-    AudioExtensionLike,
-    SafeAudioExtension,
+    AudioContainer,
+    AudioContainerLike,
+    SafeAudioContainer,
 )
 from remora.models.container.extension.video import (
-    SafeVideoExtension,
-    VideoExtension,
-    VideoExtensionLike,
+    SafeVideoContainer,
+    VideoContainer,
+    VideoContainerLike,
 )
 
-Extension = VideoExtension | AudioExtension
-ExtensionLike = VideoExtensionLike | AudioExtensionLike
+StreamContainer = VideoContainer | AudioContainer
+StreamContainerLike = VideoContainerLike | AudioContainerLike
 """Collection of video and audio extension formats."""
-SafeExtension = SafeVideoExtension | SafeAudioExtension
+SafeContainer = SafeVideoContainer | SafeAudioContainer
 
 
-def get_extension(extension: ExtensionLike | str) -> Extension:
+def get_stream_container(container: StreamContainerLike | str) -> StreamContainer:
     """Get extension enum from a string."""
-    if isinstance(extension, Extension):
-        return extension
+    if isinstance(container, StreamContainer):
+        return container
 
     try:
-        return VideoExtension(extension)
+        return VideoContainer(container)
     except ValueError:
-        return AudioExtension(extension)
+        return AudioContainer(container)
