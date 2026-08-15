@@ -17,6 +17,9 @@ SafeExtension = SafeVideoExtension | SafeAudioExtension
 
 def get_extension(extension: ExtensionLike | str) -> Extension:
     """Get extension enum from a string."""
+    if isinstance(extension, Extension):
+        return extension
+
     try:
         return VideoExtension(extension)
     except ValueError:

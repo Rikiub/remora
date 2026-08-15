@@ -19,6 +19,7 @@ from remora.models.container import (
     CodecInfo,
     VideoCodecFamily,
     VideoExtension,
+    get_extension,
 )
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
@@ -56,7 +57,7 @@ SizeType = Literal["exact", "estimated", "unknown"]
 
 # INFO
 class AudioInfo(RemoraModel):
-    codec: CodecInfo[AudioCodecFamily]
+    codec: CodecInfo[AudioCodecFamily] | None = None
     bitrate: Annotated[float | None, Field(alias="abr")] = None
     channels: Annotated[int | None, Field(alias="audio_channels")] = None
     sample_rate: Annotated[float | None, Field(alias="asr")] = None
@@ -64,7 +65,7 @@ class AudioInfo(RemoraModel):
 
 
 class VideoInfo(RemoraModel):
-    codec: CodecInfo[VideoCodecFamily]
+    codec: CodecInfo[VideoCodecFamily] | None = None
     bitrate: Annotated[float | None, Field(alias="vbr")] = None
     resolution: Resolution | None = None
     fps: float | None = None
@@ -205,7 +206,7 @@ class _BaseStream(ABC, YDLSerializable):
 class AudioStream(_BaseStream):
     type: Literal["audio"] = "audio"
     extension: Annotated[AudioExtension, Field(alias="ext")]
-    audio: AudioInfo
+    audio: AudioInfo = AudioInfo()
 
     @override
     def _quality(self) -> float:
@@ -217,7 +218,7 @@ class AudioStream(_BaseStream):
 class VideoStream(_BaseStream):
     type: Literal["video"] = "video"
     extension: Annotated[VideoExtension, Field(alias="ext")]
-    video: VideoInfo
+    video: VideoInfo = VideoInfo()
 
     @override
     def _quality(self) -> float:
@@ -232,10 +233,13 @@ class MuxedStream(VideoStream, AudioStream):
 
 
 def _infer_stream_type(data) -> str:
+    extension = None
     video = None
     audio = None
 
     if isinstance(data, dict):
+        extension = data.get("ext") or data.get("extension")
+
         if _is_ydl_format(data):
             video = _normalize_value(data.get("vcodec"))
             audio = _normalize_value(data.get("acodec"))
@@ -243,16 +247,30 @@ def _infer_stream_type(data) -> str:
             video = data.get("video")
             audio = data.get("audio")
     if isinstance(data, VideoStream):
+        extension = data.extension
         video = data.video.codec
     if isinstance(data, AudioStream):
+        extension = data.extension
         audio = data.audio.codec
 
+    # Determine from codec
     if video and audio:
         return "muxed"
     elif video:
         return "video"
     elif audio:
         return "audio"
+
+    # Determine from extension as fallback
+    elif extension:
+        extension = get_extension(extension)
+
+        if isinstance(extension, VideoExtension):
+            return "video"
+        elif isinstance(extension, AudioExtension):
+            return "audio"
+
+    # Else raise error
     raise ValueError("Cannot determine stream type")
 
 

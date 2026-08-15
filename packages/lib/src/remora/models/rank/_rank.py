@@ -93,7 +93,10 @@ def get_codec_rank(info: VideoInfo | AudioInfo) -> int:
             rank = RANK["video_codec"]
         case AudioInfo():
             rank = RANK["audio_codec"]
-    return _rank(info.codec.normalized, rank)
+    return _rank(
+        info.codec.normalized if info.codec else None,
+        rank,
+    )
 
 
 def get_extension_rank(extension: Extension) -> int:
