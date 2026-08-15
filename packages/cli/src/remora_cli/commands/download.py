@@ -7,7 +7,7 @@ from typing import Annotated
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
-from remora.models.container import ContainerFormat, SafeContainer
+from remora.models.container import AVContainerFormat, RichAVContainer
 from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
     DisplayOptions,
@@ -32,7 +32,7 @@ async def download(
     query: QueryParameter,
     # FILTER
     type: Annotated[
-        ContainerFormat | None,
+        AVContainerFormat | None,
         Parameter(
             help="Type of stream to download (downloads best by default).",
             short_alias=True,
@@ -98,7 +98,7 @@ async def download(
     ] = None,
     # POST-PROCESS
     convert: Annotated[
-        SafeContainer | None,
+        RichAVContainer | None,
         Parameter(
             help="Remux or recode the downloaded file into a specific container.",
             short_alias=True,

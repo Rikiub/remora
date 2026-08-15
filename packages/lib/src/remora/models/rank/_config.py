@@ -2,9 +2,8 @@ from typing import TypedDict
 
 from remora.models.container import (
     AudioCodec,
-    AudioContainer,
+    AVContainer,
     VideoCodec,
-    VideoContainer,
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import DynamicRange
@@ -12,8 +11,8 @@ from remora.models.stream import DynamicRange
 
 class RankDict(TypedDict):
     protocol: tuple[Protocol, ...]
-    video_extension: tuple[VideoContainer, ...]
-    audio_extension: tuple[AudioContainer, ...]
+    video_container: tuple[AVContainer, ...]
+    audio_container: tuple[AVContainer, ...]
     video_codec: tuple[VideoCodec, ...]
     audio_codec: tuple[AudioCodec, ...]
     dynamic_range: tuple[DynamicRange, ...]
@@ -35,20 +34,18 @@ RANK: RankDict = {
         Protocol.F4F,
         Protocol.F4M,
     ),
-    "video_extension": (
-        VideoContainer.MP4,
-        VideoContainer.MOV,
-        VideoContainer.WEBM,
-        VideoContainer.FLV,
+    "video_container": (
+        AVContainer.MP4,
+        AVContainer.MOV,
+        AVContainer.WEBM,
+        AVContainer.FLV,
     ),
-    "audio_extension": (
-        AudioContainer.M4A,
-        AudioContainer.AAC,
-        AudioContainer.MP3,
-        AudioContainer.OGG,
-        AudioContainer.OPUS,
-        AudioContainer.WEBM,
-        AudioContainer.WEBA,
+    "audio_container": (
+        AVContainer.MP4,
+        AVContainer.AAC,
+        AVContainer.MP3,
+        AVContainer.OGG,
+        AVContainer.WEBM,
     ),
     "video_codec": (
         "av1",

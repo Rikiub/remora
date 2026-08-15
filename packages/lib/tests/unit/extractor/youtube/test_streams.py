@@ -37,8 +37,7 @@ async def test_audio_streams_validation(streams: StreamList):
 
     for audio in audios:
         assert audio.type == "audio"
-        assert audio.audio is not None
-        assert audio.audio.codec != "none"
+        assert audio.audio.codec
 
         if audio.audio.bitrate:
             assert audio.quality == audio.audio.bitrate
@@ -66,9 +65,9 @@ async def test_video_streams_validation(streams: StreamList):
 
     for video in videos:
         assert video.type == "video"
-        assert video.video is not None
-        assert video.video.codec != "none"
-        assert video.video.resolution is not None
+        assert video.video
+        assert video.video.codec
+        assert video.video.resolution
 
         # Check calculated quality properties
         assert video.quality == video.video.resolution.height
@@ -95,8 +94,8 @@ async def test_muxed_streams_validation(streams: StreamList):
 
     for muxed in muxeds:
         assert muxed.type == "muxed"
-        assert muxed.video is not None and muxed.video.codec != "none"
-        assert muxed.audio is not None and muxed.audio.codec != "none"
+        assert muxed.video.codec
+        assert muxed.audio.codec
 
         # MuxedStream inherits quality from VideoStream
         if muxed.video.resolution:

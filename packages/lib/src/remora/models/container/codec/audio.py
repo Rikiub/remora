@@ -5,10 +5,10 @@ from typing import Literal
 
 from typing_extensions import override
 
-from remora.models.container.codec._base import BaseCodecFamily
+from remora.models.container._base import GetterEnum
 
 
-class AudioCodecFamily(BaseCodecFamily):
+class AudioCodecFamily(GetterEnum):
     # Common
     PCM = "PCM"  # Combines WAV and AIFF
     ALAC = "ALAC"  # Apple Lossless
@@ -22,11 +22,14 @@ class AudioCodecFamily(BaseCodecFamily):
     AC4 = "AC-4"  # Dolby Digital
     AC3 = "AC-3"  # Dolby Digital Plus
     EAC3 = "E-AC-3"  # Dolby AC-4
+    SPX = "SPX"
     DTS = "DTS"
 
     @override
     @classmethod
-    def match(cls, value: str) -> AudioCodecFamily | None:
+    def get(cls, value: str | None) -> AudioCodecFamily | None:
+        if not value:
+            return None
         value = value.lower().strip()
 
         codec = {member: member.value.lower() for member in cls}

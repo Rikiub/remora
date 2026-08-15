@@ -93,7 +93,7 @@ def dummy_media() -> Media:
                 protocol="https",
                 size_type="exact",
                 size_bytes=50000,
-                container="mp4",
+                extension="mp4",
                 video=VideoInfo(codec=CodecInfo(original="vp9")),
             ),
             AudioStream(
@@ -102,7 +102,7 @@ def dummy_media() -> Media:
                 protocol="https",
                 size_type="exact",
                 size_bytes=4000,
-                container="m4a",
+                extension="m4a",
                 audio=AudioInfo(codec=CodecInfo(original="m4a")),
             ),
         ],

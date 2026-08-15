@@ -9,11 +9,7 @@ from pydantic_core import PydanticOmit
 from typing_extensions import Self, TypeVar
 
 from remora.models._base import BaseList
-from remora.models.container import (
-    AudioCodec,
-    StreamContainerLike,
-    VideoCodec,
-)
+from remora.models.container import AudioCodec, AVContainer, AVContainerLike, VideoCodec
 from remora.models.protocol import ProtocolLike
 from remora.models.rank import get_codec_rank, get_stream_rank
 from remora.models.stream import AudioInfo, VideoInfo
@@ -59,7 +55,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
     def filter(
         self,
         quality: StreamQuality | int | None = None,
-        container: StreamContainerLike | None = None,
+        container: AVContainerLike | None = None,
         protocol: ProtocolLike | None = None,
         video_codec: VideoCodec | None = None,
         audio_codec: AudioCodec | None = None,
@@ -70,6 +66,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
         items = (s for s in self.root)
 
         if container:
+            container = AVContainer(container)
             items = (s for s in items if s.container == container)
         if quality:
             items = (s for s in items if s.quality == quality)

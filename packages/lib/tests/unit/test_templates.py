@@ -17,7 +17,7 @@ def dummy_video_stream() -> VideoStream:
         protocol="https",
         size_type="exact",
         size_bytes=50000,
-        container="mp4",
+        extension="mp4",
         video=VideoInfo(
             codec=CodecInfo(original="vp9"),
             bitrate=300,

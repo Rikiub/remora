@@ -27,9 +27,7 @@ from remora.exceptions import (
     ProcessorError,
 )
 from remora.models.container import (
-    AudioContainer,
-    VideoContainer,
-    get_stream_container,
+    AVContainer,
 )
 from remora.models.download_options import DownloadOptions
 from remora.models.event import (
@@ -208,20 +206,21 @@ class DownloadPipeline:
         output = anyio.Path(output)
 
         async for path in output.parent.iterdir():
-            if await path.is_file() and path.stem == output.name:
-                extension = get_stream_container(path.suffix.lstrip("."))
-
-                if isinstance(extension, (VideoContainer, AudioContainer)):
-                    path = Path(path)
-                    await self._stream.send(
-                        MediaCompleted(
-                            id=self.id,
-                            media=self.media,
-                            file_path=path,
-                            result="skipped",
-                        )
+            if (
+                await path.is_file()
+                and path.stem == output.name
+                and AVContainer.get(path.suffix.lstrip("."))
+            ):
+                path = Path(path)
+                await self._stream.send(
+                    MediaCompleted(
+                        id=self.id,
+                        media=self.media,
+                        file_path=path,
+                        result="skipped",
                     )
-                    return path
+                )
+                return path
 
     async def download_resources(
         self,
@@ -360,10 +359,17 @@ class DownloadPipeline:
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
     ) -> Path:
-        extension = VideoContainer.MP4
-        if isinstance(self.config.convert_to, VideoContainer):
-            extension = self.config.convert_to
+        # Get container and extension
+        convert = AVContainer.get(self.config.convert_to)
 
+        if convert and not convert.is_audio_only:
+            container = convert
+        else:
+            container = AVContainer.MP4
+
+        extension = container.get_extension()
+
+        # Setup events
         file_path = Path(f"{get_tempfile()}.{extension}")
         merging = MediaProcessing(
             id=self.id,
@@ -377,11 +383,12 @@ class DownloadPipeline:
         await self._stream.send(merging)
         prc = MediaProcessor(file_path, self.ffmpeg_path)
 
+        # Start merging
         try:
             prc = await prc.merge_streams(
                 video=video,
                 audio=audio,
-                merge_format=extension,
+                merge_container=container,
             )
         except ProcessorError:
             logger.debug(
@@ -393,12 +400,14 @@ class DownloadPipeline:
             prc = await prc.merge_streams(
                 video=video,
                 audio=audio,
-                merge_format=VideoContainer.MKV,
+                merge_container=AVContainer.MKV,
             )
 
+        # Complete events
         merging.progress.status = "completed"
         await self._stream.send(merging)
 
+        # Return merged file path
         return Path(prc.file_path)
 
     async def post_process(
@@ -412,7 +421,7 @@ class DownloadPipeline:
             file_path=file_path,
             ffmpeg_path=self.ffmpeg_path,
         )
-        extension = get_stream_container(prc.file_path.suffix.lstrip("."))
+        container = AVContainer(prc.file_path.suffix.lstrip("."))
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
@@ -452,7 +461,7 @@ class DownloadPipeline:
                 async with track_prc("change_container"):
                     await prc.change_container(self.config.convert_to)
 
-            if subtitles and extension.supports_subtitles:
+            if subtitles and container.supports_subtitles:
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
@@ -463,7 +472,7 @@ class DownloadPipeline:
                         await prc.change_container(self.config.convert_to)
                 except ProcessorError:
                     async with track_prc("convert_audio"):
-                        await prc.convert_audio(self.config.convert_to)
+                        await prc.convert_audio(container)
 
         # Metadata
         # Must run before embed the thumbnail.
@@ -471,7 +480,7 @@ class DownloadPipeline:
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
-        if thumbnail and extension.supports_thumbnails:
+        if thumbnail and container.supports_thumbnails:
             async with track_prc("embed_thumbnail"):
                 await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 

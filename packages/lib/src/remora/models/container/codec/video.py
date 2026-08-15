@@ -5,10 +5,10 @@ from typing import Literal
 
 from typing_extensions import override
 
-from remora.models.container.codec._base import BaseCodecFamily
+from remora.models.container._base import GetterEnum
 
 
-class VideoCodecFamily(BaseCodecFamily):
+class VideoCodecFamily(GetterEnum):
     AV1 = "AV1"
     VP9 = "VP9"
     VP8 = "VP8"
@@ -19,7 +19,9 @@ class VideoCodecFamily(BaseCodecFamily):
 
     @override
     @classmethod
-    def match(cls, value: str) -> VideoCodecFamily | None:
+    def get(cls, value: str | None) -> VideoCodecFamily | None:
+        if not value:
+            return None
         value = value.lower().strip()
 
         codec = {member: member.value.lower() for member in cls}

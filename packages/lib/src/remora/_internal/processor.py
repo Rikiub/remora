@@ -9,14 +9,14 @@ from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
 from remora.models.container import (
-    AudioContainerLike,
-    StreamContainerLike,
-    VideoContainerLike,
+    AVContainer,
+    RichAudioContainer,
+    RichAVContainer,
 )
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
 from remora.models.stream import AudioStream, VideoStream
-from remora.types import StrPath
+from remora.types import AudioQuality, StrPath
 
 
 class MediaProcessor:
@@ -31,17 +31,17 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, format: str | StreamContainerLike) -> Self:
-        result = await run_sync(self._prc.video_remuxer, str(format))
+    async def change_container(self, container: RichAVContainer | AVContainer) -> Self:
+        result = await run_sync(self._prc.video_remuxer, str(container))
         self._update_file(result)
         return self
 
     async def convert_audio(
         self,
-        format: str | AudioContainerLike | None = None,
-        quality: int | None = None,
+        container: RichAudioContainer | AVContainer | None = None,
+        quality: AudioQuality | None = None,
     ) -> Self:
-        result = await run_sync(self._prc.extract_audio, str(format), quality)
+        result = await run_sync(self._prc.extract_audio, str(container), quality)
         self._update_file(result)
         return self
 
@@ -68,7 +68,7 @@ class MediaProcessor:
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
-        merge_format: VideoContainerLike,
+        merge_container: RichAVContainer | AVContainer,
     ) -> Self:
         """
         Merge two streams in a single file (Remuxing).
@@ -79,13 +79,19 @@ class MediaProcessor:
             FileExistsError: The file path already exists.
         """
 
+        merge_container = AVContainer(merge_container)
+        if merge_container.is_audio_only:
+            raise ValueError(
+                f"'{merge_container}' is a audio-only container. Please select a container with video and audio support."
+            )
+
         real_streams: list[RequestedFormat] = []
         for ctx in (video, audio):
             fmt = {"filepath": str(ctx.path)} | ctx.stream._to_ydl_dict()
             real_streams.append(fmt)  # type: ignore
 
         result = await run_sync(
-            self._prc.merge_formats, str(merge_format), real_streams
+            self._prc.merge_formats, str(merge_container), real_streams
         )
         self._update_file(result)
         return self
