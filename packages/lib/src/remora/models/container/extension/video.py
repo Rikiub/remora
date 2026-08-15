@@ -29,7 +29,7 @@ class VideoExtension(BaseExtension, StrEnum):
     @property
     @override
     def supports_thumbnails(self) -> bool:
-        """Checks if the container reliably supports embedded cover art."""
+        """Checks if container reliably supports embedded cover art."""
         return self in {
             VideoExtension.MKV,
             VideoExtension.MP4,
@@ -40,7 +40,7 @@ class VideoExtension(BaseExtension, StrEnum):
     @property
     @override
     def supports_subtitles(self) -> bool:
-        """Checks if the container supports internal subtitles."""
+        """Checks if container reliably supports embedded subtitles."""
         return self in {
             VideoExtension.MKV,
             VideoExtension.MP4,

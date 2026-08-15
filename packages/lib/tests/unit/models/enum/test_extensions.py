@@ -1,11 +1,13 @@
 from typing import get_args
 
-from remora.models.container import (
+from remora.models.container.extension.audio import (
     AudioExtension,
-    VideoExtension,
+    _AudioExtensionLiteral,
 )
-from remora.models.container.extension.audio import _AudioExtensionLiteral
-from remora.models.container.extension.video import _VideoExtensionLiteral
+from remora.models.container.extension.video import (
+    VideoExtension,
+    _VideoExtensionLiteral,
+)
 
 
 def test_audio_extension_match_enum():

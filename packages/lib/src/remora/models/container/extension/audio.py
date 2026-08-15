@@ -37,7 +37,7 @@ class AudioExtension(BaseExtension, StrEnum):
     @property
     @override
     def supports_thumbnails(self) -> bool:
-        """Checks if the container reliably supports embedded cover art."""
+        """Checks if container reliably supports embedded cover art."""
         return self in {
             AudioExtension.M4A,
             AudioExtension.MP3,
