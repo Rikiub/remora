@@ -71,7 +71,7 @@ class AVContainer(GetterEnum):
                 return "m2ts" if has_video else "ts"
 
         # For all other formats
-        return self.value
+        return self.value.lower()
 
     @property
     def is_audio_only(self) -> bool:

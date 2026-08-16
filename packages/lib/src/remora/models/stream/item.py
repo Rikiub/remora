@@ -1,3 +1,4 @@
+import functools
 import re
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self
@@ -22,6 +23,13 @@ from remora.models.container import (
 )
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
+
+
+def _rgetattr(obj, attr, *args):
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return functools.reduce(_getattr, attr.split("."), obj)
 
 
 def _normalize_value(value: str | None) -> str | None:
@@ -133,39 +141,21 @@ class _BaseStream(ABC, YDLSerializable):
 
     @override
     def _to_ydl_dict(self):
-        data = super()._to_ydl_dict()
-
-        # Convert size
-        name = "filesize" if self.size_type == "exact" else "filesize_approx"
-        data[name] = self.size_bytes
-
-        # Convert YDL options
-        data |= data.get("extractor_meta") or {}
-
-        # Flatterize video and audio
-        data |= {
-            "acodec": "none",
-            "vcodec": "none",
+        return {
+            "format_id": self.id,
+            "url": str(self.url),
+            "filesize": self.size_type,
+            "filesize_approx": self.size_type,
+            "protocol": str(self.protocol),
+            "downloader_options": self.extractor_meta.downloader,
+            "cookies": self.extractor_meta.cookies,
+            "http_headers": self.extractor_meta.headers,
+            "ext": self.extension,
+            "vcodec": _rgetattr(self, "video.codec.original") or "none",
+            "acodec": _rgetattr(self, "audio.codec.original") or "none",
+            "vbr": _rgetattr(self, "video.bitrate"),
+            "abr": _rgetattr(self, "audio.bitrate"),
         }
-
-        audio = data.get("audio")
-        video = data.get("video")
-
-        if audio and (acodec := audio.get("acodec")):
-            data |= {
-                **audio,
-                "acodec": acodec or "none",
-            }
-
-        if video and (vcodec := video.get("vcodec")):
-            data |= {
-                **video,
-                **data.get("resolution", {}),
-                "vcodec": vcodec or "none",
-            }
-
-        # Return normalized info dict
-        return data
 
     @model_validator(mode="before")
     @classmethod

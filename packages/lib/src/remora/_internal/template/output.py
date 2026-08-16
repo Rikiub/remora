@@ -82,7 +82,6 @@ def format_template(
     path = sanitize_filepath(
         output_template,
         replacement_text="-",
-        max_len=250,
     )
     return path
 

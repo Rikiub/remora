@@ -422,6 +422,9 @@ class DownloadPipeline:
             ffmpeg_path=self.ffmpeg_path,
         )
         container = AVContainer(prc.file_path.suffix.lstrip("."))
+        convert_container = (
+            AVContainer(self.config.convert_to) if self.config.convert_to else None
+        )
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
@@ -457,19 +460,19 @@ class DownloadPipeline:
                 )
 
         if isinstance(stream, VideoStream):
-            if self.config.convert_to:
+            if convert_container:
                 async with track_prc("change_container"):
-                    await prc.change_container(self.config.convert_to)
+                    await prc.change_container(convert_container)
 
             if subtitles and container.supports_subtitles:
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
         elif isinstance(stream, AudioStream):
-            if self.config.convert_to and self.config.convert_to != stream.container:
+            if convert_container and convert_container != stream.container:
                 try:
                     async with track_prc("change_container", True):
-                        await prc.change_container(self.config.convert_to)
+                        await prc.change_container(convert_container)
                 except ProcessorError:
                     async with track_prc("convert_audio"):
                         await prc.convert_audio(container)
