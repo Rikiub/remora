@@ -1,4 +1,3 @@
-import functools
 import re
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self
@@ -14,7 +13,7 @@ from pydantic import (
 )
 from typing_extensions import override
 
-from remora.models._base import RemoraModel, YDLSerializable
+from remora.models._base import RemoraModel, YDLSerializable, rgetattr
 from remora.models.container import (
     AudioCodecFamily,
     AVContainer,
@@ -25,15 +24,8 @@ from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
 
-def _rgetattr(obj, attr, *args):
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-
-    return functools.reduce(_getattr, attr.split("."), obj)
-
-
 def _normalize_value(value: str | None) -> str | None:
-    return None if value == "none" else value
+    return None if (not value) or (value == "none") else value
 
 
 def _is_ydl_format(value: dict) -> bool:
@@ -81,8 +73,8 @@ class VideoInfo(RemoraModel):
 
 # STREAMS
 class ExtractorMeta(RemoraModel):
-    downloader: Annotated[dict, Field(alias="downloader_options")] = {}  # noqa: RUF012
-    headers: Annotated[dict, Field(alias="http_headers")] = {}  # noqa: RUF012
+    downloader: dict = {}  # noqa: RUF012
+    headers: dict = {}  # noqa: RUF012
     cookies: str | None = None
 
 
@@ -151,10 +143,10 @@ class _BaseStream(ABC, YDLSerializable):
             "cookies": self.extractor_meta.cookies,
             "http_headers": self.extractor_meta.headers,
             "ext": self.extension,
-            "vcodec": _rgetattr(self, "video.codec.original") or "none",
-            "acodec": _rgetattr(self, "audio.codec.original") or "none",
-            "vbr": _rgetattr(self, "video.bitrate"),
-            "abr": _rgetattr(self, "audio.bitrate"),
+            "vcodec": rgetattr(self, "video.codec.original") or "none",
+            "acodec": rgetattr(self, "audio.codec.original") or "none",
+            "vbr": rgetattr(self, "video.bitrate"),
+            "abr": rgetattr(self, "audio.bitrate"),
         }
 
     @model_validator(mode="before")

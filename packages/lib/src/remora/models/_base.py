@@ -1,3 +1,4 @@
+import functools
 from collections.abc import Iterable, Iterator
 from typing import Generic, Self, TypeVar, overload
 
@@ -73,3 +74,12 @@ EnsureNone = WrapValidator(_validate_or_none)
 
 EnsureList = BeforeValidator(lambda v: v if v else [])
 """Ensure data will be empty list if field not exists."""
+
+
+def rgetattr(obj: object, attr: str, *args) -> object | None:
+    """Get attribute recursively."""
+
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return functools.reduce(_getattr, attr.split("."), obj)
