@@ -5,7 +5,7 @@ description = "Download any video/audio you want from a simple URL ✨"
 dependencies = ["remora", "rich>=14.0.0", "anyio>=4.12.1", "cyclopts>=4.22.5"]
 
 [project.optional-dependencies]
-ffmpeg = ["remora[ffmpeg]"]
+standard = ["remora[standard]"]
 
 [project.scripts]
 remora = "remora_cli:run"

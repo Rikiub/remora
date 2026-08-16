@@ -1284,27 +1284,29 @@ dependencies = [
     { name = "pathvalidate" },
     { name = "pydantic" },
     { name = "typing-extensions" },
-    { name = "yt-dlp", extra = ["default", "deno"] },
+    { name = "yt-dlp", extra = ["default"] },
 ]
 
 [package.optional-dependencies]
-ffmpeg = [
+standard = [
     { name = "imageio-ffmpeg" },
+    { name = "yt-dlp", extra = ["default", "deno"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "imageio-ffmpeg", marker = "extra == 'ffmpeg'", specifier = ">=0.6.0" },
+    { name = "imageio-ffmpeg", marker = "extra == 'standard'", specifier = ">=0.6.0" },
     { name = "lazy-loader", specifier = ">=0.5" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pathvalidate", specifier = ">=3.2.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
-    { name = "yt-dlp", extras = ["default", "deno"], specifier = ">=2026.7.4" },
+    { name = "yt-dlp", extras = ["default"], specifier = ">=2026.7.4" },
+    { name = "yt-dlp", extras = ["default", "deno"], marker = "extra == 'standard'" },
 ]
-provides-extras = ["ffmpeg"]
+provides-extras = ["standard"]
 
 [[package]]
 name = "remora-cli"
@@ -1318,8 +1320,8 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-ffmpeg = [
-    { name = "remora", extra = ["ffmpeg"] },
+standard = [
+    { name = "remora", extra = ["standard"] },
 ]
 
 [package.metadata]
@@ -1327,10 +1329,10 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "cyclopts", specifier = ">=4.22.5" },
     { name = "remora", editable = "packages/lib" },
-    { name = "remora", extras = ["ffmpeg"], marker = "extra == 'ffmpeg'", editable = "packages/lib" },
+    { name = "remora", extras = ["standard"], marker = "extra == 'standard'", editable = "packages/lib" },
     { name = "rich", specifier = ">=14.0.0" },
 ]
-provides-extras = ["ffmpeg"]
+provides-extras = ["standard"]
 
 [[package]]
 name = "remora-docs"
