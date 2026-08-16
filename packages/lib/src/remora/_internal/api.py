@@ -20,9 +20,13 @@ from remora.types import StrPath, StrUrl
 
 
 class Remora:
-    def __init__(self, download_options: DownloadOptions | None = None):
+    def __init__(
+        self,
+        download_options: DownloadOptions | None = None,
+        extractor: MediaExtractor | None = None,
+    ):
         self.download_options = download_options or DownloadOptions()
-        self.extractor = MediaExtractor()
+        self.extractor = extractor or MediaExtractor()
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...

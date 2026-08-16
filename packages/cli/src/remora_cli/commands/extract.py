@@ -80,8 +80,8 @@ async def extract(
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
 
-    display or DisplayOptions()
-    auth or ExtractorOptions()
+    display = display or DisplayOptions()
+    auth = auth or ExtractorOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
@@ -91,7 +91,7 @@ async def extract(
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
-        extractor = MediaExtractor()
+        extractor = MediaExtractor(cookies_file=auth.cookies)
 
     # Determine user intent
     sel_format = format

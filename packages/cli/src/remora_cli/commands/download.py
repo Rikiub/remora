@@ -7,6 +7,7 @@ from typing import Annotated
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
+from remora import MediaExtractor
 from remora.models.container import AVContainerFormat, RichAVContainer
 from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
@@ -176,7 +177,10 @@ async def download(
         except OutputTemplateError as error:
             raise CycloptsError(str(error))
 
-        remora = Remora(download_options=config)
+        remora = Remora(
+            download_options=config,
+            extractor=MediaExtractor(cookies_file=auth.cookies),
+        )
 
     async for target, result in extract_queries(query, remora.extractor):
         if isinstance(result, (Playlist, SearchList)) and not result.entries.medias():

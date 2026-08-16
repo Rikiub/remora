@@ -10,6 +10,7 @@ from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
+from remora.types import StrPath
 
 
 @dataclass(slots=True, frozen=True)
@@ -43,12 +44,16 @@ def extract_query(
     raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
 
-def extract_info(query: str) -> YDLExtractInfo:
+def extract_info(
+    query: str,
+    cookies_file: StrPath | None = None,
+) -> YDLExtractInfo:
     try:
         ydl = YDL(
             params={
                 "extract_flat": "in_playlist",
                 "skip_download": True,
+                "cookiefile": cookies_file,
             },
             auto_init=True,
         )

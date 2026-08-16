@@ -14,10 +14,16 @@ from remora.models.media import (
     SearchList,
 )
 from remora.models.search import SearchService
-from remora.types import StrUrl
+from remora.types import StrPath, StrUrl
 
 
 class MediaExtractor:
+    def __init__(
+        self,
+        cookies_file: StrPath | None = None,
+    ):
+        self.cookies_file = cookies_file
+
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
 
@@ -40,7 +46,7 @@ class MediaExtractor:
             # Extract info
             from remora._internal.ydl.extractor import extract_info
 
-            info = await run_sync(extract_info, url)
+            info = await run_sync(extract_info, url, self.cookies_file)
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
