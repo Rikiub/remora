@@ -1,6 +1,7 @@
 from remora._internal.downloader.selector import SelectorContext, StreamSelector
 from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
+from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.metadata.size import Resolution
 from remora.models.stream.item import (
@@ -139,7 +140,7 @@ def resolve(media: Media, **kwargs) -> SelectorContext:
 
 def make_media(*streams) -> Media:
     return Media(
-        extractor="Youtube",
+        extractor=Extractor(id="Youtube", name="youtube"),
         id="test",
         title="Test",
         url=URL,

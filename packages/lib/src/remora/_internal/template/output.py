@@ -79,7 +79,11 @@ def format_template(
     output_template = formatter.format(str(output_template), **data)
 
     # Remove invalid characters and limit length
-    path = sanitize_filepath(output_template, max_len=250)
+    path = sanitize_filepath(
+        output_template,
+        replacement_text="-",
+        max_len=250,
+    )
     return path
 
 

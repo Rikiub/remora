@@ -24,6 +24,7 @@ from remora.models.event.stream import (
     StreamCompleted,
     StreamContinuous,
 )
+from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
@@ -68,7 +69,7 @@ def dummy_media() -> Media:
     URL = "https://example.com/video"
 
     return Media(
-        extractor="Youtube",
+        extractor=Extractor(id="Youtube", name="youtube"),
         id="test_123",
         title="Mock Video",
         url="https://youtube.com/watch?v=test",

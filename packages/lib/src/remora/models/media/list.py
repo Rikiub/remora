@@ -6,12 +6,7 @@ from typing import Annotated, Literal, TypeVar
 from pydantic import AliasChoices, Field, HttpUrl
 
 from remora.models._base import BaseList
-from remora.models.media._base import (
-    URL_CHOICES,
-    BaseExtract,
-    ExtractID,
-    ExtractorField,
-)
+from remora.models.media._base import URL_CHOICES, BaseExtract, ExtractID
 from remora.models.media.item import LazyMedia
 from remora.models.metadata import ThumbnailList
 
@@ -29,13 +24,11 @@ class EntriesList(BaseList[_Entry]):
 
 class _BaseList(ABC, BaseExtract):
     entries: Annotated[EntriesList, Field(repr=False, default_factory=EntriesList)]
-    extractor: ExtractorField
 
 
 # Search
 class SearchList(_BaseList):
     type: Literal["search"] = "search"
-
     service: str
     query: str
 
@@ -44,21 +37,12 @@ class SearchList(_BaseList):
 class LazyPlaylist(_BaseList, ExtractID):
     type: Literal["playlist"] = "playlist"
 
-    id: Annotated[
-        str,
-        Field(validation_alias=AliasChoices("playlist_id", "id")),
-    ]
+    id: Annotated[str, Field(alias="playlist_id")]
     url: Annotated[
         HttpUrl,
         Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
     ]
-    title: Annotated[
-        str,
-        Field(
-            alias="playlist_title",
-            validation_alias=AliasChoices("playlist_url", "title"),
-        ),
-    ] = ""
+    title: Annotated[str, Field(alias="playlist_title")] = ""
     thumbnails: ThumbnailList = ThumbnailList()
 
 

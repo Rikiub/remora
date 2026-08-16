@@ -2,6 +2,7 @@ import pytest
 
 from remora._internal.template.output import format_template
 from remora.models.container import CodecInfo
+from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 from remora.models.metadata.social import Channel, Metrics, Uploader
@@ -29,7 +30,7 @@ def dummy_video_stream() -> VideoStream:
 def dummy_media() -> Media:
     """Media rich of placeholder metadata."""
     return Media(
-        extractor="Extractor Media",
+        extractor=Extractor(id="Extractor Media", name="extractor:media"),
         id="1",
         title="Media Title",
         url="https://example.com/media",
@@ -60,7 +61,7 @@ def dummy_playlist() -> Playlist:
         id="1",
         url="https://example.com/playlist",
         title="Playlist Title",
-        extractor="Extractor Playlist",
+        extractor=Extractor(id="Extractor Playlist", name="extractor:playlist"),
         modified_date="2026-05-02T12:00:00",
         upload_date="2026-05-02T12:00:00",
         release_date="2026-05-02T12:00:00",
@@ -97,7 +98,8 @@ def format(
 
 
 def test_media(format):
-    assert format("{extractor}") == "Extractor Media"
+    assert format("{extractor.id}") == "Extractor Media"
+    assert format("{extractor.name}") == "extractor-media"
     assert format("{title}") == "Media Title"
 
     assert format("{uploader.name}") == "Uploader Name"
@@ -110,7 +112,8 @@ def test_media(format):
 
 
 def test_playlist(format):
-    assert format("{playlist.extractor}") == "Extractor Playlist"
+    assert format("{playlist.extractor.id}") == "Extractor Playlist"
+    assert format("{playlist.extractor.name}") == "extractor-playlist"
     assert format("{playlist.title}") == "Playlist Title"
 
     assert format("{playlist.uploader.name}") == "Uploader Name"

@@ -2,41 +2,59 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import AliasChoices, Field, HttpUrl, model_validator
-from typing_extensions import override
+from typing_extensions import TypeIs, override
 
-from remora.models._base import EnsureNone, YDLSerializable
+from remora.models._base import EnsureNone, RemoraModel, YDLSerializable
 from remora.models.metadata import Channel, Metrics, Uploader
 
 # Types
-PLAYLIST_EXTRACTORS = ["YoutubeTab"]
-URL_CHOICES = ["original_url", "url", "webpage_url"]
+PLAYLIST_EXTRACTOR_IDS = ("YoutubeTab",)
+URL_CHOICES = ("original_url", "url", "webpage_url")
 
 # Fields
 TypeField = Field(alias="_type")
-ExtractorField = Annotated[
-    str,
-    Field(
-        alias="extractor_key",
-        validation_alias=AliasChoices("extractor_key", "ie_key"),
-    ),
-]
 
 
-def is_ydl_media(data) -> bool:
+def is_ydl_media(data) -> TypeIs[dict]:
     return isinstance(data, dict) and bool(
         data.get("extractor_key") or data.get("ie_key")
     )
 
 
 # Base
-class BaseExtract(YDLSerializable): ...
+class Extractor(RemoraModel):
+    id: str
+    name: str
+
+
+class BaseExtract(YDLSerializable):
+    extractor: Extractor
+
+    @override
+    def _to_ydl_dict(self) -> dict:
+        info = super()._to_ydl_dict()
+        info |= info["extractor"]
+        return info
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_ydl_extractor(cls, data) -> dict:
+        if is_ydl_media(data):
+            extractor = data.pop("extractor", None)
+            if isinstance(extractor, dict):
+                extractor = extractor.get("name")
+
+            data["extractor"] = {
+                "id": data.get("extractor_key") or data.get("ie_key"),
+                "name": extractor,
+            }
+        return data
 
 
 class ExtractID(BaseExtract):
     """Base identifier for media objects."""
 
     id: str
-    extractor: ExtractorField
     url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
     modified_date: Annotated[datetime | None, EnsureNone] = None

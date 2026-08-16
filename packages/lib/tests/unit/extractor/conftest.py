@@ -20,7 +20,7 @@ def mock_extractor(mocker: MockerFixture, ydl_data):
     def _mock(filename: str):
         data = ydl_data(filename)
         return mocker.patch(
-            "remora._internal.ydl.extractor.extract_info",
+            "remora._internal.ydl.wrapper.YDL.extract_info",
             return_value=data,
         )
 

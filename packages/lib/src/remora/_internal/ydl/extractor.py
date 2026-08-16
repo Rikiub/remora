@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import cast
 
+from yt_dlp.extractor import get_info_extractor
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
@@ -52,7 +53,18 @@ def extract_info(query: str) -> YDLExtractInfo:
             auto_init=True,
         )
         info = ydl.extract_info(query, download=False)
-        info["protocol"] = determine_protocol(info)  # Infer protocol if missing
+
+        # Normalize extractor fields
+        info = _normalize_extractor_field(info)
+
+        entries = info.get("entries") or []
+        for index, entry in enumerate(entries):
+            entries[index] = _normalize_extractor_field(entry)
+        info["entries"] = entries
+
+        # Infer protocol if missing
+        if info.get("url"):
+            info["protocol"] = determine_protocol(info)
     except YDLDownloadError as error:
         raise ExtractorError(
             message=sanitize_ydl_error(error),
@@ -60,3 +72,11 @@ def extract_info(query: str) -> YDLExtractInfo:
         )
 
     return cast(YDLExtractInfo, info)
+
+
+def _normalize_extractor_field(info: dict) -> dict:
+    extractor = get_info_extractor(info.get("extractor_key") or info.get("ie_key"))
+    info["extractor_key"] = extractor.ie_key()
+    info["extractor"] = extractor.IE_NAME
+    info.pop("ie_key", None)
+    return info

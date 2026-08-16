@@ -2,6 +2,7 @@ from collections.abc import Iterable
 
 from pydantic import TypeAdapter
 
+from remora.models.media._base import Extractor
 from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import EntriesList, LazyPlaylist, Playlist, SearchList
 
@@ -17,6 +18,7 @@ __all__ = [
     "AnyExtractResult",
     "EntriesList",
     "ExtractResult",
+    "Extractor",
     "LazyExtractResult",
     "LazyMedia",
     "LazyPlaylist",

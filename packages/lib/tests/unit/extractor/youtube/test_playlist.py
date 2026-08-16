@@ -11,7 +11,7 @@ async def playlist(extract_ydl) -> Playlist:
 
 
 async def test_playlist(playlist: Playlist):
-    assert playlist.extractor == "YoutubeTab"
+    assert playlist.extractor.id == "YoutubeTab"
     assert playlist.id == "OLAK5uy_lRrAuEy29zo5mtAH465aEtvmRfakErDoI"
     assert playlist.title == "Album - HIVE"
     assert (
@@ -22,13 +22,13 @@ async def test_playlist(playlist: Playlist):
 
 async def test_medias(playlist: Playlist):
     for media in playlist.entries.medias():
-        assert media.extractor == "Youtube"
+        assert media.extractor.id == "Youtube"
 
-        assert media.title is not None
-        assert media.duration is not None
+        assert media.title
+        assert media.duration
 
-        assert media.uploader is not None
-        assert media.channel is not None
-        assert media.metrics is not None
+        assert media.uploader
+        assert media.channel
+        assert media.metrics
 
         assert len(media.thumbnails) > 0

@@ -10,8 +10,9 @@ from pydantic import (
 
 from remora.models._base import EnsureList, EnsureNone
 from remora.models.media._base import (
-    PLAYLIST_EXTRACTORS,
+    PLAYLIST_EXTRACTOR_IDS,
     ExtractID,
+    Extractor,
     TypeField,
     is_ydl_media,
 )
@@ -60,10 +61,10 @@ class LazyMedia(ExtractID):
 
     @field_validator("extractor")
     @classmethod
-    def _validate_extractor(cls, v: str) -> str:
-        if v in PLAYLIST_EXTRACTORS:
-            raise ValueError(f"'{v}' extractor is for playlists only.")
-        return v
+    def _validate_extractor(cls, extractor: Extractor) -> Extractor:
+        if extractor.id in PLAYLIST_EXTRACTOR_IDS:
+            raise ValueError(f"'{extractor.id}' extractor is for playlists only.")
+        return extractor
 
     @model_validator(mode="before")
     @classmethod
