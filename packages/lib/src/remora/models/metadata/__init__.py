@@ -7,9 +7,14 @@ from remora.models.metadata.subtitle import (
     ExternalSubtitle,
     Subtitle,
     SubtitleList,
+    SubtitleRequestContext,
     SubtitleType,
 )
-from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
+from remora.models.metadata.thumbnail import (
+    Thumbnail,
+    ThumbnailList,
+    ThumbnailRequestContext,
+)
 
 __all__ = [
     "Channel",
@@ -22,8 +27,10 @@ __all__ = [
     "Resolution",
     "Subtitle",
     "SubtitleList",
+    "SubtitleRequestContext",
     "SubtitleType",
     "Thumbnail",
     "ThumbnailList",
+    "ThumbnailRequestContext",
     "Uploader",
 ]

@@ -5,6 +5,7 @@ from remora.models.stream.item import (
     MuxedStream,
     SizeType,
     Stream,
+    StreamRequestContext,
     VideoInfo,
     VideoStream,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "SizeType",
     "Stream",
     "StreamList",
+    "StreamRequestContext",
     "VideoInfo",
     "VideoStream",
 ]

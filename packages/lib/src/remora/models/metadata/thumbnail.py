@@ -1,6 +1,6 @@
-from typing import Generic, Literal, Self
+from typing import Annotated, Generic, Literal, Self
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from typing_extensions import TypeVar, override
 
 from remora.models._base import BaseList, RemoraModel, YDLSerializable
@@ -8,27 +8,25 @@ from remora.models.metadata._base import Metadata
 from remora.models.metadata.size import Resolution
 
 
-class ExtractorMeta(RemoraModel):
-    preference: int = 0
+class ThumbnailRequestContext(RemoraModel):
+    headers: Annotated[dict | None, Field(alias="http_headers")] = None
 
 
 class Thumbnail(Metadata, YDLSerializable):
     id: str = ""
     url: str
     resolution: Resolution | None = None
-    extractor_meta: ExtractorMeta = ExtractorMeta()
+    priority: Annotated[int, Field(alias="preference")] = 0
+    request_context: ThumbnailRequestContext = ThumbnailRequestContext()
 
     @override
     def _to_ydl_dict(self):
         data = super()._to_ydl_dict()
-        data |= data.get("extractor_meta", {})
-
         if res := self.resolution:
             data |= {
                 "width": res.width,
                 "height": res.height,
             }
-
         return data
 
     @model_validator(mode="before")
@@ -48,8 +46,8 @@ class Thumbnail(Metadata, YDLSerializable):
                     data["resolution"] = None
 
             # Map extras
-            if "extractor_meta" not in data:
-                data["extractor_meta"] = data
+            if "request_context" not in data:
+                data["request_context"] = data
 
             return data
         return data
@@ -97,7 +95,7 @@ class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
 
     def _sort_by_best_filter(self, thumbnail: _T) -> tuple[int, ...]:
         return (
-            thumbnail.extractor_meta.preference,
+            thumbnail.priority,
             thumbnail.resolution.width if thumbnail.resolution else -1,
             thumbnail.resolution.height if thumbnail.resolution else -1,
         )

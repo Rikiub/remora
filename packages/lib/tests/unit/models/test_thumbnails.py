@@ -4,7 +4,6 @@ import pytest
 
 from remora.models.metadata.size import Resolution
 from remora.models.metadata.thumbnail import (
-    ExtractorMeta,
     Thumbnail,
     ThumbnailList,
 )
@@ -19,24 +18,24 @@ def thumbnails() -> ThumbnailList:
             Thumbnail(
                 id="4",
                 url=URL,
-                extractor_meta=ExtractorMeta(preference=-3),
+                priority=-3,
             ),
             Thumbnail(
                 id="1",
                 url=URL,
                 resolution=Resolution(width=500, height=500),
-                extractor_meta=ExtractorMeta(preference=-1),
+                priority=-1,
             ),
             Thumbnail(
                 id="3",
                 url=URL,
                 resolution=Resolution(width=300, height=300),
-                extractor_meta=ExtractorMeta(preference=-2),
+                priority=-2,
             ),
             Thumbnail(
                 id="2",
                 url=URL,
-                # By default the extractor preference is 0
+                # By default the priority is 0
             ),
         ]
     )

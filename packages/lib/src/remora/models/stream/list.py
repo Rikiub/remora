@@ -77,10 +77,10 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
                 s
                 for s in items
                 if isinstance(s, VideoStream)
-                and (c := s.video.codec)
+                and (codec := s.video.codec)
                 and (
-                    c.normalized.startswith(video_codec)
-                    or c.original.startswith(video_codec)
+                    codec.normalized.startswith(video_codec)
+                    or codec.original.startswith(video_codec)
                 )
             )
         if audio_codec:
@@ -88,10 +88,10 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
                 s
                 for s in items
                 if isinstance(s, AudioStream)
-                and (c := s.audio.codec)
+                and (codec := s.audio.codec)
                 and (
-                    c.normalized.startswith(audio_codec)
-                    or c.original.startswith(audio_codec)
+                    codec.normalized.startswith(audio_codec)
+                    or codec.original.startswith(audio_codec)
                 )
             )
         if language:

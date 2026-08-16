@@ -72,9 +72,9 @@ class VideoInfo(RemoraModel):
 
 
 # STREAMS
-class ExtractorMeta(RemoraModel):
-    downloader: dict = {}  # noqa: RUF012
-    headers: dict = {}  # noqa: RUF012
+class StreamRequestContext(RemoraModel):
+    downloader: dict | None = None
+    headers: dict | None = None
     cookies: str | None = None
 
 
@@ -84,7 +84,7 @@ class _BaseStream(ABC, YDLSerializable):
     id: str
     protocol: Protocol
     url: HttpUrl
-    extractor_meta: ExtractorMeta = ExtractorMeta()
+    request_context: StreamRequestContext = StreamRequestContext()
 
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
@@ -135,18 +135,18 @@ class _BaseStream(ABC, YDLSerializable):
     def _to_ydl_dict(self):
         return {
             "format_id": self.id,
+            "protocol": str(self.protocol),
             "url": str(self.url),
             "filesize": self.size_type,
             "filesize_approx": self.size_type,
-            "protocol": str(self.protocol),
-            "downloader_options": self.extractor_meta.downloader,
-            "cookies": self.extractor_meta.cookies,
-            "http_headers": self.extractor_meta.headers,
             "ext": self.extension,
             "vcodec": rgetattr(self, "video.codec.original") or "none",
             "acodec": rgetattr(self, "audio.codec.original") or "none",
             "vbr": rgetattr(self, "video.bitrate"),
             "abr": rgetattr(self, "audio.bitrate"),
+            "downloader_options": self.request_context.downloader,
+            "cookies": self.request_context.cookies,
+            "http_headers": self.request_context.headers,
         }
 
     @model_validator(mode="before")
@@ -154,7 +154,7 @@ class _BaseStream(ABC, YDLSerializable):
     def _validate_ydl_base(cls, data) -> dict:
         if _is_ydl_format(data):
             data["id"] = data.get("format_id")
-            data["extractor_meta"] = {
+            data["request_context"] = {
                 "downloader": data.get("downloader_options", {}),
                 "headers": data.get("http_headers", {}),
                 "cookies": data.get("cookies"),

@@ -5,10 +5,15 @@ from typing import Annotated, Generic, Literal, Self
 from pydantic import BeforeValidator, Field, HttpUrl
 from typing_extensions import TypeVar, override
 
-from remora.models._base import BaseList, YDLSerializable
+from remora.models._base import BaseList, RemoraModel, YDLSerializable
 from remora.models.metadata._base import Metadata
 
 SubtitleType = Literal["external", "embedded"]
+
+
+class SubtitleRequestContext(RemoraModel):
+    headers: Annotated[dict | None, Field(alias="http_headers")] = None
+    impersonate: bool = False
 
 
 class _BaseSubtitle(Metadata, YDLSerializable):
@@ -16,6 +21,7 @@ class _BaseSubtitle(Metadata, YDLSerializable):
     name: str = ""
     language: str
     extension: Annotated[str, Field(alias="ext")]
+    request_context: SubtitleRequestContext = SubtitleRequestContext()
 
     @override
     def _to_ydl_dict(self) -> dict[str, list[dict[str, str]]]:
@@ -57,6 +63,7 @@ def _parse_ydl_subtitles(data):
                     "type": sub_type,
                     "content": value.get("data"),
                     "language": lang,
+                    "request_context": value,
                 }
                 flat_subtitles.append(entry)
 
