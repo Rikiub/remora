@@ -62,7 +62,7 @@ def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
 
 
 @cache
-def _validate_ffmpeg(ffmpeg_path: Path | None) -> Path:
+def _validate_ffmpeg(ffmpeg_path: Path) -> Path:
     """Validate provided FFmpeg binary."""
 
     # Ensure the path is not None
