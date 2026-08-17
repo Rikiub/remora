@@ -3,6 +3,7 @@ import tempfile
 
 from yt_dlp.YoutubeDL import YoutubeDL
 
+from remora._internal.path import get_cache_dir
 from remora._internal.ydl.types import YDLParams
 
 
@@ -24,6 +25,8 @@ class YDL(YoutubeDL):
             "quiet": True,
             # Disable Colors
             "color": {"stdout": "no_color", "stderr": "no_color"},
+            # Set cache dir relative to library
+            "cachedir": get_cache_dir() / "ydl",
             # Remove FFmpeg detection for consistent results
             # If yt-dlp found a inexistent path, it'll disable FFmpeg
             "ffmpeg_location": tempfile.gettempdir(),

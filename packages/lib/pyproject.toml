@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.28.1",
     "anyio>=4.12.1",
     "lazy-loader>=0.5",
+    "platformdirs>=4.11.3",
 ]
 
 [project.optional-dependencies]

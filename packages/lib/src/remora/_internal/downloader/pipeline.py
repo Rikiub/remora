@@ -17,7 +17,7 @@ from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora._internal.extractor import MediaExtractor
 from remora._internal.ffmpeg import find_internal_ffmpeg, find_system_ffmpeg
-from remora._internal.path import get_tempfile
+from remora._internal.path import create_temp_file
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
 from remora._internal.types import StreamContext
@@ -231,16 +231,16 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                 downloader = MuxedStreamDownloader(
                     video=StreamContext(
                         stream=video_stream,
-                        path=get_tempfile(),
+                        path=create_temp_file(),
                     ),
                     audio=StreamContext(
                         stream=audio_stream,
-                        path=get_tempfile(),
+                        path=create_temp_file(),
                     ),
                 )
             else:
                 downloader = StreamDownloader(
-                    output_path=get_tempfile(),
+                    output_path=create_temp_file(),
                     stream=video_stream or audio_stream,  # ty: ignore[invalid-argument-type]
                 )
 
@@ -301,7 +301,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                     logger.debug("Downloading thumbnail")
                     context.thumbnail = await download_thumbnail(
                         media.thumbnails[0],
-                        get_tempfile(),
+                        create_temp_file(),
                     )
                     logger.debug("Thumbnail downloaded")
                 except MetadataDownloaderError as error:
@@ -319,7 +319,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                     logger.debug("Downloading subtitles")
                     context.subtitles = await download_subtitles(
                         media.subtitles,
-                        get_tempfile(),
+                        create_temp_file(),
                     )
                     logger.debug("Subtitles downloaded")
                 except MetadataDownloaderError as error:
@@ -354,7 +354,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         extension = container.get_extension()
 
         # Setup events
-        file_path = Path(f"{get_tempfile()}.{extension}")
+        file_path = Path(f"{create_temp_file()}.{extension}")
         merging = MediaProcessing(
             id=self.id,
             media=self.media,
