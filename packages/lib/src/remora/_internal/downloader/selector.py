@@ -87,20 +87,17 @@ class StreamSelector:
 
         # Map to FormatType
         literal_type = {
-            MuxedStream: "muxed",
+            MuxedStream: "video",
             VideoStream: "video",
             AudioStream: "audio",
         }[type]
 
         # Resolve quality
-        if (
+        if self.config.quality and (
             # If format type is declared, then filter only that type
-            self.config.quality
-            and (f := self.config.format_type)
-            and f.startswith(literal_type)
+            self.config.format_type == literal_type
             # If format type isn't declared, then default to filter only videos
-            or self.config.quality
-            and isinstance(type, VideoStream)
+            or issubclass(type, VideoStream)
         ):
             result = candidates.get_closest_quality(self.config.quality)
 
