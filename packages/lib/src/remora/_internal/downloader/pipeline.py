@@ -16,7 +16,10 @@ from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora._internal.extractor import MediaExtractor
-from remora._internal.ffmpeg import find_internal_ffmpeg, find_system_ffmpeg
+from remora._internal.ffmpeg import (
+    find_system_ffmpeg_dir,
+    find_wheel_ffmpeg_dir,
+)
 from remora._internal.path import create_temp_file
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
@@ -74,8 +77,8 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         self.media: Media = media  # ty: ignore[invalid-assignment]
         self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
+        self.ffmpeg_dir = self._determine_ffmpeg_dir()
         self.has_missing_data = False
-        self.ffmpeg_path = self._get_ffmpeg_binary()
 
     @override
     async def _emit(self, event) -> None:
@@ -104,7 +107,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         # Select Best Streams
         selected = StreamSelector(
             self.config,
-            merge_available=bool(self.ffmpeg_path),
+            merge_available=bool(self.ffmpeg_dir),
         ).resolve(media)
 
         metadata_stream = selected.muxed or selected.video or selected.audio
@@ -142,7 +145,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
             )
 
         # Determine stable file
-        if self.ffmpeg_path and (results.video and results.audio):
+        if self.ffmpeg_dir and (results.video and results.audio):
             file_path = await self._process_merge(
                 video=results.video,
                 audio=results.audio,
@@ -155,7 +158,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
             raise ValueError("Neither video or audio was downloaded")
 
         # Post-process file
-        if self.ffmpeg_path:
+        if self.ffmpeg_dir:
             with logger.contextualize(status="processing"):
                 file_path = await self._post_process(
                     file_path,
@@ -168,7 +171,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                 MediaWarning(
                     id=self.id,
                     media=self.media,
-                    message="FFmpeg unavailable, skipping post-processing",
+                    message="FFmpeg binaries unavailable, skipping post-processing",
                 )
             )
 
@@ -365,7 +368,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
             ),
         )
         await self._emit(merging)
-        prc = MediaProcessor(file_path, self.ffmpeg_path)
+        prc = MediaProcessor(file_path, self.ffmpeg_dir)
 
         # Start merging
         try:
@@ -403,7 +406,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
     ) -> Path:
         prc = MediaProcessor(
             file_path=file_path,
-            ffmpeg_path=self.ffmpeg_path,
+            ffmpeg_dir=self.ffmpeg_dir,
         )
         container = AVContainer(prc.file_path.suffix.lstrip("."))
         convert_container = (
@@ -473,15 +476,21 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
 
         return Path(prc.file_path)
 
-    def _get_ffmpeg_binary(self) -> Path | None:
-        if ffmpeg_path := find_internal_ffmpeg():
-            logger.info("Using FFmpeg binary from dependency for post-processing")
-        elif ffmpeg_path := find_system_ffmpeg():
-            logger.info("Using FFmpeg binary from system for post-processing")
+    def _determine_ffmpeg_dir(self) -> Path | None:
+        if ffmpeg_dir := self.config.ffmpeg_location:
+            logger.info('Using "ffmpeg" and "ffprobe" binaries from provided path')
+        elif ffmpeg_dir := find_wheel_ffmpeg_dir():
+            logger.info(
+                'Using "ffmpeg" and "ffprobe" binaries from wheel for post-processing'
+            )
+        elif ffmpeg_dir := find_system_ffmpeg_dir():
+            logger.info(
+                'Using "ffmpeg" and "ffprobe" binaries from system for post-processing'
+            )
         else:
-            logger.warning("FFmpeg binary not found, post-processing disabled")
-            ffmpeg_path = None
-        return ffmpeg_path
+            logger.warning("FFmpeg location not found, post-processing disabled")
+            ffmpeg_dir = None
+        return Path(ffmpeg_dir) if ffmpeg_dir else None
 
     async def _move_to_final(self, src: StrPath, dest: StrPath) -> Path:
         _src, _dest = anyio.Path(src), anyio.Path(dest)

@@ -11,7 +11,7 @@ def test_output_template():
 
 def test_ffmpeg():
     with pytest.raises(FFmpegNotFoundError):
-        DownloadOptions(ffmpeg_path="{wrong_key}")
+        DownloadOptions(ffmpeg_location="{wrong_key}")
 
 
 def test_format():

@@ -131,7 +131,7 @@ async def download(
             group=Panel.POST_PROCESS,
         ),
     ] = False,
-    ffmpeg_path: Annotated[
+    ffmpeg_location: Annotated[
         Path | None,
         Parameter(
             help="FFmpeg executable to use.",
@@ -151,17 +151,16 @@ async def download(
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from remora import DownloadOptions, Remora
-        from remora._internal.ffmpeg import get_ffmpeg
+        from remora._internal.ffmpeg import get_ffmpeg_dir
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.models.media import Playlist, SearchList
         from remora_cli.ui.download_handler import ProgressCallback
         from remora_cli.ui.extractor import extract_queries
 
         try:
-            ffmpeg_path = get_ffmpeg(ffmpeg_path)
+            get_ffmpeg_dir(ffmpeg_location)
         except FFmpegNotFoundError:
-            ffmpeg_path = None
-            logger.warning("FFmpeg binary not found, post-processing disabled")
+            logger.warning("FFmpeg binaries not found, post-processing disabled")
 
         try:
             config = DownloadOptions(
@@ -170,7 +169,7 @@ async def download(
                 format_type=type,
                 convert_to=convert,
                 quality=quality,
-                ffmpeg_path=ffmpeg_path,
+                ffmpeg_location=ffmpeg_location,
                 max_workers=max_workers,
                 embed_metadata=embed_metadata,
             )

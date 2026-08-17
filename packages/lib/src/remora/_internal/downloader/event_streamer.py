@@ -17,7 +17,7 @@ class AsyncEventStreamer(ABC, Generic[_T]):
     """
 
     def __init__(self, buffer_size: int | None = None):
-        self._buffer_size = _DEFAULT_BUFFER_SIZE if buffer_size is None else 0
+        self._buffer_size = _DEFAULT_BUFFER_SIZE if buffer_size is None else buffer_size
         self._send_stream: MemoryObjectSendStream[_T] | None = None
 
     @asynccontextmanager
@@ -35,7 +35,10 @@ class AsyncEventStreamer(ABC, Generic[_T]):
             async with send_stream:
                 try:
                     await self._run_pipeline()
-                except anyio.get_cancelled_exc_class():
+                except (
+                    anyio.get_cancelled_exc_class(),
+                    KeyboardInterrupt,
+                ):
                     with anyio.CancelScope(shield=True):
                         await self._on_cancelled()
                     raise
@@ -66,10 +69,13 @@ class AsyncEventStreamer(ABC, Generic[_T]):
             pass  # Stream closed early, safe to ignore
 
     def _emit_nowait(self, event: _T) -> None:
-        """Safely pushes an event to the stream."""
+        """Safely pushes an event to the stream without blocking."""
         if not self._send_stream:
             return
-        self._send_stream.send_nowait(event)
+        try:
+            self._send_stream.send_nowait(event)
+        except (anyio.ClosedResourceError, anyio.WouldBlock):
+            pass
 
     async def _on_finally(self) -> None:
         """Subclasses CAN override this to handle cleanup tasks."""

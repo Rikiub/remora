@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator
 
-from remora._internal.ffmpeg import validate_ffmpeg
+from remora._internal.ffmpeg import validate_ffmpeg_dir
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
 from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
@@ -30,7 +30,7 @@ class DownloadOptions(RemoraModel):
 
         convert_to: Convert or remux the file by the given extension. *[FFmpeg]*
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. *[FFmpeg]*
-        ffmpeg_path: Path to custom FFmpeg executable. *[FFmpeg]*
+        ffmpeg_dir: Directory with both FFmpeg and FFprobe binaries. *[FFmpeg]*
 
         max_workers: Limit of simultaneous downloads.
     """
@@ -46,9 +46,9 @@ class DownloadOptions(RemoraModel):
 
     convert_to: RichAVContainer | AVContainer | None = None
     embed_metadata: bool = True
-    ffmpeg_path: Annotated[
+    ffmpeg_location: Annotated[
         StrPath | None,
-        AfterValidator(lambda v: validate_ffmpeg(v) if v else v),
+        AfterValidator(lambda v: validate_ffmpeg_dir(v) if v else v),
     ] = None
 
     max_workers: int = DEFAULT_WORKERS

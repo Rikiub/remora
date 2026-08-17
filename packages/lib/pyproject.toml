@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-standard = ["yt-dlp[default,deno]", "imageio-ffmpeg>=0.6.0"]
+standard = ["yt-dlp[default,deno]", "ffmpeg-binaries>=1.1.0"]
 
 [build-system]
 requires = ["uv_build>=0.12.2,<0.13"]

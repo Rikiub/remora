@@ -1,6 +1,5 @@
 import pathlib
 
-import anyio
 from anyio import Path
 from anyio.to_thread import run_sync
 from typing_extensions import override
@@ -76,25 +75,22 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamEvent]):
             case "finished":
                 self.downloaded_bytes = self.total_bytes
 
-        try:
-            if self.current_segment:
-                self._emit_nowait(
-                    StreamSegmented(
-                        current_segment=self.current_segment,
-                        total_segments=self.total_segments,
-                        downloaded_bytes=self.downloaded_bytes,
-                        speed=speed,
-                        elapsed=elapsed,
-                    )
+        if self.current_segment:
+            self._emit_nowait(
+                StreamSegmented(
+                    current_segment=self.current_segment,
+                    total_segments=self.total_segments,
+                    downloaded_bytes=self.downloaded_bytes,
+                    speed=speed,
+                    elapsed=elapsed,
                 )
-            else:
-                self._emit_nowait(
-                    StreamContinuous(
-                        downloaded_bytes=self.downloaded_bytes,
-                        total_bytes=self.total_bytes or None,
-                        speed=speed,
-                        elapsed=elapsed,
-                    )
+            )
+        else:
+            self._emit_nowait(
+                StreamContinuous(
+                    downloaded_bytes=self.downloaded_bytes,
+                    total_bytes=self.total_bytes or None,
+                    speed=speed,
+                    elapsed=elapsed,
                 )
-        except anyio.WouldBlock:
-            pass
+            )

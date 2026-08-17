@@ -14,7 +14,7 @@ from yt_dlp.postprocessor.ffmpeg import (
     FFmpegVideoRemuxerPP,
 )
 
-from remora._internal.ffmpeg import validate_ffmpeg
+from remora._internal.ffmpeg import validate_ffmpeg_dir
 from remora._internal.ydl.messages import sanitize_ydl_error
 from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
@@ -40,9 +40,9 @@ class RequestedFormat(TypedDict):
 
 
 class YDLProcessor:
-    def __init__(self, file_path: StrPath, ffmpeg_path: StrPath | None = None) -> None:
+    def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None) -> None:
         self.file_path = Path(file_path)
-        self.ffmpeg_path = validate_ffmpeg(ffmpeg_path)
+        self.ffmpeg_dir = validate_ffmpeg_dir(ffmpeg_dir)
 
         if not self.file_extension:
             raise ValueError(f'"{self.file_path}" must have a file extension')
@@ -107,11 +107,7 @@ class YDLProcessor:
                 }
             }
 
-        try:
-            pp.run(info)
-        except KeyError:
-            raise ProcessorError("Unable to embed thumbnail")
-
+        pp.run(info)
         return self
 
     @catch
@@ -167,7 +163,7 @@ class YDLProcessor:
 
     def _ydl(self, params: dict | None = None) -> YDL:
         params = params or {}
-        params |= {"ffmpeg_location": str(self.ffmpeg_path)}
+        params |= {"ffmpeg_location": str(self.ffmpeg_dir)}
         return YDL(params)
 
     @property

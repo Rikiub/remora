@@ -16,9 +16,8 @@ _OUTPUT_EXCLUDED_KEYS = {
     "heatmap",
     "chapters",
     "subtitles",
-    "thumbnails",
     "streams",
-    "playlist.entries",
+    "thumbnails",
     "playlist.thumbnails",
 }
 _KEYS = {

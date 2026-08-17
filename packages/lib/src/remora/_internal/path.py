@@ -23,16 +23,14 @@ def get_cache_dir() -> Path:
 # Temporary directory exclusive of the current session
 # Deleted automatically on exit
 
-_SESSION_TEMP_DIR = Path(tempfile.mkdtemp(prefix=f"{LIBRAY_NAME}-"))
-
 
 def get_temp_dir() -> Path:
-    return _SESSION_TEMP_DIR
+    return _DIRS.user_runtime_path
 
 
 def create_temp_file() -> Path:
     """Create and return file in the temporary directory."""
-    with tempfile.NamedTemporaryFile(dir=_SESSION_TEMP_DIR, delete=False) as file:
+    with tempfile.NamedTemporaryFile(dir=get_temp_dir(), delete=False) as file:
         return Path(file.name)
 
 

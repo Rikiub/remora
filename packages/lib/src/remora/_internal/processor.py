@@ -4,7 +4,7 @@ from typing import Self
 
 from anyio.to_thread import run_sync
 
-from remora._internal.ffmpeg import get_ffmpeg
+from remora._internal.ffmpeg import get_ffmpeg_dir
 from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
@@ -20,12 +20,12 @@ from remora.types import AudioQuality, StrPath
 
 
 class MediaProcessor:
-    def __init__(self, file_path: StrPath, ffmpeg_path: StrPath | None = None):
+    def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None):
         self.file_path = Path(file_path)
 
         # Validate FFmpeg
-        self.ffmpeg_path = get_ffmpeg(ffmpeg_path)
-        self._prc = YDLProcessor(self.file_path, self.ffmpeg_path)
+        self.ffmpeg_dir = get_ffmpeg_dir(ffmpeg_dir)
+        self._prc = YDLProcessor(self.file_path, self.ffmpeg_dir)
 
     @property
     def extension(self) -> str:

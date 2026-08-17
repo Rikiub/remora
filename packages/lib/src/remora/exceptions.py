@@ -33,5 +33,13 @@ class ProcessorError(RemoraError):
     """Base exception for post-processing and media transcoding errors."""
 
 
-class FFmpegNotFoundError(ProcessorError, FileNotFoundError):
-    """Raised when the ffmpeg executable is not found."""
+class FFmpegError(ProcessorError):
+    """Base exception for FFmpeg related errors."""
+
+
+class FFmpegNotFoundError(FFmpegError, FileNotFoundError):
+    """Raised when the FFmpeg executable is not found."""
+
+
+class FFprobeNotFoundError(FFmpegError, FileNotFoundError):
+    """Raised when the FFprobe executable is not found."""

@@ -4,8 +4,8 @@ import pytest
 
 from remora._internal.ffmpeg import (
     _validate_ffmpeg,
-    find_internal_ffmpeg,
-    find_system_ffmpeg,
+    find_system_ffmpeg_dir,
+    find_wheel_ffmpeg_dir,
     validate_ffmpeg,
 )
 from remora.exceptions import FFmpegNotFoundError
@@ -16,8 +16,8 @@ MODULE = "remora._internal.ffmpeg"
 @pytest.fixture(autouse=True)
 def clear_caches():
     """Clears functools caches before every test to prevent state leakage."""
-    find_internal_ffmpeg.cache_clear()
-    find_system_ffmpeg.cache_clear()
+    find_wheel_ffmpeg_dir.cache_clear()
+    find_system_ffmpeg_dir.cache_clear()
     _validate_ffmpeg.cache_clear()
 
 
@@ -47,7 +47,7 @@ def test_founded_system_ffmpeg(mocker):
     mocker.patch(f"{MODULE}.which", return_value=BINARY)
     mocker.patch("subprocess.run", return_value="ffmpeg version")
 
-    ffmpeg_path = find_system_ffmpeg()
+    ffmpeg_path = find_system_ffmpeg_dir()
     compare_path = Path(BINARY)
 
     assert ffmpeg_path == compare_path
@@ -57,5 +57,5 @@ def test_missing_system_ffmpeg(mocker):
     """Test ffmpeg binary missed."""
     mocker.patch(f"{MODULE}.which", return_value=None)
 
-    path = find_system_ffmpeg()
+    path = find_system_ffmpeg_dir()
     assert path is None
