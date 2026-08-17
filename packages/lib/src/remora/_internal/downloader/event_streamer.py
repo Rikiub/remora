@@ -6,6 +6,7 @@ from typing import Generic, TypeVar
 import anyio
 from anyio.streams.memory import MemoryObjectSendStream
 
+_DEFAULT_BUFFER_SIZE = 25
 _T = TypeVar("_T")
 
 
@@ -16,7 +17,7 @@ class AsyncEventStreamer(ABC, Generic[_T]):
     """
 
     def __init__(self, buffer_size: int | None = None):
-        self._buffer_size = buffer_size or 30
+        self._buffer_size = _DEFAULT_BUFFER_SIZE if buffer_size is None else 0
         self._send_stream: MemoryObjectSendStream[_T] | None = None
 
     @asynccontextmanager

@@ -39,7 +39,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
     ):
-        super().__init__(output_path, stream, retries, buffer_size=20)
+        super().__init__(output_path, stream, retries)
 
         # Workers
         self.max_workers = max_workers

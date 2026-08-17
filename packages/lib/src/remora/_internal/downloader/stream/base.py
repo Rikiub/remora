@@ -7,6 +7,7 @@ from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora.models.stream import Stream, VideoStream
 from remora.types import DEFAULT_RETRIES, StrPath
 
+_DEFAULT_BUFFER_SIZE = 100
 _T = TypeVar("_T")
 
 
@@ -18,12 +19,11 @@ class BaseStreamDownloader(AsyncEventStreamer[_T]):
         output_path: StrPath,
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
-        buffer_size: int | None = None,
     ) -> None:
         self.file_path = Path(output_path)
         self.stream = stream
         self.retries = retries
-        super().__init__(buffer_size=buffer_size)
+        super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
 
     def _log_stream(self):
         stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"

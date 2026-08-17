@@ -68,14 +68,14 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
+        super().__init__()
+
         self.id = media.id
         self.media: Media = media  # ty: ignore[invalid-assignment]
         self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
         self.has_missing_data = False
         self.ffmpeg_path = self._get_ffmpeg_binary()
-
-        super().__init__(buffer_size=30)
 
     @override
     async def _emit(self, event) -> None:

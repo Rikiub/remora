@@ -26,7 +26,7 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamEvent]):
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
     ):
-        super().__init__(output_path, stream, retries=retries, buffer_size=30)
+        super().__init__(output_path, stream, retries=retries)
 
         self.downloaded_bytes = 0
         self.total_bytes = 0

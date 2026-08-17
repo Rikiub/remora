@@ -5,6 +5,7 @@ import anyio
 from typing_extensions import override
 
 from remora._internal.downloader.event_streamer import AsyncEventStreamer
+from remora._internal.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.types import StreamContext
 from remora.exceptions import DownloaderError
@@ -32,7 +33,7 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
         audio: StreamContext[AudioStream],
         retries: int = DEFAULT_RETRIES,
     ):
-        super().__init__(buffer_size=30)
+        super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
 
         self.video = StreamManager(stream=video.stream, path=video.path)
         self.audio = StreamManager(stream=audio.stream, path=audio.path)

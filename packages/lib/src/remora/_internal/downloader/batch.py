@@ -40,7 +40,9 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
         self.extractor = extractor or MediaExtractor()
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
         self._item = item
-        super().__init__(buffer_size=100)
+
+        # Setup buffer
+        super().__init__(buffer_size=100 * self.config.max_workers)
 
         # Fields
         self.id: str
