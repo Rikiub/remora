@@ -128,7 +128,7 @@ def mock_pipeline(
         mock_processor(MODULE_PATH)
 
         # Mock File System Paths
-        mocker.patch(f"{MODULE_PATH}.get_tempfile", return_value=tmp_path / "temp")
+        mocker.patch(f"{MODULE_PATH}.create_temp_file", return_value=tmp_path / "temp")
 
         # Mock Shutil to prevent file moving
         mocker.patch(f"{MODULE_PATH}.shutil.move")

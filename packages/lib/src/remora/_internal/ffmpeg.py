@@ -179,7 +179,7 @@ def _validate_ffprobe(ffprobe_path: Path) -> Path:
         )
 
         # result.stdout is explicitly checked here since text=True places the output there
-        if "ffprobe version" not in result.stdout:
+        if "ffprobe version" not in str(result):
             raise FFprobeNotFoundError(
                 f"'{ffprobe_path.name}' is a binary, but it doesn't appear to be FFprobe."
             )
