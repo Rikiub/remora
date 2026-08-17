@@ -4,9 +4,9 @@ import anyio
 from loguru import logger
 from typing_extensions import override
 
+from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora._internal.downloader.logs import log_event_playlist
 from remora._internal.downloader.pipeline import DownloadPipeline
-from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
 from remora.exceptions import DownloaderError, ExtractorError

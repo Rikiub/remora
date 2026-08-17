@@ -4,8 +4,8 @@ from dataclasses import dataclass
 import anyio
 from typing_extensions import override
 
+from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora._internal.downloader.stream.main import StreamDownloader
-from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora._internal.types import StreamContext
 from remora.exceptions import DownloaderError
 from remora.models.event import (

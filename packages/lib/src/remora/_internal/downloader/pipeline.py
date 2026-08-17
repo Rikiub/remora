@@ -9,12 +9,12 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
+from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora._internal.downloader.logs import log_event_media
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
 from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
-from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora._internal.extractor import MediaExtractor
 from remora._internal.ffmpeg import find_internal_ffmpeg, find_system_ffmpeg
 from remora._internal.path import get_tempfile
