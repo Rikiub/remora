@@ -76,7 +76,7 @@ class VideoInfo(RemoraModel):
 class StreamFragment(RemoraModel):
     url: HttpUrl
     duration: float | None = None
-    size_bytes: Annotated[float, Field(alias="filesize")]
+    size_bytes: Annotated[float | None, Field(alias="filesize")] = None
 
 
 class StreamRequestContext(RemoraModel):
@@ -195,7 +195,7 @@ class _BaseStream(ABC, YDLSerializable):
             data["size_type"] = size_type
             data["size_bytes"] = size_bytes
 
-            # Get resolution
+            # Map resolution
             resolution = None
             width = data.get("width")
             height = data.get("height")
@@ -232,9 +232,8 @@ class _BaseStream(ABC, YDLSerializable):
                 }
 
             # Map fragments
-            if fragments := data.pop("fragments", None):
+            if fragments := data.get("fragments"):
                 base_url = data.get("fragment_base_url")
-                data["base_url"] = base_url
 
                 for index, item in enumerate(fragments):
                     url = item.get("url")
@@ -248,6 +247,7 @@ class _BaseStream(ABC, YDLSerializable):
                         raise ValueError("Unable to calculate absolute fragment URL")
 
                     fragments[index]["url"] = absolute_url
+                data["fragments"] = fragments
 
             # Return normalized dict
             return data
