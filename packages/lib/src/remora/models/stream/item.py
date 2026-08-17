@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self
+from urllib.parse import urljoin
 
 from pydantic import (
     AfterValidator,
@@ -72,6 +73,12 @@ class VideoInfo(RemoraModel):
 
 
 # STREAMS
+class StreamFragment(RemoraModel):
+    url: HttpUrl
+    duration: float | None = None
+    size_bytes: Annotated[float, Field(alias="filesize")]
+
+
 class StreamRequestContext(RemoraModel):
     downloader: dict | None = None
     headers: dict | None = None
@@ -84,6 +91,7 @@ class _BaseStream(ABC, YDLSerializable):
     id: str
     protocol: Protocol
     url: HttpUrl
+    fragments: list[StreamFragment] | None = None
     request_context: StreamRequestContext = StreamRequestContext()
 
     size_type: SizeType = "unknown"
@@ -134,16 +142,25 @@ class _BaseStream(ABC, YDLSerializable):
     @override
     def _to_ydl_dict(self):
         return {
+            # Http Info
             "format_id": self.id,
             "protocol": str(self.protocol),
             "url": str(self.url),
-            "filesize": self.size_type,
-            "filesize_approx": self.size_type,
+            "fragments": [f.model_dump(by_alias=True) for f in self.fragments]
+            if self.fragments
+            else None,
+            # Basic Container Info
+            "filesize": self.size_bytes if self.size_type == "exact" else None,
+            "filesize_approx": self.size_bytes
+            if self.size_type == "estimated"
+            else None,
             "ext": self.extension,
+            # Detailed Info
             "vcodec": rgetattr(self, "video.codec.original", "none"),
             "acodec": rgetattr(self, "audio.codec.original", "none"),
             "vbr": rgetattr(self, "video.bitrate", None),
             "abr": rgetattr(self, "audio.bitrate", None),
+            # Request Context
             "downloader_options": self.request_context.downloader,
             "cookies": self.request_context.cookies,
             "http_headers": self.request_context.headers,
@@ -213,6 +230,24 @@ class _BaseStream(ABC, YDLSerializable):
                     "video_ext": video_ext or ext,
                     "resolution": resolution,
                 }
+
+            # Map fragments
+            if fragments := data.pop("fragments", None):
+                base_url = data.get("fragment_base_url")
+                data["base_url"] = base_url
+
+                for index, item in enumerate(fragments):
+                    url = item.get("url")
+                    path = item.get("path")
+
+                    if url:
+                        absolute_url = url
+                    elif base_url and path:
+                        absolute_url = urljoin(str(base_url), path)
+                    else:
+                        raise ValueError("Unable to calculate absolute fragment URL")
+
+                    fragments[index]["url"] = absolute_url
 
             # Return normalized dict
             return data

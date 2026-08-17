@@ -65,7 +65,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
     @override
     async def _run_pipeline(self) -> None:
         self.client = httpx.AsyncClient(
-            headers=self._get_headers(),
+            headers=self.stream.request_context.headers,
             cookies=self._get_cookies(),
             follow_redirects=True,
         )
@@ -174,20 +174,60 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
         return self.file_path
 
     async def _download_segments(self) -> Path:
-        res = await self.client.get(str(self.stream.url))
-        res.raise_for_status()
+        urls: list[str] = []
+        protocol = self.stream.protocol
 
-        urls = [
-            urljoin(str(self.stream.url), line.strip())
-            for line in res.text.splitlines()
-            if line.strip() and not line.startswith("#")
-        ]
+        # Use pre-parsed fragments
+        if fragments := self.stream.fragments:
+            logger.debug("Using pre-parsed fragments")
 
-        part_files: list[Path] = []
+            for frag in fragments:
+                urls.append(str(frag.url))
+
+        # HLS: Manual M3U8 Parsing
+        elif protocol in (Protocol.M3U8, Protocol.M3U8_NATIVE):
+            logger.debug("Manually parsing M3U8 manifest")
+
+            res = await self.client.get(str(self.stream.url))
+            res.raise_for_status()
+
+            for line in res.text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+
+                if line.startswith("#EXT-X-MAP:"):
+                    start = line.find('URI="')
+                    if start != -1:
+                        start += 5
+                        end = line.find('"', start)
+                        if end != -1:
+                            init_uri = line[start:end]
+                            urls.append(urljoin(str(self.stream.url), init_uri))
+                elif not line.startswith("#"):
+                    urls.append(urljoin(str(self.stream.url), line))
+
+        # DASH: Fail gracefully
+        elif protocol in (
+            Protocol.HTTP_DASH_SEGMENTS,
+            Protocol.HTTP_DASH_SEGMENTS_GENERATOR,
+        ):
+            raise DownloaderError(
+                f"Cannot manually parse {protocol.value} XML manifests."
+                "Ensure 'fragments' info is passed to the `Stream` model."
+            )
+        else:
+            raise TypeError(f"Unsupported segmented protocol: {protocol.value}")
+
+        if not urls:
+            raise DownloaderError("No segments found to download.")
+
+        self.total_segments = len(urls)
         logger.debug(
             "{fragments_total} fragments will be downloaded in parallel",
-            fragments_total=len(urls),
+            fragments_total=self.total_segments,
         )
+        part_files: list[Path] = []
 
         async with anyio.create_task_group() as tg:
             for index, url in enumerate(urls):
@@ -227,18 +267,22 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
 
             downloaded = 0
 
-            # 'r+b' for shared files, 'ab' for part files
-            mode = "r+b" if is_continuous else "ab"
+            # Support resuming part files across application restarts
+            if not is_continuous:
+                stats = await path.stat()
+                downloaded = stats.st_size
+                self.downloaded_bytes += downloaded
 
-            async with await path.open(mode) as f:
+            # Use "r+b" universally
+            async with await path.open("r+b") as f:
                 for attempt in range(self.retries):
-                    if is_continuous:
-                        current_start = start + downloaded
-                    else:
-                        stats = await path.stat()
-                        current_start = start + stats.st_size
+                    current_start = start + downloaded
 
-                    headers = {"Range": f"bytes={current_start}-{end}"} if end else {}
+                    # Formulate Range correctly even if end is None
+                    headers = {}
+                    if current_start > 0 or end is not None:
+                        range_end = end if end is not None else ""
+                        headers = {"Range": f"bytes={current_start}-{range_end}"}
 
                     try:
                         async with self.client.stream(
@@ -248,25 +292,37 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
                         ) as res:
                             res.raise_for_status()
 
-                            if is_continuous:
-                                await f.seek(current_start)
+                            # Handle server ignoring the Range request (returns 200 instead of 206)
+                            if res.status_code == 200 and current_start > start:
+                                self.downloaded_bytes -= downloaded
+                                downloaded = 0
+                                current_start = start
+                                if not is_continuous:
+                                    await f.truncate(0)
+
+                            # Always seek to the correct write position
+                            await f.seek(current_start)
 
                             async for chunk in res.aiter_bytes():
                                 await f.write(chunk)
-
                                 downloaded += len(chunk)
                                 self.downloaded_bytes += len(chunk)
 
                                 await self._update_progress()
 
-                            if end:
-                                logger.debug(
-                                    "Downloaded range: {range_start}/{range_end}",
-                                    range_start=start,
-                                    range_end=end,
-                                )
+                        # Update segment progress upon successful download
+                        if not is_continuous:
+                            self.current_segment += 1
+                            await self._update_progress()
 
-                            return
+                        if end:
+                            logger.debug(
+                                "Downloaded range: {range_start}/{range_end}",
+                                range_start=start,
+                                range_end=end,
+                            )
+                        return
+
                     except Exception:
                         if attempt == self.retries - 1:
                             raise
@@ -306,15 +362,12 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
                 )
             )
 
-    def _get_headers(self) -> dict[str, str] | None:
-        return self.stream.request_context.headers
-
     def _get_cookies(self) -> dict[str, str]:
         cookie_dict = {}
         if not self.stream.request_context.cookies:
             return cookie_dict
 
-        # 1. Clean the string and split
+        # Clean the string and split
         # yt-dlp cookie strings often have multiple cookies separated by '; '
         parts = self.stream.request_context.cookies.split(";")
 
@@ -326,7 +379,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
             key = key.strip()
             val = val.strip()
 
-            # 2. Skip metadata attributes entirely
+            # Skip metadata attributes entirely
             # We only want the actual data keys
             if key.lower() in (
                 "domain",

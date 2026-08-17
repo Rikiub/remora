@@ -4,10 +4,11 @@ from functools import cache
 from pathlib import Path
 from shutil import which
 
-from remora.exceptions import FFmpegNotFoundError, FFprobeNotFoundError, FFmpegError
+from remora.exceptions import FFmpegError, FFmpegNotFoundError, FFprobeNotFoundError
 from remora.types import StrPath
 
 # Directories
+
 
 def get_ffmpeg_dir(ffmpeg_dir: StrPath | None = None) -> Path:
     """Get FFmpeg and FFprobe binaries directory from wheel, system or provided path.
@@ -73,11 +74,13 @@ def validate_ffmpeg_dir(ffmpeg_dir: StrPath | None) -> Path:
     ffmpeg = which("ffmpeg", path=ffmpeg_dir)
     ffprobe = which("ffprobe", path=ffmpeg_dir)
 
-    ffmpeg= validate_ffmpeg(ffmpeg)
+    ffmpeg = validate_ffmpeg(ffmpeg)
     ffprobe = validate_ffprobe(ffprobe)
 
     if ffmpeg.parent != ffprobe.parent:
-        raise FFmpegError("Both ffmpeg and ffprobe binaries must be in the same directory.")
+        raise FFmpegError(
+            "Both ffmpeg and ffprobe binaries must be in the same directory."
+        )
 
     return ffmpeg_dir
 
@@ -87,15 +90,19 @@ def _validate_ffmpeg_dir(ffmpeg_dir: Path) -> Path:
     ffmpeg = which("ffmpeg", path=ffmpeg_dir)
     ffprobe = which("ffprobe", path=ffmpeg_dir)
 
-    ffmpeg= validate_ffmpeg(ffmpeg)
+    ffmpeg = validate_ffmpeg(ffmpeg)
     ffprobe = validate_ffprobe(ffprobe)
 
     if ffmpeg.parent != ffprobe.parent:
-        raise FFmpegError("Both ffmpeg and ffprobe binaries must be in the same directory.")
+        raise FFmpegError(
+            "Both ffmpeg and ffprobe binaries must be in the same directory."
+        )
 
     return ffmpeg_dir
 
+
 # Single binaries
+
 
 def validate_ffmpeg(ffmpeg_path: StrPath | None) -> Path:
     """Validate provided FFmpeg binary.
