@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
+from typing_extensions import override
 
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.downloader.selector import SelectorContext, StreamSelector
@@ -38,13 +39,16 @@ class FakeBatchDownloader(MuxedStreamDownloader):
     """Mocks the async generator for stream downloads."""
 
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__(*args, **kwargs)
 
-    async def download(self):
-        yield BatchStreamDownloading(streams=[])
-        yield BatchStreamCompleted(
-            video_path="/tmp/video.mp4",
-            audio_path="/tmp/audio.mp4",
+    @override
+    async def _run_pipeline(self):
+        await self._emit(BatchStreamDownloading(streams=[]))
+        await self._emit(
+            BatchStreamCompleted(
+                video_path="/tmp/video.mp4",
+                audio_path="/tmp/audio.mp4",
+            )
         )
 
 
@@ -52,11 +56,12 @@ class FakeStreamDownloader(StreamDownloader):
     """Mocks the async generator for stream downloads."""
 
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__(*args, **kwargs)
 
-    async def download(self):
-        yield StreamContinuous(total_bytes=50000)
-        yield StreamCompleted(file_path=Path())
+    @override
+    async def _run_pipeline(self):
+        await self._emit(StreamContinuous(total_bytes=50000))
+        await self._emit(StreamCompleted(file_path=Path()))
 
 
 MockPipeline = Callable[[Media], DownloadPipeline]
@@ -129,13 +134,19 @@ def mock_pipeline(
         mocker.patch(f"{MODULE_PATH}.shutil.move")
 
         # Mock Stream Selectors to return dummy streams
-        video = media.streams[0] if 0 <= 0 < len(media.streams) else None  # noqa: PLR0133
-        audio = media.streams[1] if 0 <= 1 < len(media.streams) else None  # noqa: PLR0133
+        try:
+            video = media.streams.videos()[0]
+        except IndexError:
+            video = None
+
+        try:
+            audio = media.streams.audios()[0]
+        except IndexError:
+            audio = None
 
         mock_selector = mocker.patch(f"{MODULE_PATH}.{StreamSelector.__name__}")
         mock_selector.return_value.resolve.return_value = SelectorContext(
-            video=video,  # ty: ignore[invalid-argument-type]
-            audio=audio,  # ty: ignore[invalid-argument-type]
+            video=video, audio=audio
         )
 
         # Mock the Heavy Downloaders
@@ -185,8 +196,9 @@ async def test_download_pipeline_muxed(
     # Consume the async generator
     events = []
 
-    async for event in pipeline.download():
-        events.append(event)
+    async with pipeline.start() as progress:
+        async for event in progress:
+            events.append(event)
 
     # Check that the event sequence is exactly as expected
     event_types = [type(e) for e in events]
@@ -214,11 +226,61 @@ async def test_download_pipeline_single(
     # Consume the async generator
     events = []
 
-    async for event in pipeline.download():
-        events.append(event)
+    async with pipeline.start() as progress:
+        async for event in progress:
+            events.append(event)
 
 
 # Media Processor
+@pytest.mark.skip("Hard to test right now")
+async def test_processor_merge(
+    mock_pipeline: MockPipeline,
+    mock_processor: AsyncMock,
+    dummy_media: Media,
+):
+    """Test that the pipeline merges the streams."""
+
+    # Get media proccesor
+    processor: MediaProcessor = mock_processor(MODULE_PATH)
+
+    # Init pipeline
+    pipeline = mock_pipeline(dummy_media)
+
+    # Consume the async generator
+    async with pipeline.start() as progress:
+        async for _ in progress:
+            pass
+
+    # Verify specific inner methods were called
+    processor.merge_streams.assert_called_once()  # ty: ignore[unresolved-attribute]
+
+
+@pytest.mark.skip("Hard to test right now")
+async def test_processor_no_merge(
+    mock_pipeline: MockPipeline,
+    mock_processor: AsyncMock,
+    dummy_media: Media,
+):
+    """Test that the pipeline NOT merges the streams."""
+
+    # Get media proccesor
+    processor: MediaProcessor = mock_processor(MODULE_PATH)
+
+    # Init pipeline
+    pipeline = mock_pipeline(dummy_media)
+
+    # Set only ONE stream to avoid merge streams
+    pipeline.media.streams = pipeline.media.streams.audio_only()  # ty: ignore[invalid-assignment]
+
+    # Consume the async generator
+    async with pipeline.start() as progress:
+        async for _ in progress:
+            pass
+
+    # Verify specific inner methods were called
+    processor.merge_streams.assert_not_called()  # ty: ignore[unresolved-attribute]
+
+
 async def test_full_processor_metadata(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
@@ -233,13 +295,13 @@ async def test_full_processor_metadata(
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async for _ in pipeline.download():
-        pass
+    async with pipeline.start() as progress:
+        async for _ in progress:
+            pass
 
     # Verify specific inner methods were called
-    processor.merge_streams.assert_called_once()  # type: ignore
-    processor.embed_metadata.assert_called_once()  # type: ignore
-    processor.embed_thumbnail.assert_called_once()  # type: ignore
+    processor.embed_metadata.assert_called_once()  # ty: ignore[unresolved-attribute]
+    processor.embed_thumbnail.assert_called_once()  # ty: ignore[unresolved-attribute]
 
 
 @pytest.mark.skip("Hard to test right now")
@@ -261,10 +323,10 @@ async def test_empty_processor_metadata(
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async for _ in pipeline.download():
-        pass
+    async with pipeline.start() as progress:
+        async for _ in progress:
+            pass
 
     # Verify specific inner methods were NOT called
-    processor.merge_streams.assert_not_called()  # type: ignore
-    processor.embed_metadata.assert_not_called()  # type: ignore
-    processor.embed_thumbnail.assert_not_called()  # type: ignore
+    processor.embed_metadata.assert_not_called()  # ty: ignore[unresolved-attribute]
+    processor.embed_thumbnail.assert_not_called()  # ty: ignore[unresolved-attribute]

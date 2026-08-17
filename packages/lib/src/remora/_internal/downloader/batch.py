@@ -1,10 +1,12 @@
-from collections.abc import AsyncIterable, Iterable
+from collections.abc import Iterable
 
 import anyio
 from loguru import logger
+from typing_extensions import override
 
 from remora._internal.downloader.logs import log_event_playlist
 from remora._internal.downloader.pipeline import DownloadPipeline
+from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
 from remora.exceptions import DownloaderError, ExtractorError
@@ -26,7 +28,7 @@ from remora.models.media import (
 from remora.models.media.list import _BaseList
 
 
-class DownloadBatch:
+class DownloadBatch(AsyncEventStreamer[BatchEvent]):
     def __init__(
         self,
         item: AnyExtractResult,
@@ -38,6 +40,7 @@ class DownloadBatch:
         self.extractor = extractor or MediaExtractor()
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
         self._item = item
+        super().__init__(buffer_size=100)
 
         # Fields
         self.id: str
@@ -50,74 +53,53 @@ class DownloadBatch:
         self.success: int
         self.failed: int
 
-    async def download(self) -> AsyncIterable[BatchEvent]:
-        self._stream, receive_stream = anyio.create_memory_object_stream[BatchEvent](
-            100
+    @override
+    async def _run_pipeline(self):
+        await self._setup()
+
+        await self._emit(
+            PlaylistStarted(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
+            )
         )
 
-        async with receive_stream:
-            try:
-                async with anyio.create_task_group() as tg:
-                    tg.start_soon(self._producer)
+        with logger.contextualize(
+            list_id=self.id,
+            list_title=self.playlist.title if self.playlist else None,
+            list_total=len(self.medias),
+        ):
+            async with anyio.create_task_group() as tg:
+                for media in self.medias:
+                    tg.start_soon(self._pipeline, media)
 
-                    async for event in receive_stream:
-                        await log_event_playlist(event)
-                        yield event
-            except anyio.get_cancelled_exc_class():
-                yield PlaylistCancelled(
-                    id=self.id,
-                    completed=self.completed,
-                    total=self.total,
-                )
-                raise
-
-    async def _producer(self):
-        async with self._stream:
-            await self._setup()
-
-            await self._stream.send(
-                PlaylistStarted(
-                    id=self.id,
-                    completed=self.completed,
-                    total=self.total,
-                )
+        await self._emit(
+            PlaylistCompleted(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
+                result="partial" if self.failed else "success",
             )
-
-            with logger.contextualize(
-                list_id=self.id,
-                list_title=self.playlist.title if self.playlist else None,
-                list_total=len(self.medias),
-            ):
-                # Tasks
-                async with anyio.create_task_group() as tg:
-                    for media in self.medias:
-                        tg.start_soon(self._pipeline, media)
-
-                self._stream.send_nowait(
-                    PlaylistCompleted(
-                        id=self.id,
-                        completed=self.completed,
-                        total=self.total,
-                        result="partial" if self.failed else "success",
-                    )
-                )
+        )
 
     async def _pipeline(self, media: LazyMedia):
         async with self.limiter:
             try:
-                async for event in DownloadPipeline(
+                async with DownloadPipeline(
                     media,
                     self.config,
                     self.extractor,
-                ).download():
-                    await self._stream.send(event)
+                ).start() as progress:
+                    async for event in progress:
+                        await self._emit(event)
 
                 self.success += 1
-            except* (ExtractorError, DownloaderError):
+            except (ExtractorError, DownloaderError):
                 self.failed += 1
 
             self.completed += 1
-            await self._stream.send(
+            await self._emit(
                 PlaylistInProgress(
                     id=self.id,
                     completed=self.completed,
@@ -137,11 +119,13 @@ class DownloadBatch:
             playlist = item
 
         # Unpack and get the list
+        medias: list[LazyMedia]
+
         match item:
             case LazyMedia():
                 medias = [item]
             case _BaseList():  # Playlist and SearchList
-                medias = list(item.entries)
+                medias = list(item.entries.medias())
             case EntriesList():
                 medias = list(item.medias())
             case Iterable():
@@ -174,3 +158,18 @@ class DownloadBatch:
             import secrets
 
             self.id = secrets.token_urlsafe(6)
+
+    @override
+    async def _on_cancelled(self):
+        await self._emit(
+            PlaylistCancelled(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
+            )
+        )
+
+    @override
+    async def _emit(self, event):
+        await log_event_playlist(event)
+        await super()._emit(event)

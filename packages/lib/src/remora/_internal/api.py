@@ -73,12 +73,13 @@ class Remora:
         else:
             from remora._internal.downloader.pipeline import DownloadPipeline
 
-            async for event in DownloadPipeline(
+            async with DownloadPipeline(
                 extracted,
                 config=self.download_options,
                 extractor=self.extractor,
-            ).download():
-                yield event
+            ).start() as progress:
+                async for event in progress:
+                    yield event
 
     async def download_batch(
         self, item: StrUrl | AnyExtractResult
@@ -90,12 +91,13 @@ class Remora:
 
         from remora._internal.downloader.batch import DownloadBatch
 
-        async for event in DownloadBatch(
+        async with DownloadBatch(
             extracted,
             config=self.download_options,
             extractor=self.extractor,
-        ).download():
-            yield event
+        ).start() as progress:
+            async for event in progress:
+                yield event
 
     async def download_stream(
         self,
@@ -105,13 +107,13 @@ class Remora:
     ) -> AsyncIterable[StreamEvent]:
         from remora._internal.downloader.stream.main import StreamDownloader
 
-        downloader = StreamDownloader(
+        async with StreamDownloader(
             output_path,
             item,
             retries=retries or self.download_options.retries,
-        )
-        async for event in downloader.download():
-            yield event
+        ).start() as progress:
+            async for event in progress:
+                yield event
 
     @overload
     async def download_resource(self, item: Thumbnail, output_path) -> Path: ...

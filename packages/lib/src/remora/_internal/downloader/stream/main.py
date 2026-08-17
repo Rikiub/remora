@@ -1,5 +1,3 @@
-from collections.abc import AsyncIterable
-
 from loguru import logger
 from typing_extensions import override
 
@@ -11,7 +9,7 @@ from remora.models.stream import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class StreamDownloader(BaseStreamDownloader):
+class StreamDownloader(BaseStreamDownloader[StreamEvent]):
     def __init__(
         self,
         output_path: StrPath,
@@ -27,7 +25,7 @@ class StreamDownloader(BaseStreamDownloader):
         self.max_workers = max_workers
 
     @override
-    async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
+    async def _run_pipeline(self) -> None:
         use_fallback = False
 
         with logger.contextualize(
@@ -42,13 +40,11 @@ class StreamDownloader(BaseStreamDownloader):
                     self.stream,
                     retries=self.retries,
                     max_workers=self.max_workers,
-                ) as client:
-                    async for event in client.download():
-                        yield event
+                ).start() as progress:
+                    async for event in progress:
+                        await self._emit(event)
                     return
-            except* (TypeError, DownloaderError) as eg:
-                error = eg.exceptions[0]
-
+            except (TypeError, DownloaderError) as error:
                 if isinstance(error, TypeError):
                     logger.debug(
                         'Protocol "{protocol}" incompatible with httpx downloader',
@@ -60,17 +56,17 @@ class StreamDownloader(BaseStreamDownloader):
                     use_fallback = True
 
                 if not use_fallback:
-                    raise error
+                    raise
 
             # Fallback downloader
             from remora._internal.downloader.stream.ydl import YDLStreamDownloader
 
             logger.debug("Retrying with other downloader")
 
-            downloader = YDLStreamDownloader(
+            async with YDLStreamDownloader(
                 self.file_path,
                 self.stream,
                 self.retries,
-            )
-            async for event in downloader.download():
-                yield event
+            ).start() as progress:
+                async for event in progress:
+                    await self._emit(event)

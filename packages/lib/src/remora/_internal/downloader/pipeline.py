@@ -1,5 +1,4 @@
 import shutil
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,12 +7,14 @@ from typing import cast
 import anyio
 from anyio.to_thread import run_sync
 from loguru import logger
+from typing_extensions import override
 
 from remora._internal.downloader.logs import log_event_media
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
 from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
+from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora._internal.extractor import MediaExtractor
 from remora._internal.ffmpeg import find_internal_ffmpeg, find_system_ffmpeg
 from remora._internal.path import get_tempfile
@@ -31,6 +32,7 @@ from remora.models.container import (
 )
 from remora.models.download_options import DownloadOptions
 from remora.models.event import (
+    BatchStreamCompleted,
     BatchStreamDownloading,
     MediaCancelled,
     MediaCompleted,
@@ -42,6 +44,7 @@ from remora.models.event import (
     MediaWarning,
     Processing,
     ProcessorTask,
+    StreamProgressEvent,
 )
 from remora.models.media import LazyMedia, Media
 from remora.models.stream import AudioStream, Stream, VideoStream
@@ -56,7 +59,7 @@ class DownloadContext:
     subtitles: list[Path] | None = None
 
 
-class DownloadPipeline:
+class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
     """Handles the lifecycle of a single media download."""
 
     def __init__(
@@ -66,132 +69,121 @@ class DownloadPipeline:
         extractor: MediaExtractor | None = None,
     ):
         self.id = media.id
-
-        self.media: Media = media  # type: ignore
+        self.media: Media = media  # ty: ignore[invalid-assignment]
         self.config = config or DownloadOptions()
         self.extractor = extractor or MediaExtractor()
         self.has_missing_data = False
+        self.ffmpeg_path = self._get_ffmpeg_binary()
 
-        self.ffmpeg_path = self.get_ffmpeg_binary()
+        super().__init__(buffer_size=30)
 
-    async def download(self) -> AsyncIterator[MediaEvent]:
-        """Entry point to start the pipeline."""
-        self._stream, receive_stream = anyio.create_memory_object_stream[MediaEvent](30)
+    @override
+    async def _emit(self, event) -> None:
+        """Safely dispatches and logs pipeline events."""
+        await log_event_media(event)
+        await super()._emit(event)
 
-        # Producer
-        async def producer():
-            with logger.contextualize(media_id=self.id):
-                async with self._stream:
-                    try:
-                        await self.pipeline()
-                    except* (DownloaderError, ExtractorError, ProcessorError) as eg:
-                        # Catch expected errors to avoid crashes
-                        error = eg.exceptions[0]
-                        logger.error(str(error))
+    @override
+    async def _on_cancelled(self) -> None:
+        await self._emit(MediaCancelled(id=self.id, media=self.media))
 
-        # Consumer
-        async with receive_stream:
+    @override
+    async def _run_pipeline(self):
+        media = await self._resolve_media()
+
+        with logger.contextualize(media_id=self.id, media_title=media.title):
             try:
-                async with anyio.create_task_group() as tg:
-                    tg.start_soon(producer)
-
-                    async for event in receive_stream:
-                        await log_event_media(event)
-                        yield event
-            except anyio.get_cancelled_exc_class():
-                yield MediaCancelled(id=self.id, media=self.media)
+                await self._pipeline(media)
+            except (DownloaderError, ExtractorError, ProcessorError) as error:
+                logger.error(str(error))
                 raise
 
-    async def pipeline(self):
+    async def _pipeline(self, media: Media):
         """The one who orchestrate the jobs."""
 
-        # Resolve Media
-        media = await self.resolve_media()
+        # Select Best Streams
+        selected = StreamSelector(
+            self.config,
+            merge_available=bool(self.ffmpeg_path),
+        ).resolve(media)
 
-        with logger.contextualize(media_title=media.title):
-            # Select Best Streams
-            selected = StreamSelector(
-                self.config,
-                merge_available=bool(self.ffmpeg_path),
-            ).resolve(media)
-
-            metadata_stream = selected.muxed or selected.video or selected.audio
-            if not metadata_stream:
-                error = "Streams not found"
-                await self._stream.send(
-                    MediaFailed(
-                        id=self.id,
-                        media=self.media,
-                        message=error,
-                    )
+        metadata_stream = selected.muxed or selected.video or selected.audio
+        if not metadata_stream:
+            error = "Streams not found"
+            await self._emit(
+                MediaFailed(
+                    id=self.id,
+                    media=self.media,
+                    message=error,
                 )
-                raise DownloaderError(error)
-
-            # Calculate Path & Check Existence
-            output = format_template(
-                self.config.output_template,
-                stream=metadata_stream,
-                media=media,
-                default_missing="NA",
             )
-            output = anyio.Path(output)
-            await output.parent.mkdir(parents=True, exist_ok=True)
+            raise DownloaderError(error)
 
-            # Skip if option is enabled and a duplicate is found
-            if self.config.skip_existing and await self.check_output_duplicate(output):
-                return
+        # Calculate Path & Check Existence
+        output = format_template(
+            self.config.output_template,
+            stream=metadata_stream,
+            media=media,
+            default_missing="NA",
+        )
+        output = anyio.Path(output)
+        await output.parent.mkdir(parents=True, exist_ok=True)
 
-            # Download resources like streams, subtitles and thumbnail
-            with logger.contextualize(status="downloading"):
-                results = await self.download_resources(
-                    media,
-                    selected.muxed or selected.video,
-                    selected.audio,
+        # Skip if option is enabled and a duplicate is found
+        if self.config.skip_existing and await self._check_output_duplicate(output):
+            return
+
+        # Download resources like streams, subtitles and thumbnail
+        with logger.contextualize(status="downloading"):
+            results = await self._download_resources(
+                media,
+                selected.muxed or selected.video,
+                selected.audio,
+            )
+
+        # Determine stable file
+        if self.ffmpeg_path and (results.video and results.audio):
+            file_path = await self._process_merge(
+                video=results.video,
+                audio=results.audio,
+            )
+        elif results.video:
+            file_path = results.video.path
+        elif results.audio:
+            file_path = results.audio.path
+        else:
+            raise ValueError("Neither video or audio was downloaded")
+
+        # Post-process file
+        if self.ffmpeg_path:
+            with logger.contextualize(status="processing"):
+                file_path = await self._post_process(
+                    file_path,
+                    metadata_stream,
+                    results.thumbnail,
+                    results.subtitles,
                 )
-
-            # Determine stable file
-            if self.ffmpeg_path and (results.video and results.audio):
-                file_path = await self.process_merge(
-                    video=results.video,
-                    audio=results.audio,
+        else:
+            await self._emit(
+                MediaWarning(
+                    id=self.id,
+                    media=self.media,
+                    message="FFmpeg unavailable, skipping post-processing",
                 )
-            elif results.video:
-                file_path = results.video.path
-            elif results.audio:
-                file_path = results.audio.path
-            else:
-                raise ValueError("Neither video or audio was downloaded")
+            )
 
-            # Post-process file
-            if self.ffmpeg_path:
-                with logger.contextualize(status="processing"):
-                    file_path = await self.post_process(
-                        file_path,
-                        metadata_stream,
-                        results.thumbnail,
-                        results.subtitles,
-                    )
-            else:
-                await self._stream.send(
-                    MediaWarning(
-                        id=self.id,
-                        media=self.media,
-                        message="FFmpeg unavailable, skipping post-processing",
-                    )
-                )
+        # Complete (Move file to target)
+        await self._move_to_final(file_path, output)
 
-            # Complete (Move file to target)
-            await self.move_to_final(file_path, output)
-
-    async def resolve_media(self) -> Media:
-        await self._stream.send(MediaExtracting(id=self.id, media=self.media))
+    async def _resolve_media(self) -> Media:
+        await self._emit(MediaExtracting(id=self.id, media=self.media))
         media = cast(LazyMedia | Media, self.media)
 
         if not isinstance(media, Media):
             try:
                 self.media = await self.extractor.extract(media)
             except ExtractorError as error:
-                await self._stream.send(
+                await self._emit(
                     MediaFailed(
                         id=self.id,
                         media=self.media,
@@ -202,7 +194,7 @@ class DownloadPipeline:
 
         return self.media
 
-    async def check_output_duplicate(self, output: StrPath) -> Path | None:
+    async def _check_output_duplicate(self, output: StrPath) -> Path | None:
         output = anyio.Path(output)
 
         async for path in output.parent.iterdir():
@@ -212,7 +204,7 @@ class DownloadPipeline:
                 and AVContainer.get(path.suffix.lstrip("."))
             ):
                 path = Path(path)
-                await self._stream.send(
+                await self._emit(
                     MediaCompleted(
                         id=self.id,
                         media=self.media,
@@ -222,7 +214,7 @@ class DownloadPipeline:
                 )
                 return path
 
-    async def download_resources(
+    async def _download_resources(
         self,
         media: Media,
         video_stream: VideoStream | None,
@@ -234,20 +226,33 @@ class DownloadPipeline:
             if not (video_stream or audio_stream):
                 raise ValueError("At least one stream type must be provided")
 
+            # Get situable downloader
+            if video_stream and audio_stream:
+                downloader = MuxedStreamDownloader(
+                    video=StreamContext(
+                        stream=video_stream,
+                        path=get_tempfile(),
+                    ),
+                    audio=StreamContext(
+                        stream=audio_stream,
+                        path=get_tempfile(),
+                    ),
+                )
+            else:
+                downloader = StreamDownloader(
+                    output_path=get_tempfile(),
+                    stream=video_stream or audio_stream,  # ty: ignore[invalid-argument-type]
+                )
+
             try:
-                if video_stream and audio_stream:
-                    async for event in MuxedStreamDownloader(
-                        video=StreamContext(
-                            stream=video_stream,
-                            path=get_tempfile(),
-                        ),
-                        audio=StreamContext(
-                            stream=audio_stream,
-                            path=get_tempfile(),
-                        ),
-                    ).download():
+                async with downloader.start() as progress:
+                    async for event in progress:
                         if event.status == "downloading":
-                            await self._stream.send(
+                            # Normalize single downloads
+                            if isinstance(event, StreamProgressEvent):
+                                event = BatchStreamDownloading(streams=[event])
+
+                            await self._emit(
                                 MediaDownloading(
                                     id=self.id,
                                     media=self.media,
@@ -255,39 +260,19 @@ class DownloadPipeline:
                                 )
                             )
                         elif event.status == "completed":
-                            completed_event = event
-
-                            context.video = StreamContext(
-                                stream=video_stream,
-                                path=completed_event.video_path,
-                            )
-                            context.audio = StreamContext(
-                                stream=audio_stream,
-                                path=completed_event.audio_path,
-                            )
-                else:
-                    async for event in StreamDownloader(
-                        output_path=get_tempfile(),
-                        stream=video_stream or audio_stream,  # type: ignore
-                    ).download():
-                        if event.status == "downloading":
-                            await self._stream.send(
-                                MediaDownloading(
-                                    id=self.id,
-                                    media=self.media,
-                                    progress=BatchStreamDownloading(streams=[event]),
-                                )
-                            )
-                        elif event.status == "completed":
                             if video_stream:
                                 context.video = StreamContext(
                                     stream=video_stream,
-                                    path=event.file_path,
+                                    path=event.video_path
+                                    if isinstance(event, BatchStreamCompleted)
+                                    else event.file_path,
                                 )
                             elif audio_stream:
                                 context.audio = StreamContext(
                                     stream=audio_stream,
-                                    path=event.file_path,
+                                    path=event.audio_path
+                                    if isinstance(event, BatchStreamCompleted)
+                                    else event.file_path,
                                 )
 
                 if context.video:
@@ -300,16 +285,15 @@ class DownloadPipeline:
                         'Audio stream downloaded: "{path}"',
                         path=context.audio.path,
                     )
-            except* DownloaderError as eg:
-                error = eg.exceptions[0]
-                await self._stream.send(
+            except DownloaderError as error:
+                await self._emit(
                     MediaFailed(
                         id=self.id,
                         media=self.media,
                         message=str(error),
                     )
                 )
-                raise error
+                raise
 
         async def thumbnail():
             if media.thumbnails:
@@ -320,12 +304,12 @@ class DownloadPipeline:
                         get_tempfile(),
                     )
                     logger.debug("Thumbnail downloaded")
-                except MetadataDownloaderError as e:
-                    await self._stream.send(
+                except MetadataDownloaderError as error:
+                    await self._emit(
                         MediaWarning(
                             id=self.id,
                             media=self.media,
-                            message=str(e),
+                            message=str(error),
                         )
                     )
 
@@ -338,12 +322,12 @@ class DownloadPipeline:
                         get_tempfile(),
                     )
                     logger.debug("Subtitles downloaded")
-                except MetadataDownloaderError as e:
-                    await self._stream.send(
+                except MetadataDownloaderError as error:
+                    await self._emit(
                         MediaWarning(
                             id=self.id,
                             media=self.media,
-                            message=str(e),
+                            message=str(error),
                         )
                     )
 
@@ -354,7 +338,7 @@ class DownloadPipeline:
 
         return context
 
-    async def process_merge(
+    async def _process_merge(
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
@@ -380,7 +364,7 @@ class DownloadPipeline:
                 file_path=file_path,
             ),
         )
-        await self._stream.send(merging)
+        await self._emit(merging)
         prc = MediaProcessor(file_path, self.ffmpeg_path)
 
         # Start merging
@@ -405,12 +389,12 @@ class DownloadPipeline:
 
         # Complete events
         merging.progress.status = "completed"
-        await self._stream.send(merging)
+        await self._emit(merging)
 
         # Return merged file path
         return Path(prc.file_path)
 
-    async def post_process(
+    async def _post_process(
         self,
         file_path: Path,
         stream: Stream | None = None,
@@ -437,7 +421,7 @@ class DownloadPipeline:
                     file_path=prc.file_path,
                 ),
             )
-            await self._stream.send(event)
+            await self._emit(event)
 
             try:
                 yield
@@ -445,13 +429,13 @@ class DownloadPipeline:
                 event.progress.file_path = prc.file_path
                 event.progress.status = "completed"
 
-                await self._stream.send(event)
+                await self._emit(event)
             except ProcessorError as error:
                 if raise_exceptions:
                     raise
 
                 self.has_missing_data = True
-                await self._stream.send(
+                await self._emit(
                     MediaWarning(
                         id=self.id,
                         media=self.media,
@@ -489,7 +473,7 @@ class DownloadPipeline:
 
         return Path(prc.file_path)
 
-    def get_ffmpeg_binary(self) -> Path | None:
+    def _get_ffmpeg_binary(self) -> Path | None:
         if ffmpeg_path := find_internal_ffmpeg():
             logger.info("Using FFmpeg binary from dependency for post-processing")
         elif ffmpeg_path := find_system_ffmpeg():
@@ -499,7 +483,7 @@ class DownloadPipeline:
             ffmpeg_path = None
         return ffmpeg_path
 
-    async def move_to_final(self, src: StrPath, dest: StrPath) -> Path:
+    async def _move_to_final(self, src: StrPath, dest: StrPath) -> Path:
         _src, _dest = anyio.Path(src), anyio.Path(dest)
 
         final_path = _dest.parent / f"{_dest.name}{_src.suffix}"
@@ -508,7 +492,7 @@ class DownloadPipeline:
         # Use shutil.move for compability between cross filesystems
         await run_sync(shutil.move, src, final_path)
 
-        await self._stream.send(
+        await self._emit(
             MediaCompleted(
                 id=self.id,
                 media=self.media,

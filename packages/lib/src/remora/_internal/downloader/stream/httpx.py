@@ -1,5 +1,4 @@
 import pathlib
-from collections.abc import AsyncIterable
 from urllib.parse import urljoin
 
 import anyio
@@ -21,7 +20,7 @@ from remora.models.stream import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class HttpxStreamDownloader(BaseStreamDownloader):
+class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
     SUPPORTED_PROTOCOLS = frozenset(
         {
             Protocol.HTTP,
@@ -40,7 +39,7 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         retries: int = DEFAULT_RETRIES,
         max_workers: int = 8,
     ):
-        super().__init__(output_path, stream, retries)
+        super().__init__(output_path, stream, retries, buffer_size=20)
 
         # Workers
         self.max_workers = max_workers
@@ -56,51 +55,40 @@ class HttpxStreamDownloader(BaseStreamDownloader):
         self.current_segment = 0
         self.total_segments = 0
 
-    async def __aenter__(self):
+        # Log
+        self._log_stream()
+
+    @override
+    async def _on_finally(self):
+        await self.client.aclose()
+
+    @override
+    async def _run_pipeline(self) -> None:
         self.client = httpx.AsyncClient(
             headers=self._get_headers(),
             cookies=self._get_cookies(),
             follow_redirects=True,
         )
-        return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.client.aclose()
+        protocol = Protocol(self.stream.protocol)
+        logger.debug('Stream protocol is "{}"', str(protocol))
 
-    @override
-    async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
-        self._log_stream()
-        self._send_stream, receive_stream = anyio.create_memory_object_stream[
-            StreamEvent
-        ](20)
-
-        async with receive_stream, anyio.create_task_group() as tg:
-            tg.start_soon(self._producer)
-
-            async for event in receive_stream:
-                yield event
-
-    async def _producer(self):
-        async with self._send_stream:
+        async with self.client:
             try:
-                protocol = Protocol(self.stream.protocol)
-                logger.debug('Stream protocol is "{}"', str(protocol))
+                if protocol.is_segmented:
+                    logger.debug("Downloading stream segments")
+                    path = await self._download_segments()
 
-                async with self.client:
-                    if protocol.is_segmented:
-                        logger.debug("Downloading stream segments")
-                        path = await self._download_segments()
+                elif protocol in (Protocol.HTTP, Protocol.HTTPS):
+                    logger.debug("Downloading stream as http")
 
-                    elif protocol in (Protocol.HTTP, Protocol.HTTPS):
-                        logger.debug("Downloading stream as http")
+                    self.is_continuous = True
+                    path = await self._download_multi_part()
 
-                        self.is_continuous = True
-                        path = await self._download_multi_part()
-
-                    else:
-                        raise TypeError(
-                            f"Unable to handle protocol: {self.stream.protocol}"
-                        )
+                else:
+                    raise TypeError(
+                        f"Unable to handle protocol: {self.stream.protocol}"
+                    )
             except* (httpx.HTTPError, OSError, ValueError, TypeError) as eg:
                 error = eg.exceptions[0]
                 status_code = 0
@@ -110,12 +98,11 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
                 raise DownloaderError(str(error), status_code=status_code) from error
 
-            path = await self._fix_extension(path)
-            self.file_path = path
+        path = await self._fix_extension(path)
+        self.file_path = path
 
-            await self._send_stream.send(
-                StreamCompleted(file_path=pathlib.Path(self.file_path))
-            )
+        await self._emit(StreamCompleted(file_path=pathlib.Path(self.file_path)))
+        await self._on_cancelled()
 
     async def _download_multi_part(self) -> Path:
         async with self.client.stream(
@@ -304,14 +291,14 @@ class HttpxStreamDownloader(BaseStreamDownloader):
 
         # Send event to top function
         if self.is_continuous:
-            await self._send_stream.send(
+            await self._emit(
                 StreamContinuous(
                     downloaded_bytes=self.downloaded_bytes,
                     total_bytes=self.total_bytes,
                 )
             )
         else:
-            await self._send_stream.send(
+            await self._emit(
                 StreamSegmented(
                     downloaded_bytes=self.downloaded_bytes,
                     current_segment=self.current_segment,
@@ -319,9 +306,8 @@ class HttpxStreamDownloader(BaseStreamDownloader):
                 )
             )
 
-    def _get_headers(self) -> dict[str, str]:
-        headers = self.stream.request_context.headers
-        return headers
+    def _get_headers(self) -> dict[str, str] | None:
+        return self.stream.request_context.headers
 
     def _get_cookies(self) -> dict[str, str]:
         cookie_dict = {}

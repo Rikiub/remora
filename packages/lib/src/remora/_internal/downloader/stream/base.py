@@ -1,13 +1,16 @@
-from abc import ABC
+from typing import TypeVar
 
 from anyio import Path
 from loguru import logger
 
+from remora._internal.downloader.stream_event import AsyncEventStreamer
 from remora.models.stream import Stream, VideoStream
 from remora.types import DEFAULT_RETRIES, StrPath
 
+_T = TypeVar("_T")
 
-class BaseStreamDownloader(ABC):
+
+class BaseStreamDownloader(AsyncEventStreamer[_T]):
     SUPPORTED_PROTOCOLS: set[str] | frozenset[str]
 
     def __init__(
@@ -15,10 +18,12 @@ class BaseStreamDownloader(ABC):
         output_path: StrPath,
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
+        buffer_size: int | None = None,
     ) -> None:
         self.file_path = Path(output_path)
         self.stream = stream
         self.retries = retries
+        super().__init__(buffer_size=buffer_size)
 
     def _log_stream(self):
         stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"
@@ -30,6 +35,6 @@ class BaseStreamDownloader(ABC):
             stream_id=self.stream.id,
             stream_type=stream_type,
             quality=self.stream.quality,
-            extension=self.stream.container,
+            extension=self.stream.extension,
             downloader=self.__class__.__name__,
         )

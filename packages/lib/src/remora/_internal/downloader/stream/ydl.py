@@ -1,5 +1,4 @@
 import pathlib
-from collections.abc import AsyncIterable
 
 import anyio
 from anyio import Path
@@ -18,7 +17,7 @@ from remora.models.stream import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class YDLStreamDownloader(BaseStreamDownloader):
+class YDLStreamDownloader(BaseStreamDownloader[StreamEvent]):
     SUPPORTED_PROTOCOLS = frozenset(Protocol)
 
     def __init__(
@@ -27,7 +26,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
     ):
-        super().__init__(output_path, stream, retries=retries)
+        super().__init__(output_path, stream, retries=retries, buffer_size=30)
 
         self.downloaded_bytes = 0
         self.total_bytes = 0
@@ -36,34 +35,19 @@ class YDLStreamDownloader(BaseStreamDownloader):
         self.total_segments = 0
 
     @override
-    async def download(self) -> AsyncIterable[StreamEvent]:  # type: ignore
-        self._log_stream()
-        self._send_stream, receive_stream = anyio.create_memory_object_stream[
-            StreamEvent
-        ](30)
-
-        async with receive_stream, anyio.create_task_group() as tg:
-            tg.start_soon(self._producer)
-
-            async for event in receive_stream:
-                yield event
-
-    async def _producer(self):
+    async def _run_pipeline(self) -> None:
         from remora._internal.ydl.downloader import download_format
 
-        async with self._send_stream:
-            path = await run_sync(
-                download_format,
-                self.file_path,
-                self.stream._to_ydl_dict(),
-                self._ydl_progress,
-                self.retries,
-            )
+        path = await run_sync(
+            download_format,
+            self.file_path,
+            self.stream._to_ydl_dict(),
+            self._ydl_progress,
+            self.retries,
+        )
 
-            self.file_path = Path(path)
-            await self._send_stream.send(
-                StreamCompleted(file_path=pathlib.Path(self.file_path))
-            )
+        self.file_path = Path(path)
+        await self._emit(StreamCompleted(file_path=pathlib.Path(self.file_path)))
 
     def _ydl_progress(self, data: dict) -> None:
         """`YT-DLP` progress hook, but stable and without issues."""
@@ -94,7 +78,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
 
         try:
             if self.current_segment:
-                self._send_stream.send_nowait(
+                self._emit_nowait(
                     StreamSegmented(
                         current_segment=self.current_segment,
                         total_segments=self.total_segments,
@@ -104,7 +88,7 @@ class YDLStreamDownloader(BaseStreamDownloader):
                     )
                 )
             else:
-                self._send_stream.send_nowait(
+                self._emit_nowait(
                     StreamContinuous(
                         downloaded_bytes=self.downloaded_bytes,
                         total_bytes=self.total_bytes or None,
