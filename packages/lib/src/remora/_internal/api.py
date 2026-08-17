@@ -77,7 +77,7 @@ class Remora:
                 extracted,
                 config=self.download_options,
                 extractor=self.extractor,
-            ).start() as progress:
+            ) as progress:
                 async for event in progress:
                     yield event
 
@@ -95,7 +95,7 @@ class Remora:
             extracted,
             config=self.download_options,
             extractor=self.extractor,
-        ).start() as progress:
+        ) as progress:
             async for event in progress:
                 yield event
 
@@ -111,7 +111,7 @@ class Remora:
             output_path,
             item,
             retries=retries or self.download_options.retries,
-        ).start() as progress:
+        ) as progress:
             async for event in progress:
                 yield event
 

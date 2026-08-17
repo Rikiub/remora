@@ -40,7 +40,7 @@ class StreamDownloader(BaseStreamDownloader[StreamEvent]):
                     self.stream,
                     retries=self.retries,
                     max_workers=self.max_workers,
-                ).start() as progress:
+                ) as progress:
                     async for event in progress:
                         await self._emit(event)
                     return
@@ -67,6 +67,6 @@ class StreamDownloader(BaseStreamDownloader[StreamEvent]):
                 self.file_path,
                 self.stream,
                 self.retries,
-            ).start() as progress:
+            ) as progress:
                 async for event in progress:
                     await self._emit(event)

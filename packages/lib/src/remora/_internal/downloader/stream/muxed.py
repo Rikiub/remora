@@ -65,7 +65,7 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
             output_path=self.video.path,
             stream=self.video.stream,
             retries=self.retries,
-        ).start() as progress:
+        ) as progress:
             async for event in progress:
                 if event.status == "downloading":
                     self.video.event = event
@@ -79,7 +79,7 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
             output_path=self.audio.path,
             stream=self.audio.stream,
             retries=self.retries,
-        ).start() as progress:
+        ) as progress:
             async for event in progress:
                 if event.status == "downloading":
                     self.audio.event = event

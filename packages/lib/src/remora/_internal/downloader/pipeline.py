@@ -98,7 +98,13 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
             try:
                 await self._pipeline(media)
             except (DownloaderError, ExtractorError, ProcessorError) as error:
-                logger.error(str(error))
+                await self._emit(
+                    MediaFailed(
+                        id=self.id,
+                        media=self.media,
+                        message=str(error),
+                    )
+                )
                 raise
 
     async def _pipeline(self, media: Media):
@@ -112,15 +118,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
 
         metadata_stream = selected.muxed or selected.video or selected.audio
         if not metadata_stream:
-            error = "Streams not found"
-            await self._emit(
-                MediaFailed(
-                    id=self.id,
-                    media=self.media,
-                    message=error,
-                )
-            )
-            raise DownloaderError(error)
+            raise DownloaderError("Streams not found")
 
         # Calculate Path & Check Existence
         output = format_template(
@@ -183,17 +181,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         media = cast(LazyMedia | Media, self.media)
 
         if not isinstance(media, Media):
-            try:
-                self.media = await self.extractor.extract(media)
-            except ExtractorError as error:
-                await self._emit(
-                    MediaFailed(
-                        id=self.id,
-                        media=self.media,
-                        message=str(error),
-                    )
-                )
-                raise
+            self.media = await self.extractor.extract(media)
 
         return self.media
 
@@ -247,56 +235,46 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                     stream=video_stream or audio_stream,  # ty: ignore[invalid-argument-type]
                 )
 
-            try:
-                async with downloader.start() as progress:
-                    async for event in progress:
-                        if event.status == "downloading":
-                            # Normalize single downloads
-                            if isinstance(event, StreamProgressEvent):
-                                event = BatchStreamDownloading(streams=[event])
+            async with downloader as progress:
+                async for event in progress:
+                    if event.status == "downloading":
+                        # Normalize single downloads
+                        if isinstance(event, StreamProgressEvent):
+                            event = BatchStreamDownloading(streams=[event])
 
-                            await self._emit(
-                                MediaDownloading(
-                                    id=self.id,
-                                    media=self.media,
-                                    progress=event,
-                                )
+                        await self._emit(
+                            MediaDownloading(
+                                id=self.id,
+                                media=self.media,
+                                progress=event,
                             )
-                        elif event.status == "completed":
-                            if video_stream:
-                                context.video = StreamContext(
-                                    stream=video_stream,
-                                    path=event.video_path
-                                    if isinstance(event, BatchStreamCompleted)
-                                    else event.file_path,
-                                )
-                            elif audio_stream:
-                                context.audio = StreamContext(
-                                    stream=audio_stream,
-                                    path=event.audio_path
-                                    if isinstance(event, BatchStreamCompleted)
-                                    else event.file_path,
-                                )
+                        )
+                    elif event.status == "completed":
+                        if video_stream:
+                            context.video = StreamContext(
+                                stream=video_stream,
+                                path=event.video_path
+                                if isinstance(event, BatchStreamCompleted)
+                                else event.file_path,
+                            )
+                        elif audio_stream:
+                            context.audio = StreamContext(
+                                stream=audio_stream,
+                                path=event.audio_path
+                                if isinstance(event, BatchStreamCompleted)
+                                else event.file_path,
+                            )
 
-                if context.video:
-                    logger.debug(
-                        'Video stream downloaded: "{path}"',
-                        path=context.video.path,
-                    )
-                elif context.audio:
-                    logger.debug(
-                        'Audio stream downloaded: "{path}"',
-                        path=context.audio.path,
-                    )
-            except DownloaderError as error:
-                await self._emit(
-                    MediaFailed(
-                        id=self.id,
-                        media=self.media,
-                        message=str(error),
-                    )
+            if context.video:
+                logger.debug(
+                    'Video stream downloaded: "{path}"',
+                    path=context.video.path,
                 )
-                raise
+            elif context.audio:
+                logger.debug(
+                    'Audio stream downloaded: "{path}"',
+                    path=context.audio.path,
+                )
 
         async def thumbnail():
             if media.thumbnails:
@@ -334,10 +312,13 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                         )
                     )
 
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(format)
-            tg.start_soon(thumbnail)
-            tg.start_soon(subtitles)
+        try:
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(format)
+                tg.start_soon(thumbnail)
+                tg.start_soon(subtitles)
+        except* DownloaderError as eg:
+            raise eg.exceptions[0] from eg
 
         return context
 

@@ -196,7 +196,7 @@ async def test_download_pipeline_muxed(
     # Consume the async generator
     events = []
 
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for event in progress:
             events.append(event)
 
@@ -226,7 +226,7 @@ async def test_download_pipeline_single(
     # Consume the async generator
     events = []
 
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for event in progress:
             events.append(event)
 
@@ -247,7 +247,7 @@ async def test_processor_merge(
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for _ in progress:
             pass
 
@@ -273,7 +273,7 @@ async def test_processor_no_merge(
     pipeline.media.streams = pipeline.media.streams.audio_only()  # ty: ignore[invalid-assignment]
 
     # Consume the async generator
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for _ in progress:
             pass
 
@@ -295,7 +295,7 @@ async def test_full_processor_metadata(
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for _ in progress:
             pass
 
@@ -323,7 +323,7 @@ async def test_empty_processor_metadata(
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async with pipeline.start() as progress:
+    async with pipeline as progress:
         async for _ in progress:
             pass
 

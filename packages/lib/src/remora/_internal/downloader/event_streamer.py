@@ -1,19 +1,19 @@
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, AsyncIterator
+from collections.abc import AsyncIterable, AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Generic, TypeVar
 
 import anyio
+from anyio import AsyncContextManagerMixin
 from anyio.streams.memory import MemoryObjectSendStream
 
 _DEFAULT_BUFFER_SIZE = 25
 _T = TypeVar("_T")
 
-
-class AsyncEventStreamer(ABC, Generic[_T]):
+class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
     """
     Base class that safely manages AnyIO background tasks, event streams,
-    and cancellation propagation.
+    and cancellation propagation natively using AnyIO's Context Manager Mixin.
     """
 
     def __init__(self, buffer_size: int | None = None):
@@ -21,8 +21,8 @@ class AsyncEventStreamer(ABC, Generic[_T]):
         self._send_stream: MemoryObjectSendStream[_T] | None = None
 
     @asynccontextmanager
-    async def start(self) -> AsyncIterator[AsyncIterable[_T]]:
-        """Entry point to start the background process and yield events."""
+    async def __asynccontextmanager__(self) -> AsyncGenerator[AsyncIterable[_T], None]:
+        """AnyIO's internal mixin hook. This runs the background process and yields the receive stream safely."""
         if self._send_stream:
             raise RuntimeError(f"{self.__class__.__name__} can only be started once.")
 
@@ -31,28 +31,40 @@ class AsyncEventStreamer(ABC, Generic[_T]):
         )
         self._send_stream = send_stream
 
-        async def _producer_wrapper():
-            async with send_stream:
+        try:
+            async with receive_stream, anyio.create_task_group() as tg:
+                tg.start_soon(self._producer_wrapper)
+
                 try:
-                    await self._run_pipeline()
-                except (
-                    anyio.get_cancelled_exc_class(),
-                    KeyboardInterrupt,
-                ):
-                    with anyio.CancelScope(shield=True):
-                        await self._on_cancelled()
-                    raise
+                    yield receive_stream
                 finally:
-                    with anyio.CancelScope(shield=True):
-                        await self._on_finally()
+                    tg.cancel_scope.cancel()
+        except BaseExceptionGroup as eg:
+            # Unwrap exception group if is only one
+            if len(eg.exceptions) == 1:
+                raise eg.exceptions[0] from None
 
-        async with receive_stream, anyio.create_task_group() as tg:
-            tg.start_soon(_producer_wrapper)
+            # Else return the whole exception group
+            raise
 
+
+    async def _producer_wrapper(self) -> None:
+        if not self._send_stream:
+            return
+            
+        async with self._send_stream:
             try:
-                yield receive_stream
+                await self._run_pipeline()
+            except (
+                anyio.get_cancelled_exc_class(),
+                KeyboardInterrupt,
+            ):
+                with anyio.CancelScope(shield=True):
+                    await self._on_cancelled()
+                raise
             finally:
-                tg.cancel_scope.cancel()
+                with anyio.CancelScope(shield=True):
+                    await self._on_finally()
 
     @abstractmethod
     async def _run_pipeline(self) -> None:

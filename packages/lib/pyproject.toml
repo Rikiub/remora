@@ -1,7 +1,7 @@
 [project]
 name = "remora"
 version = "3.0.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 description = "Download any video/audio you want from a simple URL ✨"
 dependencies = [
     "yt-dlp[default]>=2026.7.4",

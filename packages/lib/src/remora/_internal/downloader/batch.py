@@ -92,7 +92,7 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
                     media,
                     self.config,
                     self.extractor,
-                ).start() as progress:
+                ) as progress:
                     async for event in progress:
                         await self._emit(event)
 
