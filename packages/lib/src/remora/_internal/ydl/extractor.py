@@ -18,7 +18,7 @@ class SearchQuery:
     service: SearchService
     template: str
 
-    def build(self, query: str, limit: int = 20) -> str:
+    def build(self, query: str, limit: int = 25) -> str:
         return self.template.format(limit=limit) + query
 
 
