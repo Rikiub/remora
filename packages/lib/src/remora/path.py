@@ -19,9 +19,9 @@ def get_cache_dir() -> Path:
     return _DIRS.user_cache_path
 
 
-def get_state_dir() -> Path:
+def get_log_dir() -> Path:
     """Get state directory of the library."""
-    return _DIRS.user_state_path
+    return _DIRS.user_log_path
 
 
 # Temporary directory exclusive of the current session

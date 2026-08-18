@@ -1,8 +1,11 @@
+from functools import partial
+
 from loguru import logger
 from rich.logging import RichHandler
+from rich.text import Text
 
 from remora import logs
-from remora.path import get_state_dir
+from remora.path import get_log_dir
 from remora.types import LIBRAY_NAME
 from remora_cli.ui.rich import CONSOLE
 
@@ -36,12 +39,13 @@ def setup_logging(level: logs.LoggingLevels) -> None:
 
     # Structured Logs
     logger.add(
-        get_state_dir() / "logs" / "trace.jsonl",
+        get_log_dir() / "remora.jsonl",
         level="DEBUG",
         rotation="10 MB",
+        retention=1,
         serialize=True,
         enqueue=True,
-        format=get_format,
+        format=partial(get_format, markup=False),
         filter={
             LIBRAY_NAME: "DEBUG",
             "remora_cli": "CRITICAL",
@@ -59,7 +63,7 @@ LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
 }
 
 
-def get_format(record) -> str:
+def get_format(record, markup: bool = True) -> str:
     level = record["level"]
     extra = record.get("extra", {})
     icon = extra.get("icon") or getattr(record["level"], "icon", "")
@@ -87,4 +91,5 @@ def get_format(record) -> str:
         lib_prefix = "[dim]\\[LIB] "
 
     # Format
-    return f"{icon} {lib_prefix}{status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
+    message = f"{icon} {lib_prefix}{status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
+    return message if markup else Text.from_markup(message).plain
