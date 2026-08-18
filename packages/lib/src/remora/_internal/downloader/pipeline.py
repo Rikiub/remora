@@ -92,20 +92,19 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
 
     @override
     async def _run_pipeline(self):
-        media = await self._resolve_media()
+        try:
+            media = await self._resolve_media()
 
-        with logger.contextualize(media_id=self.id, media_title=media.title):
-            try:
+            with logger.contextualize(media_id=self.id, media_title=media.title):
                 await self._pipeline(media)
-            except (DownloaderError, ExtractorError, ProcessorError) as error:
-                await self._emit(
-                    MediaFailed(
-                        id=self.id,
-                        media=self.media,
-                        message=str(error),
-                    )
+        except (DownloaderError, ExtractorError, ProcessorError) as error:
+            await self._emit(
+                MediaFailed(
+                    id=self.id,
+                    media=self.media,
+                    message=str(error),
                 )
-                raise
+            )
 
     async def _pipeline(self, media: Media):
         """The one who orchestrate the jobs."""

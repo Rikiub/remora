@@ -92,8 +92,8 @@ class ProgressCallback:
                             )
                             self.progress.update(event.id, status="Skipped")
 
-                    if self._tg:
-                        self._tg.start_soon(self._finish_item, event)
+            if isinstance(event, (MediaFailed, MediaCompleted)) and self._tg:
+                self._tg.start_soon(self._finish_item, event)
 
     async def _finish_item(self, event: BatchEvent):
         await anyio.sleep(1.0)

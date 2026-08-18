@@ -55,10 +55,7 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         async with self._send_stream:
             try:
                 await self._run_pipeline()
-            except (
-                anyio.get_cancelled_exc_class(),
-                KeyboardInterrupt,
-            ):
+            except anyio.get_cancelled_exc_class():
                 with anyio.CancelScope(shield=True):
                     await self._on_cancelled()
                 raise

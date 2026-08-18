@@ -16,7 +16,7 @@ from remora.models.event import (
     PlaylistCancelled,
     PlaylistCompleted,
     PlaylistInProgress,
-    PlaylistStarted,
+    PlaylistStarted, MediaCompleted, MediaFailed,
 )
 from remora.models.media import (
     AnyExtractResult,
@@ -52,7 +52,6 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
         self.completed: int
         self.totat: int
 
-        self.success: int
         self.failed: int
 
     @override
@@ -87,20 +86,18 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
 
     async def _pipeline(self, media: LazyMedia):
         async with self.limiter:
-            try:
-                async with DownloadPipeline(
-                    media,
-                    self.config,
-                    self.extractor,
-                ) as progress:
-                    async for event in progress:
-                        await self._emit(event)
+            async with DownloadPipeline(
+                media,
+                self.config,
+                self.extractor,
+            ) as progress:
+                async for event in progress:
+                    if isinstance(event, MediaCompleted):
+                        self.completed += 1
+                    elif isinstance(event, MediaFailed):
+                        self.failed += 1
+                    await self._emit(event)
 
-                self.success += 1
-            except (ExtractorError, DownloaderError):
-                self.failed += 1
-
-            self.completed += 1
             await self._emit(
                 PlaylistInProgress(
                     id=self.id,
