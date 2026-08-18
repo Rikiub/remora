@@ -9,14 +9,15 @@ from remora._internal.downloader.logs import log_event_playlist
 from remora._internal.downloader.pipeline import DownloadPipeline
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
-from remora.exceptions import DownloaderError, ExtractorError
 from remora.models.download_options import DownloadOptions
 from remora.models.event import (
     BatchEvent,
+    MediaCompleted,
+    MediaFailed,
     PlaylistCancelled,
     PlaylistCompleted,
     PlaylistInProgress,
-    PlaylistStarted, MediaCompleted, MediaFailed,
+    PlaylistStarted,
 )
 from remora.models.media import (
     AnyExtractResult,
