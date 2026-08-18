@@ -24,7 +24,7 @@ def parse_queries(
             entry = entry.split(":")[1].strip()
         else:
             raise CycloptsError(
-                f"'{selection}' is invalid. Should be URL or search PROVIDER."
+                f"'{selection}' is invalid. Should be URL or search SERVICE."
             )
 
         yield target, entry
