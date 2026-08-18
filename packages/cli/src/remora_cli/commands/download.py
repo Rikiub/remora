@@ -7,7 +7,6 @@ from typing import Annotated
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
-from remora import MediaExtractor
 from remora.models.container import AVContainerFormat, RichAVContainer
 from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
 from remora_cli.options import (
@@ -15,6 +14,7 @@ from remora_cli.options import (
     ExtractorOptions,
     QueryParameter,
 )
+from remora_cli.ui.download_handler import ProgressCallback
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -150,11 +150,10 @@ async def download(
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import DownloadOptions, Remora
+        from remora import DownloadOptions, MediaExtractor, Remora
         from remora._internal.ffmpeg import get_ffmpeg_dir
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.models.media import Playlist, SearchList
-        from remora_cli.ui.download_handler import ProgressCallback
         from remora_cli.ui.extractor import extract_queries
 
         try:
@@ -188,6 +187,9 @@ async def download(
         if isinstance(result, SearchList):
             result = result.entries.medias()[0]
 
-        async with ProgressCallback(display.quiet) as progress:
-            async for event in remora.download_batch(result):
-                await progress.playlist_callback(event)
+        async with (
+            ProgressCallback(display.quiet) as wrapper,
+            remora.download_batch(result) as progress,
+        ):
+            async for event in progress:
+                await wrapper.playlist_callback(event)

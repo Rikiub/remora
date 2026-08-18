@@ -4,9 +4,9 @@ import anyio
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora._internal.downloader.logs import log_event_playlist
-from remora._internal.downloader.pipeline import DownloadPipeline
+from remora._internal.downloader.pipeline.base import Downloader
+from remora._internal.downloader.pipeline.media import MediaDownloader
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
 from remora.models.download_options import DownloadOptions
@@ -16,6 +16,7 @@ from remora.models.event import (
     MediaFailed,
     PlaylistCancelled,
     PlaylistCompleted,
+    PlaylistEnded,
     PlaylistInProgress,
     PlaylistStarted,
 )
@@ -27,23 +28,25 @@ from remora.models.media import (
     Playlist,
 )
 from remora.models.media.list import _BaseList
+from remora.types import StrUrl
 
 
-class DownloadBatch(AsyncEventStreamer[BatchEvent]):
+class BatchDownloader(Downloader[BatchEvent]):
     def __init__(
         self,
-        item: AnyExtractResult,
+        item: StrUrl | AnyExtractResult,
         config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        self.config = config or DownloadOptions()
-        self.extractor = extractor or MediaExtractor()
-        self.limiter = anyio.CapacityLimiter(self.config.max_workers)
-        self._item = item
+        super().__init__(
+            config=config,
+            extractor=extractor,
+        )
+        self._buffer_size = 100 * self.config.max_workers
 
-        # Setup buffer
-        super().__init__(buffer_size=100 * self.config.max_workers)
+        self.limiter = anyio.CapacityLimiter(self.config.max_workers)
+        self._unresolved_item = item
 
         # Fields
         self.id: str
@@ -56,9 +59,13 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
         self.failed: int
 
     @override
-    async def _run_pipeline(self):
-        await self._setup()
+    async def _emit(self, event):
+        await log_event_playlist(event)
+        await super()._emit(event)
 
+    @override
+    async def _run_pipeline(self) -> None:
+        await self._setup()
         await self._emit(
             PlaylistStarted(
                 id=self.id,
@@ -93,10 +100,17 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
                 result="partial" if self.failed else "success",
             )
         )
+        await self._emit(
+            PlaylistEnded(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
+            )
+        )
 
     async def _pipeline(self, media: LazyMedia):
         async with self.limiter:
-            async with DownloadPipeline(
+            async with MediaDownloader(
                 media,
                 self.config,
                 self.extractor,
@@ -117,7 +131,10 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
             )
 
     async def _setup(self):
-        item = self.medias or self._item
+        if isinstance(self._unresolved_item, StrUrl):
+            item = await self.extractor.extract(self._unresolved_item)
+        else:
+            item = self.medias or self._unresolved_item
 
         # Determine if is a playlist
         playlist = None
@@ -166,9 +183,6 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
         else:
             import secrets
 
-            self.id = secrets.token_urlsafe(6)
-
-    @override
-    async def _emit(self, event):
-        await log_event_playlist(event)
-        await super()._emit(event)
+            # Generate ID to have a unique hash
+            token = secrets.token_urlsafe()
+            self.id = f"job-{token}"

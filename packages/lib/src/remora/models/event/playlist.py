@@ -28,7 +28,15 @@ class PlaylistCancelled(_BasePlaylist):
     status: Literal["cancelled"] = "cancelled"
 
 
+class PlaylistEnded(_BasePlaylist):
+    status: Literal["ended"] = "ended"
+
+
 PlaylistEvent = (
-    PlaylistStarted | PlaylistInProgress | PlaylistCompleted | PlaylistCancelled
+    PlaylistStarted
+    | PlaylistInProgress
+    | PlaylistCompleted
+    | PlaylistCancelled
+    | PlaylistEnded
 )
 BatchEvent = PlaylistEvent | MediaEvent

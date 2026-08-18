@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Generic, TypeVar
 
 import anyio
-from anyio import AsyncContextManagerMixin
+from anyio import AsyncContextManagerMixin, CancelScope
 from anyio.streams.memory import MemoryObjectSendStream
 
 _DEFAULT_BUFFER_SIZE = 25
@@ -20,6 +20,12 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
     def __init__(self, buffer_size: int | None = None):
         self._buffer_size = _DEFAULT_BUFFER_SIZE if buffer_size is None else buffer_size
         self._send_stream: MemoryObjectSendStream[_T] | None = None
+        self._cancel_scope: CancelScope | None = None
+
+    def cancel(self):
+        """Instantly interrupts the pipeline, but keeps the stream open for final events."""
+        if self._cancel_scope:
+            self._cancel_scope.cancel()
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[AsyncIterable[_T], None]:
@@ -48,9 +54,19 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         if not self._send_stream:
             return
 
+        self._cancel_scope = anyio.CancelScope()
+
         async with self._send_stream:
             try:
-                await self._run_pipeline()
+                with self._cancel_scope:
+                    await self._run_pipeline()
+
+                if self._cancel_scope.cancel_called:
+                    await self._on_cancelled()
+            except anyio.get_cancelled_exc_class():
+                with anyio.CancelScope(shield=True):
+                    await self._on_cancelled()
+                raise
             finally:
                 with anyio.CancelScope(shield=True):
                     await self._on_exit()
@@ -79,4 +95,7 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
             pass
 
     async def _on_exit(self) -> None:
+        """Subclasses CAN override this to handle cleanup tasks."""
+
+    async def _on_cancelled(self) -> None:
         """Subclasses CAN override this to handle cleanup tasks."""

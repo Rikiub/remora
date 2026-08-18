@@ -1,5 +1,6 @@
+from typing import Self
+
 import anyio
-from anyio.abc import TaskGroup
 from loguru import logger
 
 from remora.models.event import (
@@ -7,10 +8,12 @@ from remora.models.event import (
     MediaCancelled,
     MediaCompleted,
     MediaDownloading,
+    MediaEnded,
     MediaEvent,
     MediaExtracting,
     MediaFailed,
     MediaProcessing,
+    MediaSkipped,
     MediaWarning,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -27,8 +30,15 @@ class ProgressCallback:
         self.disable = disable
         self.progress = DownloadProgress(disable)
 
-        self._tg: TaskGroup | None = None
-        self._exit_stack = anyio.create_task_group()
+    async def __aenter__(self) -> Self:
+        self._tg = anyio.create_task_group()
+        await self._tg.__aenter__()
+        self.progress.start()
+        return self
+
+    async def __aexit__(self, *args):
+        await self._tg.__aexit__(*args)
+        self.progress.stop()
 
     async def playlist_callback(self, event: BatchEvent):
         if self.disable:
@@ -47,13 +57,12 @@ class ProgressCallback:
                     self.progress.counter.reset(total=event.total)
                 case PlaylistInProgress():
                     self.progress.counter.update(completed=event.completed)
-                case PlaylistCancelled():
-                    logger.warning("Download cancelled")
-
                 case PlaylistCompleted(result="success"):
                     logger.success("Download completed")
                 case PlaylistCompleted(result="partial"):
                     logger.success("Download completed (Some items failed)")
+                case PlaylistCancelled():
+                    logger.warning("Download cancelled")
 
                 # Media
                 case MediaExtracting():
@@ -71,7 +80,7 @@ class ProgressCallback:
                         total=event.progress.total_bytes,
                     )
                 case MediaProcessing():
-                    self.processor_callback(event.id, event.progress)
+                    self._processor_callback(event.id, event.progress)
                 case MediaWarning():
                     logger.warning("Warning: {}", event.message)
                 case MediaCancelled():
@@ -80,36 +89,28 @@ class ProgressCallback:
                 case MediaFailed():
                     logger.error("Download failed: {}", event.message)
                     self.progress.update(event.id, status="Error")
-                case MediaCompleted():
-                    match event.result:
-                        case "success":
-                            logger.success("Completed")
-                            self.progress.update(event.id, status="Completed")
-                        case "partial":
-                            logger.success("Completed (Some data missed)")
-                            self.progress.update(event.id, status="Completed")
-                        case "skipped":
-                            logger.success(
-                                'Skipped (Exists as "{file_extension}")',
-                                file_extension=event.file_extension,
-                                icon="🔄",
-                            )
-                            self.progress.update(event.id, status="Skipped")
+                case MediaSkipped():
+                    logger.success(
+                        'Skipped (Exists as "{file_extension}")',
+                        file_extension=event.file_extension,
+                        icon="🔄",
+                    )
+                    self.progress.update(event.id, status="Skipped")
+                case MediaCompleted(result="success"):
+                    logger.success("Completed")
+                    self.progress.update(event.id, status="Completed")
+                case MediaCompleted(result="partial"):
+                    logger.success("Completed (Some data missed)")
+                    self.progress.update(event.id, status="Completed")
+                case MediaEnded():
 
-            if (
-                isinstance(
-                    event,
-                    (MediaFailed, MediaCompleted, MediaCancelled, PlaylistCancelled),
-                )
-                and self._tg
-            ):
-                self._tg.start_soon(self._finish_item, event)
+                    async def finish_item(event: BatchEvent):
+                        await anyio.sleep(1.0)
+                        self.progress.remove_task(event.id)
 
-    async def _finish_item(self, event: BatchEvent):
-        await anyio.sleep(1.0)
-        self.progress.remove_task(event.id)
+                    self._tg.start_soon(finish_item, event)
 
-    def processor_callback(self, id: str, event: Processing):
+    def _processor_callback(self, id: str, event: Processing):
         self.progress.update(id, status="Processing[blink]...[/]")
 
         if event.status == "started":
@@ -130,12 +131,3 @@ class ProgressCallback:
             return media.title
         else:
             return ""
-
-    async def __aenter__(self):
-        self._tg = await self._exit_stack.__aenter__()
-        self.progress.start()
-        return self
-
-    async def __aexit__(self, *args):
-        await self._exit_stack.__aexit__(*args)
-        self.progress.stop()

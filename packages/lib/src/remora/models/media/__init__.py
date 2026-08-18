@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 from pydantic import TypeAdapter
 
@@ -10,9 +10,7 @@ LazyExtractResult = LazyMedia | LazyPlaylist
 ExtractResult = Media | Playlist
 ExtractAdapter = TypeAdapter[ExtractResult](ExtractResult)
 
-AnyExtractResult = (
-    LazyExtractResult | ExtractResult | SearchList | EntriesList | Iterable[LazyMedia]
-)
+AnyExtractResult = LazyExtractResult | ExtractResult | SearchList | Sequence[LazyMedia]
 
 __all__ = [
     "AnyExtractResult",

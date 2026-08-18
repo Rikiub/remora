@@ -2,16 +2,15 @@ import shutil
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 import anyio
 from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.event_streamer import AsyncEventStreamer
 from remora._internal.downloader.logs import log_event_media
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
+from remora._internal.downloader.pipeline.base import Downloader
 from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
@@ -40,10 +39,12 @@ from remora.models.event import (
     MediaCancelled,
     MediaCompleted,
     MediaDownloading,
+    MediaEnded,
     MediaEvent,
     MediaExtracting,
     MediaFailed,
     MediaProcessing,
+    MediaSkipped,
     MediaWarning,
     Processing,
     ProcessorTask,
@@ -62,7 +63,7 @@ class DownloadContext:
     subtitles: list[Path] | None = None
 
 
-class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
+class MediaDownloader(Downloader[MediaEvent]):
     """Handles the lifecycle of a single media download."""
 
     def __init__(
@@ -71,28 +72,34 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         config: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
-        super().__init__()
+        super().__init__(config=config, extractor=extractor)
 
-        self.id = media.id
+        self.id: str = media.id
         self.media: Media = media  # ty: ignore[invalid-assignment]
-        self.config = config or DownloadOptions()
-        self.extractor = extractor or MediaExtractor()
+        self._unresolved_item = media
+
         self.ffmpeg_dir = self._determine_ffmpeg_dir()
         self.has_missing_data = False
 
-    @override
-    async def _emit(self, event) -> None:
-        """Safely dispatches and logs pipeline events."""
-        await log_event_media(event)
-        await super()._emit(event)
+    async def _resolve_media(self) -> None:
+        item = self._unresolved_item
+
+        if type(item) is LazyMedia:
+            await self._emit(MediaExtracting(id=item.id, media=item))
+            item = await self.extractor.extract(item)
+        else:
+            raise ExtractorError("Unable to resolve item")
+
+        self.id = item.id
+        self.media = item
 
     @override
     async def _run_pipeline(self):
         try:
-            media = await self._resolve_media()
+            await self._resolve_media()
 
-            with logger.contextualize(media_id=self.id, media_title=media.title):
-                await self._pipeline(media)
+            with logger.contextualize(media_id=self.id, media_title=self.media.title):
+                await self._pipeline()
         except (DownloaderError, ExtractorError, ProcessorError) as error:
             await self._emit(
                 MediaFailed(
@@ -101,17 +108,38 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                     message=str(error),
                 )
             )
-        except anyio.get_cancelled_exc_class():
-            await self._emit(MediaCancelled(id=self.id, media=self.media))
+        finally:
+            await self._emit(
+                MediaEnded(
+                    id=self.id,
+                    media=self.media,
+                )
+            )
 
-    async def _pipeline(self, media: Media):
+    @override
+    async def _on_cancelled(self):
+        await self._emit(MediaCancelled(id=self.id, media=self.media))
+        await self._emit(
+            MediaEnded(
+                id=self.id,
+                media=self.media,
+            )
+        )
+
+    @override
+    async def _emit(self, event) -> None:
+        """Safely dispatches and logs pipeline events."""
+        await log_event_media(event)
+        await super()._emit(event)
+
+    async def _pipeline(self):
         """The one who orchestrate the jobs."""
 
         # Select Best Streams
         selected = StreamSelector(
             self.config,
             merge_available=bool(self.ffmpeg_dir),
-        ).resolve(media)
+        ).resolve(self.media)
 
         metadata_stream = selected.muxed or selected.video or selected.audio
         if not metadata_stream:
@@ -121,7 +149,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         output = format_template(
             self.config.output_template,
             stream=metadata_stream,
-            media=media,
+            media=self.media,
             default_missing="NA",
         )
         output = anyio.Path(output)
@@ -134,7 +162,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         # Download resources like streams, subtitles and thumbnail
         with logger.contextualize(status="downloading"):
             results = await self._download_resources(
-                media,
+                self.media,
                 selected.muxed or selected.video,
                 selected.audio,
             )
@@ -173,15 +201,6 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         # Complete (Move file to target)
         await self._move_to_final(file_path, output)
 
-    async def _resolve_media(self) -> Media:
-        await self._emit(MediaExtracting(id=self.id, media=self.media))
-        media = cast(LazyMedia | Media, self.media)
-
-        if not isinstance(media, Media):
-            self.media = await self.extractor.extract(media)
-
-        return self.media
-
     async def _check_output_duplicate(self, output: StrPath) -> Path | None:
         output = anyio.Path(output)
 
@@ -193,11 +212,10 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
             ):
                 path = Path(path)
                 await self._emit(
-                    MediaCompleted(
+                    MediaSkipped(
                         id=self.id,
                         media=self.media,
                         file_path=path,
-                        result="skipped",
                     )
                 )
                 return path
@@ -296,7 +314,7 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                 try:
                     logger.debug("Downloading subtitles")
                     context.subtitles = await download_subtitles(
-                        media.subtitles,
+                        media.subtitles.externals(),
                         create_temp_file(),
                     )
                     logger.debug("Subtitles downloaded")

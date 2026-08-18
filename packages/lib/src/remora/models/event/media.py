@@ -11,6 +11,11 @@ class _BaseMedia(BaseEventID):
     media: Media
 
 
+class MediaStarted(_BaseMedia):
+    status: Literal["started"] = "started"
+    media: LazyMedia
+
+
 class MediaExtracting(_BaseMedia):
     status: Literal["extracting"] = "extracting"
     media: LazyMedia
@@ -28,7 +33,11 @@ class MediaProcessing(_BaseMedia):
 
 class MediaCompleted(_BaseMedia, FileEvent):
     status: Literal["completed"] = "completed"
-    result: Literal["success", "partial", "skipped"]
+    result: Literal["success", "partial"]
+
+
+class MediaSkipped(_BaseMedia, FileEvent):
+    status: Literal["skipped"] = "skipped"
 
 
 class MediaFailed(_BaseMedia):
@@ -47,12 +56,20 @@ class MediaCancelled(_BaseMedia):
     media: LazyMedia | Media
 
 
+class MediaEnded(_BaseMedia):
+    status: Literal["ended"] = "ended"
+    media: LazyMedia
+
+
 MediaEvent = (
-    MediaExtracting
+    MediaStarted
+    | MediaExtracting
     | MediaDownloading
     | MediaProcessing
     | MediaCompleted
+    | MediaSkipped
     | MediaFailed
     | MediaWarning
     | MediaCancelled
+    | MediaEnded
 )

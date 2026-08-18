@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
@@ -20,24 +21,48 @@ async def download_subtitles(subtitles: ExternalSubtitle, output_path) -> Path: 
 
 @overload
 async def download_subtitles(
-    subtitles: SubtitleList | list[ExternalSubtitle], output_path
+    subtitles: Sequence[ExternalSubtitle], output_path
 ) -> list[Path]: ...
 
 
 async def download_subtitles(
-    subtitles: SubtitleList | ExternalSubtitle | list[ExternalSubtitle],
+    subtitles: Sequence[ExternalSubtitle] | ExternalSubtitle,
     output_path: StrPath,
 ) -> Path | list[Path]:
     from remora._internal.ydl.downloader import download_subtitles as ydl
 
-    if isinstance(subtitles, list):
-        info = SubtitleList(subtitles)._to_ydl_dict()
-    else:
-        info = subtitles._to_ydl_dict()
-
+    data = SubtitleList(subtitles)
+    info = data._to_ydl_dict()
     paths = await run_sync(ydl, output_path, info)
 
-    if isinstance(subtitles, SubtitleList):
+    if isinstance(subtitles, Sequence):
         return paths
     else:
         return paths[0]
+
+
+@overload
+async def download_resource(
+    item: Thumbnail | ExternalSubtitle,
+    output_path,
+) -> Path: ...
+
+
+@overload
+async def download_resource(
+    item: Sequence[ExternalSubtitle],
+    output_path,
+) -> list[Path]: ...
+
+
+async def download_resource(
+    item: Thumbnail | ExternalSubtitle | Sequence[ExternalSubtitle],
+    output_path: StrPath,
+) -> Path | list[Path]:
+    match item:
+        case Thumbnail():
+            output_path = await download_thumbnail(item, output_path)
+            return output_path
+        case Sequence() | ExternalSubtitle():
+            paths = await download_subtitles(item, output_path)
+            return paths
