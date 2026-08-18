@@ -59,9 +59,19 @@ class BatchDownloader(Downloader[BatchState]):
         self.failed: int
 
     @override
-    async def _emit(self, state):
+    async def _emit(self, state) -> None:
         await log_event_playlist(state)
         await super()._emit(state)
+
+    @override
+    async def _on_cancelled(self) -> None:
+        await self._emit(
+            PlaylistCancelled(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
+            )
+        )
 
     @override
     async def _run_pipeline(self) -> None:
@@ -79,18 +89,14 @@ class BatchDownloader(Downloader[BatchState]):
             list_title=self.playlist.title if self.playlist else None,
             list_total=len(self.medias),
         ):
-            try:
-                async with anyio.create_task_group() as tg:
-                    for media in self.medias:
-                        tg.start_soon(self._pipeline, media)
-            except anyio.get_cancelled_exc_class():
-                await self._emit(
-                    PlaylistCancelled(
-                        id=self.id,
-                        completed=self.completed,
-                        total=self.total,
+            async with anyio.create_task_group() as tg:
+                for media in self.medias:
+                    worker = MediaDownloader(
+                        media,
+                        self.config,
+                        self.extractor,
                     )
-                )
+                    tg.start_soon(self._worker, worker)
 
         await self._emit(
             PlaylistCompleted(
@@ -108,13 +114,9 @@ class BatchDownloader(Downloader[BatchState]):
             )
         )
 
-    async def _pipeline(self, media: LazyMedia):
+    async def _worker(self, downloader: MediaDownloader):
         async with self.limiter:
-            async with MediaDownloader(
-                media,
-                self.config,
-                self.extractor,
-            ) as progress:
+            async with downloader as progress:
                 async for state in progress:
                     if isinstance(state, MediaCompleted):
                         self.completed += 1
