@@ -59,7 +59,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
         self._log_stream()
 
     @override
-    async def _on_finally(self):
+    async def _on_exit(self):
         await self.client.aclose()
 
     @override
@@ -102,7 +102,6 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
         self.file_path = path
 
         await self._emit(StreamCompleted(file_path=pathlib.Path(self.file_path)))
-        await self._on_cancelled()
 
     async def _download_multi_part(self) -> Path:
         async with self.client.stream(

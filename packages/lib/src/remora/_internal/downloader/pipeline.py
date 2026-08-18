@@ -87,10 +87,6 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
         await super()._emit(event)
 
     @override
-    async def _on_cancelled(self) -> None:
-        await self._emit(MediaCancelled(id=self.id, media=self.media))
-
-    @override
     async def _run_pipeline(self):
         try:
             media = await self._resolve_media()
@@ -105,6 +101,8 @@ class DownloadPipeline(AsyncEventStreamer[MediaEvent]):
                     message=str(error),
                 )
             )
+        except anyio.get_cancelled_exc_class():
+            await self._emit(MediaCancelled(id=self.id, media=self.media))
 
     async def _pipeline(self, media: Media):
         """The one who orchestrate the jobs."""

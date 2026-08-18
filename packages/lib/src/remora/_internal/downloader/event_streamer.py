@@ -35,11 +35,7 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         try:
             async with receive_stream, anyio.create_task_group() as tg:
                 tg.start_soon(self._producer_wrapper)
-
-                try:
-                    yield receive_stream
-                finally:
-                    tg.cancel_scope.cancel()
+                yield receive_stream
         except BaseExceptionGroup as eg:
             # Unwrap exception group if is only one
             if len(eg.exceptions) == 1:
@@ -55,13 +51,9 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         async with self._send_stream:
             try:
                 await self._run_pipeline()
-            except anyio.get_cancelled_exc_class():
-                with anyio.CancelScope(shield=True):
-                    await self._on_cancelled()
-                raise
             finally:
                 with anyio.CancelScope(shield=True):
-                    await self._on_finally()
+                    await self._on_exit()
 
     @abstractmethod
     async def _run_pipeline(self) -> None:
@@ -86,8 +78,5 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         except (anyio.ClosedResourceError, anyio.WouldBlock):
             pass
 
-    async def _on_finally(self) -> None:
+    async def _on_exit(self) -> None:
         """Subclasses CAN override this to handle cleanup tasks."""
-
-    async def _on_cancelled(self) -> None:
-        """Subclasses CAN override this to emit specific cancellation events."""

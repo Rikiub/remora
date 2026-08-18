@@ -72,9 +72,18 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
             list_title=self.playlist.title if self.playlist else None,
             list_total=len(self.medias),
         ):
-            async with anyio.create_task_group() as tg:
-                for media in self.medias:
-                    tg.start_soon(self._pipeline, media)
+            try:
+                async with anyio.create_task_group() as tg:
+                    for media in self.medias:
+                        tg.start_soon(self._pipeline, media)
+            except anyio.get_cancelled_exc_class():
+                await self._emit(
+                    PlaylistCancelled(
+                        id=self.id,
+                        completed=self.completed,
+                        total=self.total,
+                    )
+                )
 
         await self._emit(
             PlaylistCompleted(
@@ -158,16 +167,6 @@ class DownloadBatch(AsyncEventStreamer[BatchEvent]):
             import secrets
 
             self.id = secrets.token_urlsafe(6)
-
-    @override
-    async def _on_cancelled(self):
-        await self._emit(
-            PlaylistCancelled(
-                id=self.id,
-                completed=self.completed,
-                total=self.total,
-            )
-        )
 
     @override
     async def _emit(self, event):
