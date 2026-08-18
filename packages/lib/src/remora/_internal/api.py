@@ -54,31 +54,12 @@ class Remora:
         """Extract media from search service."""
         return await self.extractor.extract_search(query, service, limit)
 
-    @overload
-    async def download(
-        self, item: StrUrl | LazyMedia | Media | Playlist
-    ) -> MediaDownloader: ...
-
-    @overload
-    async def download(self, item: LazyPlaylist) -> BatchDownloader: ...
-
-    async def download(
-        self, item: StrUrl | LazyMedia | LazyPlaylist
-    ) -> MediaDownloader | BatchDownloader:
-        extracted = await self.extract(item)
-
-        if isinstance(extracted, LazyPlaylist):
-            return BatchDownloader(
-                extracted,
-                config=self.download_options,
-                extractor=self.extractor,
-            )
-        else:
-            return MediaDownloader(
-                extracted,
-                config=self.download_options,
-                extractor=self.extractor,
-            )
+    def download_media(self, item: LazyMedia) -> MediaDownloader:
+        return MediaDownloader(
+            item,
+            config=self.download_options,
+            extractor=self.extractor,
+        )
 
     def download_batch(self, item: StrUrl | AnyExtractResult) -> BatchDownloader:
         return BatchDownloader(

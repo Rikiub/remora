@@ -14,6 +14,7 @@ from remora.models.event import (
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
+    MediaStarted,
     MediaWarning,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -65,8 +66,14 @@ class ProgressCallback:
                     logger.warning("Download cancelled")
 
                 # Media
-                case MediaExtracting():
+                case MediaStarted():
                     self.progress.add_task(
+                        event.id,
+                        description=media_title,
+                        status="Starting[blink]...[/]",
+                    )
+                case MediaExtracting():
+                    self.progress.update(
                         event.id,
                         description=media_title or "Extracting[blink]...[/]",
                         status="Extracting[blink]...[/]",

@@ -45,6 +45,7 @@ from remora.models.event import (
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
+    MediaStarted,
     MediaWarning,
     Processing,
     ProcessorTask,
@@ -87,15 +88,14 @@ class MediaDownloader(Downloader[MediaEvent]):
         if type(item) is LazyMedia:
             await self._emit(MediaExtracting(id=item.id, media=item))
             item = await self.extractor.extract(item)
-        else:
-            raise ExtractorError("Unable to resolve item")
 
-        self.id = item.id
-        self.media = item
+            self.id = item.id
+            self.media = item
 
     @override
     async def _run_pipeline(self):
         try:
+            await self._emit(MediaStarted(id=self.id, media=self.media))
             await self._resolve_media()
 
             with logger.contextualize(media_id=self.id, media_title=self.media.title):

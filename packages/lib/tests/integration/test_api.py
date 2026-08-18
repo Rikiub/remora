@@ -13,7 +13,7 @@ PLAYLIST = (
 )
 
 
-async def test_single(tmp_path: Path):
+async def test_single_media(tmp_path: Path):
     remora = Remora(
         download_options=DownloadOptions(
             output_template=tmp_path,
@@ -22,17 +22,18 @@ async def test_single(tmp_path: Path):
         ),
     )
 
-    downloader = await remora.download(URL)
+    result = await remora.extract(URL)
+    assert result.type == "media"
 
-    async with downloader as progress:
+    async with remora.download_media(result) as progress:
         async for event in progress:
             if event.status == "completed":
                 assert event.file_path.is_file()
             elif event.status == "failed":
-                raise AssertionError(f"Download failed: {event.message}")
+                raise AssertionError(event.message)
 
 
-async def test_list(tmp_path: Path):
+async def test_playlist(tmp_path: Path):
     remora = Remora(
         download_options=DownloadOptions(
             output_template=tmp_path,
@@ -41,8 +42,9 @@ async def test_list(tmp_path: Path):
         ),
     )
 
-    async for event in remora.download_batch(PLAYLIST):
-        if event.type == "media" and event.status == "completed":
-            assert event.file_path.is_file()
-        elif event.status == "failed":
-            raise AssertionError(f"Download failed: {event.message}")
+    async with remora.download_batch(PLAYLIST) as progress:
+        async for event in progress:
+            if event.type == "media" and event.status == "completed":
+                assert event.file_path.is_file()
+            elif event.status == "failed":
+                raise AssertionError(event.message)

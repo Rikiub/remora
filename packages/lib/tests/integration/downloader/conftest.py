@@ -17,11 +17,12 @@ def download(tmp_path: Path):
         )
         result = await remora.extract(url)
 
-        async for event in remora.download_batch(result):
-            if event.type == "media":
-                if event.status == "completed" and not event.file_path.is_file():
-                    raise FileNotFoundError(event.file_path)
-                elif event.status == "failed":
-                    raise AssertionError(f"Download failed: {event.message}")
+        async with remora.download_batch(result) as progress:
+            async for event in progress:
+                if event.type == "media":
+                    if event.status == "completed" and not event.file_path.is_file():
+                        raise FileNotFoundError(event.file_path)
+                    elif event.status == "failed":
+                        raise AssertionError(event.message)
 
     return wrap
