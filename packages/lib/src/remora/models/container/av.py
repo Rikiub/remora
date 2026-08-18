@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Self
 
-from typing_extensions import Self, override
+from typing_extensions import override
 
 from remora.models.container._base import GetterEnum
 from remora.models.container.codec.audio import AudioCodecFamily

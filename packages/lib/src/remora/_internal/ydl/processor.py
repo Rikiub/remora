@@ -1,8 +1,7 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TypedDict
+from typing import Self, TypedDict
 
-from typing_extensions import Self
 from yt_dlp.postprocessor.embedthumbnail import EmbedThumbnailPP
 from yt_dlp.postprocessor.ffmpeg import (
     FFmpegEmbedSubtitlePP,

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import bisect
-from typing import Annotated, Generic, Literal
+from typing import Annotated, Generic, Literal, Self
 
 from loguru import logger
 from pydantic import ValidatorFunctionWrapHandler, WrapValidator
 from pydantic_core import PydanticOmit
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from remora.models._base import BaseList
 from remora.models.container import AudioCodec, AVContainer, AVContainerLike, VideoCodec

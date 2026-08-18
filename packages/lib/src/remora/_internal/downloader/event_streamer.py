@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterable
 from contextlib import asynccontextmanager
 from typing import Generic, TypeVar
 
@@ -9,6 +9,7 @@ from anyio.streams.memory import MemoryObjectSendStream
 
 _DEFAULT_BUFFER_SIZE = 25
 _T = TypeVar("_T")
+
 
 class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
     """
@@ -47,11 +48,10 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
             # Else return the whole exception group
             raise
 
-
     async def _producer_wrapper(self) -> None:
         if not self._send_stream:
             return
-            
+
         async with self._send_stream:
             try:
                 await self._run_pipeline()
