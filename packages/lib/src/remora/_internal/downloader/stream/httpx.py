@@ -9,18 +9,18 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.event import (
+from remora.models.progress import (
     StreamCompleted,
     StreamContinuous,
-    StreamEvent,
     StreamSegmented,
+    StreamState,
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import SizeType, Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
+class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(
         {
             Protocol.HTTP,
@@ -344,7 +344,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamEvent]):
         if self.total_bytes and (self.downloaded_bytes > self.total_bytes):
             self.total_bytes = self.downloaded_bytes
 
-        # Send event to top function
+        # Send state to top function
         if self.is_continuous:
             await self._emit(
                 StreamContinuous(

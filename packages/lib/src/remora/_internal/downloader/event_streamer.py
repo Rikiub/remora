@@ -13,7 +13,7 @@ _T = TypeVar("_T")
 
 class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
     """
-    Base class that safely manages AnyIO background tasks, event streams,
+    Base class that safely manages AnyIO background tasks, state streams,
     and cancellation propagation natively using AnyIO's Context Manager Mixin.
     """
 
@@ -76,21 +76,21 @@ class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         """Subclasses MUST implement their main logic here."""
         raise NotImplementedError
 
-    async def _emit(self, event: _T) -> None:
-        """Safely pushes an event to the stream."""
+    async def _emit(self, state: _T) -> None:
+        """Safely pushes an state to the stream."""
         if not self._send_stream:
             return
         try:
-            await self._send_stream.send(event)
+            await self._send_stream.send(state)
         except anyio.ClosedResourceError:
             pass  # Stream closed early, safe to ignore
 
-    def _emit_nowait(self, event: _T) -> None:
-        """Safely pushes an event to the stream without blocking."""
+    def _emit_nowait(self, state: _T) -> None:
+        """Safely pushes an state to the stream without blocking."""
         if not self._send_stream:
             return
         try:
-            self._send_stream.send_nowait(event)
+            self._send_stream.send_nowait(state)
         except (anyio.ClosedResourceError, anyio.WouldBlock):
             pass
 

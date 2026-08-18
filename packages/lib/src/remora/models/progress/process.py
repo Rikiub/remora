@@ -1,6 +1,6 @@
 from typing import Literal
 
-from remora.models.event._base import FileEvent
+from remora.models.progress._base import FileState
 
 ProcessorTask = Literal[
     "change_container",
@@ -12,6 +12,6 @@ ProcessorTask = Literal[
 ]
 
 
-class Processing(FileEvent):
+class Processing(FileState):
     status: Literal["started", "completed"]
     task: ProcessorTask

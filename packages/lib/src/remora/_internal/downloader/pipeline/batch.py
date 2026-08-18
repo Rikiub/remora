@@ -10,16 +10,6 @@ from remora._internal.downloader.pipeline.media import MediaDownloader
 from remora._internal.extractor import MediaExtractor
 from remora._internal.template.output import format_template
 from remora.models.download_options import DownloadOptions
-from remora.models.event import (
-    BatchEvent,
-    MediaCompleted,
-    MediaFailed,
-    PlaylistCancelled,
-    PlaylistCompleted,
-    PlaylistEnded,
-    PlaylistInProgress,
-    PlaylistStarted,
-)
 from remora.models.media import (
     AnyExtractResult,
     EntriesList,
@@ -28,10 +18,20 @@ from remora.models.media import (
     Playlist,
 )
 from remora.models.media.list import _BaseList
+from remora.models.progress import (
+    BatchState,
+    MediaCompleted,
+    MediaFailed,
+    PlaylistCancelled,
+    PlaylistCompleted,
+    PlaylistEnded,
+    PlaylistInProgress,
+    PlaylistStarted,
+)
 from remora.types import StrUrl
 
 
-class BatchDownloader(Downloader[BatchEvent]):
+class BatchDownloader(Downloader[BatchState]):
     def __init__(
         self,
         item: StrUrl | AnyExtractResult,
@@ -59,9 +59,9 @@ class BatchDownloader(Downloader[BatchEvent]):
         self.failed: int
 
     @override
-    async def _emit(self, event):
-        await log_event_playlist(event)
-        await super()._emit(event)
+    async def _emit(self, state):
+        await log_event_playlist(state)
+        await super()._emit(state)
 
     @override
     async def _run_pipeline(self) -> None:
@@ -115,12 +115,12 @@ class BatchDownloader(Downloader[BatchEvent]):
                 self.config,
                 self.extractor,
             ) as progress:
-                async for event in progress:
-                    if isinstance(event, MediaCompleted):
+                async for state in progress:
+                    if isinstance(state, MediaCompleted):
                         self.completed += 1
-                    elif isinstance(event, MediaFailed):
+                    elif isinstance(state, MediaFailed):
                         self.failed += 1
-                    await self._emit(event)
+                    await self._emit(state)
 
             await self._emit(
                 PlaylistInProgress(

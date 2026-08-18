@@ -1,12 +1,13 @@
 from loguru import logger
 
-from remora.models.event import (
-    BatchEvent,
+from remora.models.progress import (
+    BatchState,
     MediaCancelled,
     MediaCompleted,
-    MediaEvent,
     MediaFailed,
     MediaProcessing,
+    MediaSkipped,
+    MediaState,
     MediaWarning,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -16,18 +17,18 @@ from remora.models.event import (
 )
 
 
-async def log_event_playlist(event: BatchEvent):
-    match event:
+async def log_event_playlist(state: BatchState):
+    match state:
         case PlaylistStarted():
             logger.info(
                 "Download started with {playlist_total} items",
-                playlist_total=event.total,
+                playlist_total=state.total,
             )
         case PlaylistInProgress():
             logger.info(
                 "{playlist_completed} of {playlist_total} items completed",
-                playlist_completed=event.completed,
-                playlist_total=event.total,
+                playlist_completed=state.completed,
+                playlist_total=state.total,
             )
         case PlaylistCancelled():
             logger.warning("Download cancelled")
@@ -38,58 +39,54 @@ async def log_event_playlist(event: BatchEvent):
             logger.warning("Download completed partially")
 
 
-async def log_event_media(event: MediaEvent):
+async def log_event_media(state: MediaState):
     with logger.contextualize(
-        media_id=event.id,
-        media_title=event.media.title,
-        status=event.status,
+        media_id=state.id,
+        media_title=state.media.title,
+        status=state.status,
     ):
-        match event:
+        match state:
             case MediaProcessing():
-                await _processor_callback(event.progress)
+                await _processor_callback(state.progress)
             case MediaWarning():
-                logger.warning("Warning: {}", event.message)
+                logger.warning("Warning: {}", state.message)
             case MediaFailed():
-                logger.error("Download failed: {}", event.message)
+                logger.error("Download failed: {}", state.message)
             case MediaCancelled():
                 logger.info("Download cancelled")
-            case MediaCompleted():
-                log = logger.bind(
-                    file_path=event.file_path,
-                    file_extension=event.file_extension,
+            case MediaSkipped():
+                logger.success(
+                    'Skipped (Exists as "{file_extension}")',
+                    file_path=state.file_path,
+                    file_extension=state.file_extension,
                 )
-
-                match event.result:
-                    case "success":
-                        log.success("Completed")
-                    case "partial":
-                        log.success("Completed (Some data missed)")
-                    case "skipped":
-                        log.success(
-                            'Skipped (Exists as "{file_extension}")',
-                            file_extension=event.file_extension,
-                            icon="🔄",
-                        )
-
-                log.debug(
-                    'Final file: "{file_path}"',
-                    file_path=event.file_path,
+            case MediaCompleted(result="success"):
+                logger.success(
+                    "Completed",
+                    file_path=state.file_path,
+                    file_extension=state.file_extension,
+                )
+            case MediaCompleted(result="partial"):
+                logger.success(
+                    "Completed (Some data missed)",
+                    file_path=state.file_path,
+                    file_extension=state.file_extension,
                 )
 
 
-async def _processor_callback(event: Processing):
-    with logger.contextualize(status=event.status, task=event.task):
-        if event.status == "completed":
-            match event.task:
+async def _processor_callback(state: Processing):
+    with logger.contextualize(status=state.status, task=state.task):
+        if state.status == "completed":
+            match state.task:
                 case "change_container":
                     logger.debug(
                         'File container changed to "{extension}"',
-                        extension=event.file_extension,
+                        extension=state.file_extension,
                     )
                 case "convert_audio":
                     logger.debug(
                         'File converted to "{extension}"',
-                        extension=event.file_extension,
+                        extension=state.file_extension,
                     )
                 case "merge_streams":
                     logger.debug("Merged video and audio formats")

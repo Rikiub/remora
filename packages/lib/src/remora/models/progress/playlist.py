@@ -1,10 +1,10 @@
 from typing import Literal
 
-from remora.models.event._base import BaseEventID
-from remora.models.event.media import MediaEvent
+from remora.models.progress._base import BaseStateID
+from remora.models.progress.media import MediaState
 
 
-class _BasePlaylist(BaseEventID):
+class _BasePlaylist(BaseStateID):
     type: Literal["playlist"] = "playlist"
 
     completed: int
@@ -32,11 +32,11 @@ class PlaylistEnded(_BasePlaylist):
     status: Literal["ended"] = "ended"
 
 
-PlaylistEvent = (
+PlaylistState = (
     PlaylistStarted
     | PlaylistInProgress
     | PlaylistCompleted
     | PlaylistCancelled
     | PlaylistEnded
 )
-BatchEvent = PlaylistEvent | MediaEvent
+BatchState = PlaylistState | MediaState

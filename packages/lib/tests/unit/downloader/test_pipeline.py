@@ -13,23 +13,23 @@ from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora._internal.processor import MediaProcessor
 from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
-from remora.models.event import MediaStarted
-from remora.models.event.media import (
+from remora.models.media import Extractor
+from remora.models.media.item import Media
+from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
+from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
+from remora.models.progress import MediaStarted
+from remora.models.progress.media import (
     MediaCompleted,
     MediaDownloading,
     MediaEnded,
     MediaProcessing,
 )
-from remora.models.event.stream import (
+from remora.models.progress.stream import (
     BatchStreamCompleted,
     BatchStreamDownloading,
     StreamCompleted,
     StreamContinuous,
 )
-from remora.models.media import Extractor
-from remora.models.media.item import Media
-from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
-from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 
 MODULE_PATH = "remora._internal.downloader.pipeline.media"
@@ -196,7 +196,7 @@ async def test_download_pipeline_muxed(
 
     # Consume the async generator
     async with pipeline as progress:
-        events = [type(event) async for event in progress]
+        events = [type(state) async for state in progress]
 
     assert MediaStarted in events
     assert MediaDownloading in events
@@ -218,8 +218,8 @@ async def test_download_pipeline_single(
     events = []
 
     async with pipeline as progress:
-        async for event in progress:
-            events.append(event)
+        async for state in progress:
+            events.append(state)
 
 
 # Media Processor

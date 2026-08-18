@@ -33,25 +33,25 @@ from remora.models.container import (
     AVContainer,
 )
 from remora.models.download_options import DownloadOptions
-from remora.models.event import (
+from remora.models.media import LazyMedia, Media
+from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
     MediaCancelled,
     MediaCompleted,
     MediaDownloading,
     MediaEnded,
-    MediaEvent,
     MediaExtracting,
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
     MediaStarted,
+    MediaState,
     MediaWarning,
     Processing,
     ProcessorTask,
-    StreamProgressEvent,
+    StreamProgressState,
 )
-from remora.models.media import LazyMedia, Media
 from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.types import StrPath
 
@@ -64,7 +64,7 @@ class DownloadContext:
     subtitles: list[Path] | None = None
 
 
-class MediaDownloader(Downloader[MediaEvent]):
+class MediaDownloader(Downloader[MediaState]):
     """Handles the lifecycle of a single media download."""
 
     def __init__(
@@ -127,10 +127,10 @@ class MediaDownloader(Downloader[MediaEvent]):
         )
 
     @override
-    async def _emit(self, event) -> None:
+    async def _emit(self, state) -> None:
         """Safely dispatches and logs pipeline events."""
-        await log_event_media(event)
-        await super()._emit(event)
+        await log_event_media(state)
+        await super()._emit(state)
 
     async def _pipeline(self):
         """The one who orchestrate the jobs."""
@@ -251,33 +251,33 @@ class MediaDownloader(Downloader[MediaEvent]):
                 )
 
             async with downloader as progress:
-                async for event in progress:
-                    if event.status == "downloading":
+                async for state in progress:
+                    if state.status == "downloading":
                         # Normalize single downloads
-                        if isinstance(event, StreamProgressEvent):
-                            event = BatchStreamDownloading(streams=[event])
+                        if isinstance(state, StreamProgressState):
+                            state = BatchStreamDownloading(streams=[state])
 
                         await self._emit(
                             MediaDownloading(
                                 id=self.id,
                                 media=self.media,
-                                progress=event,
+                                progress=state,
                             )
                         )
-                    elif event.status == "completed":
+                    elif state.status == "completed":
                         if video_stream:
                             context.video = StreamContext(
                                 stream=video_stream,
-                                path=event.video_path
-                                if isinstance(event, BatchStreamCompleted)
-                                else event.file_path,
+                                path=state.video_path
+                                if isinstance(state, BatchStreamCompleted)
+                                else state.file_path,
                             )
                         elif audio_stream:
                             context.audio = StreamContext(
                                 stream=audio_stream,
-                                path=event.audio_path
-                                if isinstance(event, BatchStreamCompleted)
-                                else event.file_path,
+                                path=state.audio_path
+                                if isinstance(state, BatchStreamCompleted)
+                                else state.file_path,
                             )
 
             if context.video:
@@ -411,7 +411,7 @@ class MediaDownloader(Downloader[MediaEvent]):
 
         @asynccontextmanager
         async def track_prc(task: ProcessorTask, raise_exceptions: bool = False):
-            event = MediaProcessing(
+            state = MediaProcessing(
                 id=self.id,
                 media=self.media,
                 progress=Processing(
@@ -420,15 +420,15 @@ class MediaDownloader(Downloader[MediaEvent]):
                     file_path=prc.file_path,
                 ),
             )
-            await self._emit(event)
+            await self._emit(state)
 
             try:
                 yield
 
-                event.progress.file_path = prc.file_path
-                event.progress.status = "completed"
+                state.progress.file_path = prc.file_path
+                state.progress.status = "completed"
 
-                await self._emit(event)
+                await self._emit(state)
             except ProcessorError as error:
                 if raise_exceptions:
                     raise

@@ -1,12 +1,12 @@
 from typing import Literal
 
-from remora.models.event._base import BaseEventID, FileEvent
-from remora.models.event.process import Processing
-from remora.models.event.stream import BatchStreamDownloading
 from remora.models.media.item import LazyMedia, Media
+from remora.models.progress._base import BaseStateID, FileState
+from remora.models.progress.process import Processing
+from remora.models.progress.stream import BatchStreamDownloading
 
 
-class _BaseMedia(BaseEventID):
+class _BaseMedia(BaseStateID):
     type: Literal["media"] = "media"
     media: Media
 
@@ -31,12 +31,12 @@ class MediaProcessing(_BaseMedia):
     progress: Processing
 
 
-class MediaCompleted(_BaseMedia, FileEvent):
+class MediaCompleted(_BaseMedia, FileState):
     status: Literal["completed"] = "completed"
     result: Literal["success", "partial"]
 
 
-class MediaSkipped(_BaseMedia, FileEvent):
+class MediaSkipped(_BaseMedia, FileState):
     status: Literal["skipped"] = "skipped"
 
 
@@ -61,7 +61,7 @@ class MediaEnded(_BaseMedia):
     media: LazyMedia
 
 
-MediaEvent = (
+MediaState = (
     MediaStarted
     | MediaExtracting
     | MediaDownloading

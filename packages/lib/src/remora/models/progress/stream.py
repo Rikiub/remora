@@ -1,11 +1,13 @@
 from pathlib import Path
 from typing import Literal
 
-from remora.models.event._base import BaseEvent, FileEvent
+from pydantic import computed_field
+
+from remora.models.progress._base import BaseState, FileState
 
 
 # Progress Types
-class _BaseStream(BaseEvent):
+class _BaseStream(BaseState):
     status: Literal["downloading"] = "downloading"
     speed: float = 0
     elapsed: float = 0
@@ -16,6 +18,7 @@ class StreamContinuous(_BaseStream):
     total_bytes: float | None
     type: Literal["continuous"] = "continuous"
 
+    @computed_field
     @property
     def fraction(self) -> float | None:
         if not self.total_bytes:
@@ -28,6 +31,7 @@ class StreamSegmented(_BaseStream):
     total_segments: int | None = None
     type: Literal["segmented"] = "segmented"
 
+    @computed_field
     @property
     def fraction(self) -> float | None:
         if not self.total_segments:
@@ -36,23 +40,25 @@ class StreamSegmented(_BaseStream):
 
 
 # Single Stream
-class StreamCompleted(FileEvent):
+class StreamCompleted(FileState):
     status: Literal["completed"] = "completed"
 
 
-StreamProgressEvent = StreamContinuous | StreamSegmented
-StreamEvent = StreamProgressEvent | StreamCompleted
+StreamProgressState = StreamContinuous | StreamSegmented
+StreamState = StreamProgressState | StreamCompleted
 
 
 # Multiple streams
-class BatchStreamDownloading(BaseEvent):
+class BatchStreamDownloading(BaseState):
     status: Literal["downloading"] = "downloading"
-    streams: list[StreamProgressEvent]
+    streams: list[StreamProgressState]
 
+    @computed_field
     @property
     def downloaded_bytes(self) -> float:
         return sum(s.downloaded_bytes for s in self.streams)
 
+    @computed_field
     @property
     def total_bytes(self) -> float | None:
         """Calculate total bytes (only if all streams provide it)"""
@@ -68,6 +74,7 @@ class BatchStreamDownloading(BaseEvent):
 
         return total_bytes or None
 
+    @computed_field
     @property
     def fraction(self) -> float | None:
         """Calculates the overall progress of all streams combined."""
@@ -91,10 +98,10 @@ class BatchStreamDownloading(BaseEvent):
         return total_percent / valid_streams
 
 
-class BatchStreamCompleted(BaseEvent):
+class BatchStreamCompleted(BaseState):
     status: Literal["completed"] = "completed"
     video_path: Path
     audio_path: Path
 
 
-BatchStreamEvent = BatchStreamDownloading | BatchStreamCompleted
+BatchStreamState = BatchStreamDownloading | BatchStreamCompleted

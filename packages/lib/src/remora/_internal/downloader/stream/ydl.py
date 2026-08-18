@@ -5,18 +5,18 @@ from anyio.to_thread import run_sync
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora.models.event import (
+from remora.models.progress import (
     StreamCompleted,
     StreamContinuous,
-    StreamEvent,
     StreamSegmented,
+    StreamState,
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class YDLStreamDownloader(BaseStreamDownloader[StreamEvent]):
+class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(Protocol)
 
     def __init__(

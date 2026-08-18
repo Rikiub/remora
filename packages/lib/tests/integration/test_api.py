@@ -26,11 +26,11 @@ async def test_single_media(tmp_path: Path):
     assert result.type == "media"
 
     async with remora.download_media(result) as progress:
-        async for event in progress:
-            if event.status == "completed":
-                assert event.file_path.is_file()
-            elif event.status == "failed":
-                raise AssertionError(event.message)
+        async for state in progress:
+            if state.status == "completed":
+                assert state.file_path.is_file()
+            elif state.status == "failed":
+                raise AssertionError(state.message)
 
 
 async def test_playlist(tmp_path: Path):
@@ -43,8 +43,8 @@ async def test_playlist(tmp_path: Path):
     )
 
     async with remora.download_batch(PLAYLIST) as progress:
-        async for event in progress:
-            if event.type == "media" and event.status == "completed":
-                assert event.file_path.is_file()
-            elif event.status == "failed":
-                raise AssertionError(event.message)
+        async for state in progress:
+            if state.type == "media" and state.status == "completed":
+                assert state.file_path.is_file()
+            elif state.status == "failed":
+                raise AssertionError(state.message)

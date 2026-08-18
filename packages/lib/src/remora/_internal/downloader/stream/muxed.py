@@ -9,11 +9,11 @@ from remora._internal.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.types import StreamContext
 from remora.exceptions import DownloaderError
-from remora.models.event import (
+from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
-    BatchStreamEvent,
-    StreamProgressEvent,
+    BatchStreamState,
+    StreamProgressState,
 )
 from remora.models.stream import AudioStream, VideoStream
 from remora.types import DEFAULT_RETRIES
@@ -21,10 +21,10 @@ from remora.types import DEFAULT_RETRIES
 
 @dataclass(slots=True)
 class StreamManager(StreamContext):
-    event: StreamProgressEvent | None = None
+    state: StreamProgressState | None = None
 
 
-class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
+class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamState]):
     SYNC_INTERVAL = 0.5
 
     def __init__(
@@ -66,12 +66,12 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
             stream=self.video.stream,
             retries=self.retries,
         ) as progress:
-            async for event in progress:
-                if event.status == "downloading":
-                    self.video.event = event
+            async for state in progress:
+                if state.status == "downloading":
+                    self.video.state = state
                     await self._sync_progress()
-                elif event.status == "completed":
-                    self.video.path = event.file_path
+                elif state.status == "completed":
+                    self.video.path = state.file_path
                     await self._sync_progress(True)
 
     async def _download_audio(self) -> None:
@@ -80,12 +80,12 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
             stream=self.audio.stream,
             retries=self.retries,
         ) as progress:
-            async for event in progress:
-                if event.status == "downloading":
-                    self.audio.event = event
+            async for state in progress:
+                if state.status == "downloading":
+                    self.audio.state = state
                     await self._sync_progress()
-                elif event.status == "completed":
-                    self.audio.path = event.file_path
+                elif state.status == "completed":
+                    self.audio.path = state.file_path
                     await self._sync_progress(True)
 
     async def _sync_progress(self, force: bool = False) -> None:
@@ -98,7 +98,7 @@ class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamEvent]):
         self.last_sync_time = now
 
         # Collect streams
-        streams = [s for s in (self.video.event, self.audio.event) if s]
+        streams = [s for s in (self.video.state, self.audio.state) if s]
 
-        # Send event
+        # Send state
         await self._emit(BatchStreamDownloading(streams=streams))

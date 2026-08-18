@@ -4,12 +4,12 @@ from typing_extensions import override
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.event import StreamEvent
+from remora.models.progress import StreamState
 from remora.models.stream import Stream
 from remora.types import DEFAULT_RETRIES, StrPath
 
 
-class StreamDownloader(BaseStreamDownloader[StreamEvent]):
+class StreamDownloader(BaseStreamDownloader[StreamState]):
     def __init__(
         self,
         output_path: StrPath,
@@ -41,8 +41,8 @@ class StreamDownloader(BaseStreamDownloader[StreamEvent]):
                     retries=self.retries,
                     max_workers=self.max_workers,
                 ) as progress:
-                    async for event in progress:
-                        await self._emit(event)
+                    async for state in progress:
+                        await self._emit(state)
                     return
             except (TypeError, DownloaderError) as error:
                 if isinstance(error, TypeError):
@@ -68,5 +68,5 @@ class StreamDownloader(BaseStreamDownloader[StreamEvent]):
                 self.stream,
                 self.retries,
             ) as progress:
-                async for event in progress:
-                    await self._emit(event)
+                async for state in progress:
+                    await self._emit(state)

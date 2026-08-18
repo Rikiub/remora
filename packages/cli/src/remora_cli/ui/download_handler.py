@@ -3,18 +3,19 @@ from typing import Self
 import anyio
 from loguru import logger
 
-from remora.models.event import (
-    BatchEvent,
+from remora.models.media import LazyMedia
+from remora.models.progress import (
+    BatchState,
     MediaCancelled,
     MediaCompleted,
     MediaDownloading,
     MediaEnded,
-    MediaEvent,
     MediaExtracting,
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
     MediaStarted,
+    MediaState,
     MediaWarning,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -22,7 +23,6 @@ from remora.models.event import (
     PlaylistStarted,
     Processing,
 )
-from remora.models.media import LazyMedia
 from remora_cli.ui.download_progress import DownloadProgress
 
 
@@ -41,23 +41,23 @@ class ProgressCallback:
         await self._tg.__aexit__(*args)
         self.progress.stop()
 
-    async def playlist_callback(self, event: BatchEvent):
+    async def playlist_callback(self, state: BatchState):
         if self.disable:
             return
 
         # Determine title
         media_title = ""
-        if isinstance(event, MediaEvent):
-            media_title = self._media_display_name(event.media)
+        if isinstance(state, MediaState):
+            media_title = self._media_display_name(state.media)
 
-        # Event Match
+        # State Match
         with logger.contextualize(media_title=media_title):
-            match event:
+            match state:
                 # Playlist
                 case PlaylistStarted():
-                    self.progress.counter.reset(total=event.total)
+                    self.progress.counter.reset(total=state.total)
                 case PlaylistInProgress():
-                    self.progress.counter.update(completed=event.completed)
+                    self.progress.counter.update(completed=state.completed)
                 case PlaylistCompleted(result="success"):
                     logger.success("Download completed")
                 case PlaylistCompleted(result="partial"):
@@ -68,60 +68,60 @@ class ProgressCallback:
                 # Media
                 case MediaStarted():
                     self.progress.add_task(
-                        event.id,
+                        state.id,
                         description=media_title,
                         status="Starting[blink]...[/]",
                     )
                 case MediaExtracting():
                     self.progress.update(
-                        event.id,
+                        state.id,
                         description=media_title or "Extracting[blink]...[/]",
                         status="Extracting[blink]...[/]",
                     )
                 case MediaDownloading():
                     self.progress.update(
-                        event.id,
+                        state.id,
                         description=media_title,
                         status="Downloading",
-                        completed=event.progress.downloaded_bytes,
-                        total=event.progress.total_bytes,
+                        completed=state.progress.downloaded_bytes,
+                        total=state.progress.total_bytes,
                     )
                 case MediaProcessing():
-                    self._processor_callback(event.id, event.progress)
+                    self._processor_callback(state.id, state.progress)
                 case MediaWarning():
-                    logger.warning("Warning: {}", event.message)
+                    logger.warning("Warning: {}", state.message)
                 case MediaCancelled():
                     logger.error("Download cancelled")
-                    self.progress.update(event.id, status="Cancelled")
+                    self.progress.update(state.id, status="Cancelled")
                 case MediaFailed():
-                    logger.error("Download failed: {}", event.message)
-                    self.progress.update(event.id, status="Error")
+                    logger.error("Download failed: {}", state.message)
+                    self.progress.update(state.id, status="Error")
                 case MediaSkipped():
                     logger.success(
                         'Skipped (Exists as "{file_extension}")',
-                        file_extension=event.file_extension,
+                        file_extension=state.file_extension,
                         icon="🔄",
                     )
-                    self.progress.update(event.id, status="Skipped")
+                    self.progress.update(state.id, status="Skipped")
                 case MediaCompleted(result="success"):
                     logger.success("Completed")
-                    self.progress.update(event.id, status="Completed")
+                    self.progress.update(state.id, status="Completed")
                 case MediaCompleted(result="partial"):
                     logger.success("Completed (Some data missed)")
-                    self.progress.update(event.id, status="Completed")
+                    self.progress.update(state.id, status="Completed")
                 case MediaEnded():
 
-                    async def finish_item(event: BatchEvent):
+                    async def finish_item(state: BatchState):
                         await anyio.sleep(1.0)
-                        self.progress.remove_task(event.id)
+                        self.progress.remove_task(state.id)
 
-                    self._tg.start_soon(finish_item, event)
+                    self._tg.start_soon(finish_item, state)
 
-    def _processor_callback(self, id: str, event: Processing):
+    def _processor_callback(self, id: str, state: Processing):
         self.progress.update(id, status="Processing[blink]...[/]")
 
-        if event.status == "started":
-            match event.task:
+        if state.status == "started":
+            match state.task:
                 case "convert_audio":
                     self.progress.update(id, status="Converting[blink]...[/]")
                 case "merge_streams":
