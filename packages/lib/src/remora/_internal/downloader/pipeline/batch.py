@@ -20,7 +20,7 @@ from remora.models.media import (
 from remora.models.media.list import _BaseList
 from remora.models.progress import (
     BatchState,
-    MediaCompleted,
+    MediaEnded,
     MediaFailed,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -118,10 +118,10 @@ class BatchDownloader(Downloader[BatchState]):
         async with self.limiter:
             async with downloader as progress:
                 async for state in progress:
-                    if isinstance(state, MediaCompleted):
-                        self.completed += 1
-                    elif isinstance(state, MediaFailed):
+                    if isinstance(state, MediaFailed):
                         self.failed += 1
+                    elif isinstance(state, MediaEnded):
+                        self.completed += 1
                     await self._emit(state)
 
             await self._emit(
