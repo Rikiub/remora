@@ -1,5 +1,4 @@
 import atexit
-import shutil
 import tempfile
 from pathlib import Path
 
@@ -20,24 +19,40 @@ def get_cache_dir() -> Path:
     return _DIRS.user_cache_path
 
 
+def get_state_dir() -> Path:
+    """Get state directory of the library."""
+    return _DIRS.user_state_path
+
+
 # Temporary directory exclusive of the current session
 # Deleted automatically on exit
 
+_session_temp_dir: tempfile.TemporaryDirectory | None = None
 
-def get_temp_dir() -> Path:
-    return _DIRS.user_runtime_path
+
+def get_session_temp_dir() -> Path:
+    """Get temporary directory for the current session."""
+    global _session_temp_dir
+
+    if not _session_temp_dir:
+        _session_temp_dir = tempfile.TemporaryDirectory(dir=_DIRS.user_runtime_path)
+
+    return Path(_session_temp_dir.name)
 
 
 def create_temp_file() -> Path:
     """Create and return file in the temporary directory."""
-    with tempfile.NamedTemporaryFile(dir=get_temp_dir(), delete=False) as file:
+    with tempfile.NamedTemporaryFile(dir=get_session_temp_dir(), delete=False) as file:
         return Path(file.name)
 
 
 def _clear_session_temp_dir():
     """Delete session temporary directory."""
+    global _session_temp_dir
 
-    shutil.rmtree(get_temp_dir())
+    if _session_temp_dir:
+        _session_temp_dir.cleanup()
+        _session_temp_dir = None
 
 
 atexit.register(_clear_session_temp_dir)

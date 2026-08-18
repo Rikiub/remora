@@ -19,7 +19,6 @@ from remora._internal.ffmpeg import (
     find_system_ffmpeg_dir,
     find_wheel_ffmpeg_dir,
 )
-from remora._internal.path import create_temp_file
 from remora._internal.processor import MediaProcessor
 from remora._internal.template.output import format_template
 from remora._internal.types import StreamContext
@@ -53,6 +52,7 @@ from remora.models.progress import (
     StreamProgressState,
 )
 from remora.models.stream import AudioStream, Stream, VideoStream
+from remora.path import create_temp_file
 from remora.types import StrPath
 
 

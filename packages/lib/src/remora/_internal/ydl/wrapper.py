@@ -3,8 +3,8 @@ import tempfile
 
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from remora._internal.path import get_cache_dir
 from remora._internal.ydl.types import YDLParams
+from remora.path import get_cache_dir
 
 
 class YDL(YoutubeDL):

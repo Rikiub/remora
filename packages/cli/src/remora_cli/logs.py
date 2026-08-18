@@ -2,6 +2,7 @@ from loguru import logger
 from rich.logging import RichHandler
 
 from remora import logs
+from remora.path import get_state_dir
 from remora.types import LIBRAY_NAME
 from remora_cli.ui.rich import CONSOLE
 
@@ -34,26 +35,18 @@ def setup_logging(level: logs.LoggingLevels) -> None:
     )
 
     # Structured Logs
-    """
-    format = (
-        "<cyan>{time:HH:mm:ss}</cyan> "
-        + "| <level>{level: <8}</level> "
-        + "| <level>{message}</level>"
-    )
-
     logger.add(
-        "logs/trace.jsonl",
+        get_state_dir() / "logs" / "trace.jsonl",
         level="DEBUG",
         rotation="10 MB",
         serialize=True,
         enqueue=True,
-        format=format,
+        format=get_format,
         filter={
+            LIBRAY_NAME: "DEBUG",
             "remora_cli": "CRITICAL",
-            "remora": "DEBUG",
         },
     )
-    """
 
 
 LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
