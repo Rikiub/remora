@@ -8,8 +8,8 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.logs import log_event_media
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
+from remora._internal.downloader.pipeline._logs import log_event_media
 from remora._internal.downloader.pipeline.base import Downloader
 from remora._internal.downloader.selector import StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader

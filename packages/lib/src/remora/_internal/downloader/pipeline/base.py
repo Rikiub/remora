@@ -1,13 +1,13 @@
 from typing import TypeVar
 
-from remora._internal.downloader.event_streamer import AsyncEventStreamer
+from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora._internal.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 
 _T = TypeVar("_T")
 
 
-class Downloader(AsyncEventStreamer[_T]):
+class Downloader(AsyncStateStreamer[_T]):
     def __init__(
         self,
         config: DownloadOptions | None = None,

@@ -11,7 +11,7 @@ _DEFAULT_BUFFER_SIZE = 25
 _T = TypeVar("_T")
 
 
-class AsyncEventStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
+class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
     """
     Base class that safely manages AnyIO background tasks, state streams,
     and cancellation propagation natively using AnyIO's Context Manager Mixin.

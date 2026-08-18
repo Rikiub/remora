@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import anyio
 from typing_extensions import override
 
-from remora._internal.downloader.event_streamer import AsyncEventStreamer
+from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora._internal.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.types import StreamContext
@@ -24,7 +24,7 @@ class StreamManager(StreamContext):
     state: StreamProgressState | None = None
 
 
-class MuxedStreamDownloader(AsyncEventStreamer[BatchStreamState]):
+class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
     SYNC_INTERVAL = 0.5
 
     def __init__(
