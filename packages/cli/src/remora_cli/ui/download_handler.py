@@ -4,6 +4,7 @@ from loguru import logger
 
 from remora.models.event import (
     BatchEvent,
+    MediaCancelled,
     MediaCompleted,
     MediaDownloading,
     MediaEvent,
@@ -15,7 +16,7 @@ from remora.models.event import (
     PlaylistCompleted,
     PlaylistInProgress,
     PlaylistStarted,
-    Processing, MediaCancelled,
+    Processing,
 )
 from remora.models.media import LazyMedia
 from remora_cli.ui.download_progress import DownloadProgress
@@ -95,7 +96,13 @@ class ProgressCallback:
                             )
                             self.progress.update(event.id, status="Skipped")
 
-            if isinstance(event, (MediaFailed, MediaCompleted, MediaCancelled, PlaylistCancelled)) and self._tg:
+            if (
+                isinstance(
+                    event,
+                    (MediaFailed, MediaCompleted, MediaCancelled, PlaylistCancelled),
+                )
+                and self._tg
+            ):
                 self._tg.start_soon(self._finish_item, event)
 
     async def _finish_item(self, event: BatchEvent):
