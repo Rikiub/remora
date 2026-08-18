@@ -3,6 +3,7 @@ Remora default logger.
 Disabled by default.
 """
 
+import uuid
 from typing import Literal
 
 from loguru import logger
@@ -36,6 +37,10 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
         "| <level>{message}</level>",
         enqueue=True,
     )
+
+    # Add unique ID for the current session
+    run_id = str(uuid.uuid4())[:8]
+    logger.configure(extra={"run_id": run_id})
 
 
 disable()

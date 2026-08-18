@@ -1,3 +1,4 @@
+import uuid
 from functools import partial
 
 from loguru import logger
@@ -45,12 +46,16 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         retention=1,
         serialize=True,
         enqueue=True,
-        format=partial(get_format, markup=False),
+        format=partial(get_format, markup=False, lib_only=True),
         filter={
             LIBRAY_NAME: "DEBUG",
             "remora_cli": "CRITICAL",
         },
     )
+
+    # Add unique ID for the current session
+    run_id = str(uuid.uuid4())[:8]
+    logger.configure(extra={"run_id": run_id})
 
 
 LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
@@ -63,7 +68,7 @@ LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
 }
 
 
-def get_format(record, markup: bool = True) -> str:
+def get_format(record, markup: bool = True, lib_only: bool = False) -> str:
     level = record["level"]
     extra = record.get("extra", {})
     icon = extra.get("icon") or getattr(record["level"], "icon", "")
@@ -87,7 +92,7 @@ def get_format(record, markup: bool = True) -> str:
 
     # Lib exclusive prefix
     lib_prefix = ""
-    if is_lib:
+    if not lib_only and is_lib:
         lib_prefix = "[dim]\\[LIB] "
 
     # Format
