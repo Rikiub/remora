@@ -183,8 +183,8 @@ class BatchDownloader(Downloader[BatchState]):
                 update={"output_template": template},
             )
         else:
-            import secrets
+            import uuid
 
-            # Generate ID to have a unique hash
-            token = secrets.token_urlsafe()
-            self.id = f"job-{token}"
+            # Generate ID to have unique hash
+            id = str(uuid.uuid4)[:8]
+            self.id = f"job-{id}"
