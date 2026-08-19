@@ -4,7 +4,7 @@ from typing import overload
 
 from anyio.to_thread import run_sync
 
-from remora.models.metadata import ExternalSubtitle, SubtitleList, Thumbnail, Subtitle
+from remora.models.metadata import Subtitle, SubtitleList, Thumbnail
 from remora.types import StrPath
 
 

@@ -10,7 +10,7 @@ from typing_extensions import TypeVar
 
 from remora.models._base import BaseList
 from remora.models.container import AudioCodec, AVContainer, AVContainerLike, VideoCodec
-from remora.models.protocol import ProtocolLike
+from remora.models.protocol import Protocol, ProtocolLike
 from remora.models.rank import get_codec_rank, get_stream_rank
 from remora.models.stream import AudioInfo, VideoInfo
 from remora.models.stream.item import (
@@ -71,6 +71,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
         if quality:
             items = (s for s in items if s.quality == quality)
         if protocol:
+            protocol = Protocol(protocol)
             items = (s for s in items if s.protocol == protocol)
         if video_codec:
             items = (

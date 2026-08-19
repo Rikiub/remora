@@ -1,8 +1,8 @@
 import pytest
 
 from remora.models.metadata.subtitle import (
-    EmbeddedSubtitle,
     ExternalSubtitle,
+    InlineSubtitle,
     SubtitleList,
 )
 
@@ -31,7 +31,7 @@ def subs() -> SubtitleList:
                 extension="srt",
                 url=URL,
             ),
-            EmbeddedSubtitle(
+            InlineSubtitle(
                 name="Lyrics",
                 language="lyrics",
                 extension="lrc",
@@ -47,11 +47,11 @@ async def test_externals(subs: SubtitleList):
 
 
 async def test_embedded(subs: SubtitleList):
-    assert len(subs.embedded()) > 0
+    assert len(subs.inlines()) > 0
 
 
 async def test_languages(subs: SubtitleList):
-    assert all(key in subs.languages() for key in ("en", "es-419"))
+    assert all(key in subs.get_languages() for key in ("en", "es-419"))
 
 
 # Filters: General
