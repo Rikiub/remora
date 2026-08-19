@@ -177,7 +177,10 @@ async def download(
 
         remora = Remora(
             download_options=config,
-            extractor=MediaExtractor(cookies_file=auth.cookies),
+            extractor=MediaExtractor(
+                cookies_file=auth.cookies,
+                proxy_url=auth.proxy,
+            ),
         )
 
     async for target, result in extract_queries(query, remora.extractor):

@@ -21,6 +21,7 @@ class MediaExtractor:
     def __init__(
         self,
         cookies_file: StrPath | None = None,
+        proxy_url: StrUrl | None = None,
     ):
         self.cookies_file = cookies_file
 

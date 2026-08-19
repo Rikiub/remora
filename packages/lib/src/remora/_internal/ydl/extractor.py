@@ -10,7 +10,7 @@ from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
-from remora.types import StrPath
+from remora.types import StrPath, StrUrl
 
 
 @dataclass(slots=True, frozen=True)
@@ -47,6 +47,7 @@ def extract_query(
 def extract_info(
     query: str,
     cookies_file: StrPath | None = None,
+    proxy_url: StrUrl | None = None,
 ) -> YDLExtractInfo:
     try:
         ydl = YDL(
@@ -54,6 +55,7 @@ def extract_info(
                 "extract_flat": "in_playlist",
                 "skip_download": True,
                 "cookiefile": cookies_file,
+                "proxy": str(proxy_url),
             },
             auto_init=True,
         )

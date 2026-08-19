@@ -91,7 +91,10 @@ async def extract(
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
-        extractor = MediaExtractor(cookies_file=auth.cookies)
+        extractor = MediaExtractor(
+            cookies_file=auth.cookies,
+            proxy_url=auth.proxy,
+        )
 
     # Determine user intent
     sel_format = format
