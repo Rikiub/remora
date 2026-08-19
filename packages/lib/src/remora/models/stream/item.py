@@ -72,19 +72,21 @@ class VideoInfo(RemoraModel):
     dynamic_range: DynamicRange | str = "SDR"
 
 
-# STREAMS
-class StreamFragment(RemoraModel):
-    url: HttpUrl
-    duration: float | None = None
-    size_bytes: Annotated[float | None, Field(alias="filesize")] = None
-
-
+# REQUEST
 class StreamRequestContext(RemoraModel):
     downloader: dict | None = None
     headers: dict | None = None
     cookies: str | None = None
 
 
+# FRAGMENTS
+class StreamFragment(RemoraModel):
+    url: HttpUrl
+    duration: float | None = None
+    size_bytes: Annotated[float | None, Field(alias="filesize")] = None
+
+
+# STREAMS
 class _BaseStream(ABC, YDLSerializable):
     """Base Stream"""
 

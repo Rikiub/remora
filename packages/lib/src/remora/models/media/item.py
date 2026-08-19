@@ -20,6 +20,7 @@ from remora.models.metadata import (
     Chapter,
     Heatmap,
     MusicMetadata,
+    StoryboardList,
     SubtitleList,
     ThumbnailList,
 )
@@ -95,6 +96,11 @@ class LazyMedia(ExtractID):
             # Map subtitles
             data["subtitles"] = SubtitleList._from_ydl_dict(data)
 
+            # Map storyboards
+            data["storyboards"] = StoryboardList._from_ydl_formats(
+                data.get("formats", [])
+            )
+
             # Return normalized data
             return data
         return data
@@ -105,6 +111,10 @@ class Media(LazyMedia):
 
     subtitles: SubtitleList = SubtitleList()
     chapters: Annotated[list[Chapter], EnsureList] = []  # noqa: RUF012
+    storyboards: Annotated[
+        StoryboardList,
+        AfterValidator(lambda list: list.sorted_by("best")),
+    ] = StoryboardList()
     streams: Annotated[
         StreamList,
         AfterValidator(lambda list: list.sorted_by("best")),
