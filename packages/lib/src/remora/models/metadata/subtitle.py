@@ -5,13 +5,13 @@ from typing import Annotated, Generic, Literal, Self
 from pydantic import Field, HttpUrl
 from typing_extensions import TypeVar, override
 
-from remora.models._base import BaseList, RemoraModel, YDLSerializable
+from remora.models._base import BaseList, Impersonate, RemoraModel, YDLSerializable
 from remora.models.metadata._base import Metadata
 
 
 class SubtitleRequestContext(RemoraModel):
     headers: Annotated[dict | None, Field(alias="http_headers")] = None
-    impersonate: bool = False
+    impersonate: Impersonate = False
 
 
 class _BaseSubtitle(Metadata, YDLSerializable):

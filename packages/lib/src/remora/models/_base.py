@@ -23,6 +23,8 @@ class YDLSerializable(RemoraModel):
         return self.model_dump(by_alias=True, mode="json")
 
 
+Impersonate = bool | list[str]
+
 _T = TypeVar("_T")
 
 

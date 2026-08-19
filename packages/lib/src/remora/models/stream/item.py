@@ -14,7 +14,7 @@ from pydantic import (
 )
 from typing_extensions import override
 
-from remora.models._base import RemoraModel, YDLSerializable, rgetattr
+from remora.models._base import Impersonate, RemoraModel, YDLSerializable, rgetattr
 from remora.models.container import (
     AudioCodecFamily,
     AVContainer,
@@ -74,9 +74,11 @@ class VideoInfo(RemoraModel):
 
 # REQUEST
 class StreamRequestContext(RemoraModel):
-    downloader: dict | None = None
-    headers: dict | None = None
+    data: Annotated[bytes | None, Field(alias="request_data")] = None
+    headers: Annotated[dict | None, Field(alias="http_headers")] = None
     cookies: str | None = None
+    impersonate: Impersonate = False
+    downloader: Annotated[dict | None, Field(alias="downloader_options")] = None
 
 
 # FRAGMENTS
@@ -165,9 +167,11 @@ class _BaseStream(ABC, YDLSerializable):
             "width": rgetattr(self, "video.resolution.width", None),
             "height": rgetattr(self, "video.resolution.height", None),
             # Request Context
-            "downloader_options": self.request_context.downloader,
-            "cookies": self.request_context.cookies,
+            "request_data": self.request_context.data,
             "http_headers": self.request_context.headers,
+            "cookies": self.request_context.cookies,
+            "impersonate": self.request_context.impersonate,
+            "downloader_options": self.request_context.downloader,
         }
 
     @model_validator(mode="before")
@@ -175,11 +179,7 @@ class _BaseStream(ABC, YDLSerializable):
     def _validate_ydl_base(cls, data) -> dict:
         if _is_ydl_format(data):
             data["id"] = data.get("format_id")
-            data["request_context"] = {
-                "downloader": data.get("downloader_options", {}),
-                "headers": data.get("http_headers", {}),
-                "cookies": data.get("cookies"),
-            }
+            data["request_context"] = data
 
             # Map size
             size_type: SizeType
