@@ -23,10 +23,7 @@ class Thumbnail(Metadata, YDLSerializable):
     def _to_ydl_dict(self):
         data = super()._to_ydl_dict()
         if res := self.resolution:
-            data |= {
-                "width": res.width,
-                "height": res.height,
-            }
+            data |= res.model_dump()
         return data
 
     @model_validator(mode="before")
@@ -34,16 +31,8 @@ class Thumbnail(Metadata, YDLSerializable):
     def _validate_ydl_thumbnail(cls, data):
         if isinstance(data, dict):
             # Map resolution
-            resolution = data.get("resolution")
-
-            if isinstance(resolution, str) or resolution is None:
-                width = data.get("width")
-                height = data.get("height")
-
-                if width and height:
-                    data["resolution"] = {"width": width, "height": height}
-                else:
-                    data["resolution"] = None
+            if data.get("width") and data.get("height"):
+                data["resolution"] = Resolution._from_ydl_dict(data)
 
             # Map extras
             if "request_context" not in data:

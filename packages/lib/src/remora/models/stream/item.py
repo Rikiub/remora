@@ -160,6 +160,8 @@ class _BaseStream(ABC, YDLSerializable):
             "acodec": rgetattr(self, "audio.codec.original", "none"),
             "vbr": rgetattr(self, "video.bitrate", None),
             "abr": rgetattr(self, "audio.bitrate", None),
+            "width": rgetattr(self, "video.resolution.width", None),
+            "height": rgetattr(self, "video.resolution.height", None),
             # Request Context
             "downloader_options": self.request_context.downloader,
             "cookies": self.request_context.cookies,
@@ -196,15 +198,10 @@ class _BaseStream(ABC, YDLSerializable):
             data["size_bytes"] = size_bytes
 
             # Map resolution
-            resolution = None
-            width = data.get("width")
-            height = data.get("height")
-
-            if width and height:
-                resolution = {
-                    "width": width,
-                    "height": height,
-                }
+            if data.get("width") and data.get("height"):
+                resolution = Resolution._from_ydl_dict(data)
+            else:
+                resolution = None
 
             # Map data to video and audio
             data.pop("container", None)
