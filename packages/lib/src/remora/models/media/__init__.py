@@ -8,7 +8,7 @@ from remora.models.media.list import EntriesList, LazyPlaylist, Playlist, Search
 
 LazyExtractResult = LazyMedia | LazyPlaylist
 ExtractResult = Media | Playlist
-ExtractAdapter = TypeAdapter[ExtractResult](ExtractResult)
+_ExtractAdapter = TypeAdapter[ExtractResult](ExtractResult)
 
 AnyExtractResult = LazyExtractResult | ExtractResult | SearchList | Sequence[LazyMedia]
 

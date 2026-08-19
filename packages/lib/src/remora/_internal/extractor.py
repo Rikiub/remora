@@ -6,12 +6,12 @@ from anyio.to_thread import run_sync
 from loguru import logger
 
 from remora.models.media import (
-    ExtractAdapter,
     LazyMedia,
     LazyPlaylist,
     Media,
     Playlist,
     SearchList,
+    _ExtractAdapter,
 )
 from remora.models.search import SearchService
 from remora.types import StrPath, StrUrl
@@ -57,7 +57,7 @@ class MediaExtractor:
                 logger.info('Using proxy: "{proxy_url}"', proxy_url=self.proxy_url)
 
             info = await run_sync(extract_info, url, self.cookies_file, self.proxy_url)
-            result = ExtractAdapter.validate_python(info, by_alias=True)
+            result = _ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
             return result
