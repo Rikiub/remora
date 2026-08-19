@@ -20,7 +20,7 @@ def get_cache_dir() -> Path:
 
 
 def get_log_dir() -> Path:
-    """Get state directory of the library."""
+    """Get log directory of the library."""
     return _DIRS.user_log_path
 
 
