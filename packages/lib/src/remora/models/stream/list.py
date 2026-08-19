@@ -17,10 +17,10 @@ from remora.models.stream.item import (
     AudioStream,
     MuxedStream,
     Stream,
+    StreamQuality,
     VideoStream,
     _DiscriminatedStream,
 )
-from remora.types import StreamQuality
 
 
 def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):

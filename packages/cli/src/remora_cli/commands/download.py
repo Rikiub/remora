@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
 from remora.models.container import AVContainerFormat, RichAVContainer
-from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS, VideoQuality
+from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS
 from remora_cli.options import (
     DisplayOptions,
     ExtractorOptions,
@@ -24,6 +24,7 @@ class Panel(StrEnum):
     POST_PROCESS = "Post-processing"
 
 
+FormatQuality = Literal[144, 240, 360, 480, 720, 1080]
 app = App()
 
 
@@ -42,7 +43,7 @@ async def download(
         ),
     ] = None,
     quality: Annotated[
-        int | VideoQuality | None,
+        int | FormatQuality | None,
         Parameter(
             help="Prefered target quality.",
             short_alias=True,

@@ -340,6 +340,8 @@ def _infer_stream_type(data) -> str:
     raise ValueError("Cannot determine stream type")
 
 
+StreamQuality = Literal[144, 240, 360, 480, 720, 1080]
+
 Stream = MuxedStream | VideoStream | AudioStream
 _DiscriminatedStream = Annotated[
     Annotated[

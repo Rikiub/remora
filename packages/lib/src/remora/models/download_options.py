@@ -6,11 +6,11 @@ from remora._internal.ffmpeg import validate_ffmpeg_dir
 from remora._internal.template.output import validate_template
 from remora.models._base import RemoraModel
 from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
+from remora.models.stream import StreamQuality
 from remora.types import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
     DEFAULT_WORKERS,
-    StreamQuality,
     StrPath,
 )
 

@@ -15,8 +15,8 @@ from remora.models.container import (
 )
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
-from remora.models.stream import AudioStream, VideoStream
-from remora.types import AudioQuality, StrPath
+from remora.models.stream import AudioStream, StreamQuality, VideoStream
+from remora.types import StrPath
 
 
 class MediaProcessor:
@@ -39,7 +39,7 @@ class MediaProcessor:
     async def convert_audio(
         self,
         container: RichAudioContainer | AVContainer | None = None,
-        quality: AudioQuality | None = None,
+        quality: StreamQuality | int | None = None,
     ) -> Self:
         result = await run_sync(self._prc.extract_audio, str(container), quality)
         self._update_file(result)
