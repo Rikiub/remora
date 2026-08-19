@@ -15,7 +15,7 @@ from remora.models.media import (
     Playlist,
     SearchList,
 )
-from remora.models.metadata import ExternalSubtitle, Thumbnail
+from remora.models.metadata import Subtitle, Thumbnail
 from remora.models.search import SearchService
 from remora.models.stream import Stream
 from remora.types import StrPath, StrUrl
@@ -82,27 +82,19 @@ class Remora:
 
     @overload
     async def download_resource(
-        self, item: Thumbnail | ExternalSubtitle, output_path
+        self, item: Thumbnail | Subtitle, output_path
     ) -> Path: ...
 
     @overload
     async def download_resource(
-        self, item: Sequence[ExternalSubtitle], output_path
+        self, item: Sequence[Subtitle], output_path
     ) -> list[Path]: ...
 
     async def download_resource(
         self,
-        item: Thumbnail | ExternalSubtitle | Sequence[ExternalSubtitle],
+        item: Thumbnail | Subtitle | Sequence[Subtitle],
         output_path: StrPath,
     ) -> Path | list[Path]:
-        match item:
-            case Thumbnail():
-                from remora._internal.downloader.metadata import download_thumbnail
+        from remora._internal.downloader.metadata import download_resource
 
-                output_path = await download_thumbnail(item, output_path)
-                return output_path
-            case Sequence() | ExternalSubtitle():
-                from remora._internal.downloader.metadata import download_subtitles
-
-                paths = await download_subtitles(item, output_path)
-                return paths
+        return await download_resource(item, output_path)
