@@ -8,7 +8,6 @@ from remora.models.metadata.subtitle import (
     Subtitle,
     SubtitleList,
     SubtitleRequestContext,
-    SubtitleType,
 )
 from remora.models.metadata.thumbnail import (
     Thumbnail,
@@ -28,7 +27,6 @@ __all__ = [
     "Subtitle",
     "SubtitleList",
     "SubtitleRequestContext",
-    "SubtitleType",
     "Thumbnail",
     "ThumbnailList",
     "ThumbnailRequestContext",

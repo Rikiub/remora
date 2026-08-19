@@ -4,7 +4,7 @@ from typing import overload
 
 from anyio.to_thread import run_sync
 
-from remora.models.metadata import ExternalSubtitle, SubtitleList, Thumbnail
+from remora.models.metadata import ExternalSubtitle, SubtitleList, Thumbnail, Subtitle
 from remora.types import StrPath
 
 
@@ -16,17 +16,17 @@ async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path
 
 
 @overload
-async def download_subtitles(subtitles: ExternalSubtitle, output_path) -> Path: ...
+async def download_subtitles(subtitles: Subtitle, output_path) -> Path: ...
 
 
 @overload
 async def download_subtitles(
-    subtitles: Sequence[ExternalSubtitle], output_path
+    subtitles: Sequence[Subtitle], output_path
 ) -> list[Path]: ...
 
 
 async def download_subtitles(
-    subtitles: Sequence[ExternalSubtitle] | ExternalSubtitle,
+    subtitles: Sequence[Subtitle] | Subtitle,
     output_path: StrPath,
 ) -> Path | list[Path]:
     from remora._internal.ydl.downloader import download_subtitles as ydl
@@ -43,26 +43,25 @@ async def download_subtitles(
 
 @overload
 async def download_resource(
-    item: Thumbnail | ExternalSubtitle,
+    item: Thumbnail | Subtitle,
     output_path,
 ) -> Path: ...
 
 
 @overload
 async def download_resource(
-    item: Sequence[ExternalSubtitle],
+    item: Sequence[Subtitle],
     output_path,
 ) -> list[Path]: ...
 
 
 async def download_resource(
-    item: Thumbnail | ExternalSubtitle | Sequence[ExternalSubtitle],
+    item: Thumbnail | Subtitle | Sequence[Subtitle],
     output_path: StrPath,
 ) -> Path | list[Path]:
-    match item:
-        case Thumbnail():
-            output_path = await download_thumbnail(item, output_path)
-            return output_path
-        case Sequence() | ExternalSubtitle():
-            paths = await download_subtitles(item, output_path)
-            return paths
+    if isinstance(item, (Subtitle, Sequence)):
+        paths = await download_subtitles(item, output_path)
+        return paths
+    elif isinstance(item, Thumbnail):
+        output_path = await download_thumbnail(item, output_path)
+        return output_path

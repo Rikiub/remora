@@ -92,6 +92,9 @@ class LazyMedia(ExtractID):
             # Map metadata
             data["music"] = data
 
+            # Map subtitles
+            data["subtitles"] = SubtitleList._from_ydl_dict(data)
+
             # Return normalized data
             return data
         return data
