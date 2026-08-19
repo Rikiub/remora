@@ -17,6 +17,7 @@ async def test_media(media: Media):
         == "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)"
     )
     assert media.duration == 213
+    assert media.metrics.views == 1795168772
     assert len(media.streams) > 0
 
 

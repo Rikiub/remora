@@ -61,9 +61,9 @@ class ExtractID(BaseExtract):
     upload_date: Annotated[datetime | None, EnsureNone] = None
     release_date: Annotated[datetime | None, EnsureNone] = None
 
+    metrics: Metrics = Metrics()
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
-    metrics: Annotated[Metrics | None, EnsureNone] = None
 
     @property
     def _is_audio_only(self) -> bool:

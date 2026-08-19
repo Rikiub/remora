@@ -2,7 +2,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, Field, HttpUrl
 
-from remora.models.metadata._base import Metadata
+from remora.models.metadata._base import Metadata, RemoraModel
 
 
 def _clean_uploader_name(v: str) -> str:
@@ -29,7 +29,7 @@ class Channel(Metadata):
     followers: Annotated[int | None, Field(alias="channel_follower_count")] = None
 
 
-class Metrics(Metadata):
+class Metrics(RemoraModel):
     views: Annotated[int | None, Field(alias="view_count")] = None
     viewers: Annotated[int | None, Field(alias="concurrent_view_count")] = None
 

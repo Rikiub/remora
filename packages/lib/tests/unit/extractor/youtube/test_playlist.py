@@ -27,8 +27,8 @@ async def test_medias(playlist: Playlist):
         assert media.title
         assert media.duration
 
+        assert media.metrics.views
         assert media.uploader
         assert media.channel
-        assert media.metrics
 
         assert len(media.thumbnails) > 0
