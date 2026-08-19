@@ -2,6 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
@@ -16,6 +17,7 @@ def download_format(
     format_info: YDLFormatInfo,
     callback: Callable[[dict[str, Any]], None] | None = None,
     retries: int = DEFAULT_RETRIES,
+    impersonate: str | None = None,
 ) -> Path:
     filepath = Path(filepath)
     params = {}
@@ -33,15 +35,25 @@ def download_format(
         "formats": [format_info],
     }
 
-    return download_from_info(info, params, retries)
+    return download_from_info(
+        info,
+        params,
+        retries=retries,
+        impersonate=impersonate,
+    )
 
 
 def download_from_info(
     info: YDLExtractInfo,
     params: YDLParams,
     retries: int = DEFAULT_RETRIES,
+    impersonate: str | None = None,
 ) -> Path:
-    config: YDLParams = {"retries": retries, "fragment_retries": retries}
+    config: YDLParams = {
+        "retries": retries,
+        "fragment_retries": retries,
+        "impersonate": ImpersonateTarget.from_str(impersonate) if impersonate else None,
+    }
 
     try:
         ydl = YDL(

@@ -24,6 +24,7 @@ class MediaExtractor:
         proxy_url: StrUrl | None = None,
     ):
         self.cookies_file = cookies_file
+        self.proxy_url = proxy_url
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -47,7 +48,15 @@ class MediaExtractor:
             # Extract info
             from remora._internal.ydl.extractor import extract_info
 
-            info = await run_sync(extract_info, url, self.cookies_file)
+            if self.cookies_file:
+                logger.info(
+                    'Using cookies file "{cookies_file}"',
+                    cookies_file=self.cookies_file,
+                )
+            if self.proxy_url:
+                logger.info('Using proxy: "{proxy_url}"', proxy_url=self.proxy_url)
+
+            info = await run_sync(extract_info, url, self.cookies_file, self.proxy_url)
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")

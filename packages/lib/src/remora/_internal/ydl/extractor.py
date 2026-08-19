@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import cast
 
 from yt_dlp.extractor import get_info_extractor
+from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
@@ -48,6 +49,7 @@ def extract_info(
     query: str,
     cookies_file: StrPath | None = None,
     proxy_url: StrUrl | None = None,
+    impersonate: str | None = None,
 ) -> YDLExtractInfo:
     try:
         ydl = YDL(
@@ -55,7 +57,10 @@ def extract_info(
                 "extract_flat": "in_playlist",
                 "skip_download": True,
                 "cookiefile": cookies_file,
-                "proxy": str(proxy_url),
+                "proxy": str(proxy_url) if proxy_url else None,
+                "impersonate": ImpersonateTarget.from_str(impersonate)
+                if impersonate
+                else None,
             },
             auto_init=True,
         )

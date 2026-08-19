@@ -81,7 +81,7 @@ def extract_status_code(
             original_exc = error.exc_info[1]
 
             if isinstance(original_exc, HTTPError):
-                status_code = original_exc.status
+                return original_exc.status
             elif isinstance(original_exc, ExtractorError):
                 return extract_status_code(original_exc)
 

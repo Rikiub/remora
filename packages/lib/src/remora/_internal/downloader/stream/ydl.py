@@ -1,10 +1,12 @@
-import pathlib
+from pathlib import Path
 
-from anyio import Path
 from anyio.to_thread import run_sync
+from loguru import logger
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
+from remora._internal.ydl.types import DEFAULT_IMPERSONATE_TARGET
+from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,
     StreamContinuous,
@@ -35,18 +37,32 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
+        try:
+            path = await self._downloader()
+        except DownloaderError as error:
+            if error.status_code == 403:
+                impersonate = DEFAULT_IMPERSONATE_TARGET
+                logger.debug(
+                    'HTTP 403 Forbidden: Retrying with "{impersonate}" impersonate target',
+                    impersonate=impersonate,
+                )
+                path = await self._downloader(impersonate=impersonate)
+            else:
+                raise
+
+        await self._emit(StreamCompleted(file_path=path))
+
+    async def _downloader(self, impersonate: str | None = None) -> Path:
         from remora._internal.ydl.downloader import download_format
 
-        path = await run_sync(
+        return await run_sync(
             download_format,
             self.file_path,
             self.stream._to_ydl_dict(),
             self._ydl_progress,
             self.retries,
+            impersonate,
         )
-
-        self.file_path = Path(path)
-        await self._emit(StreamCompleted(file_path=pathlib.Path(self.file_path)))
 
     def _ydl_progress(self, data: dict) -> None:
         """`YT-DLP` progress hook, but stable and without issues."""

@@ -91,7 +91,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                     )
             except* (httpx.HTTPError, OSError, ValueError, TypeError) as eg:
                 error = eg.exceptions[0]
-                status_code = 0
+                status_code = None
 
                 if isinstance(error, httpx.HTTPStatusError):
                     status_code = error.response.status_code

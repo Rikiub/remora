@@ -61,7 +61,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
             # Fallback downloader
             from remora._internal.downloader.stream.ydl import YDLStreamDownloader
 
-            logger.debug("Retrying with other downloader")
+            logger.debug("Retrying with YDL downloader")
 
             async with YDLStreamDownloader(
                 self.file_path,
