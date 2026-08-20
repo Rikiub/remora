@@ -257,13 +257,6 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         """Downloads a specific byte range to a file with resume support."""
 
         async with self.limiter:
-            if end:
-                logger.debug(
-                    "Downloading range: {range_start}/{range_end}",
-                    range_start=start,
-                    range_end=end,
-                )
-
             downloaded = 0
 
             # Support resuming part files across application restarts
@@ -314,12 +307,6 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                             self.current_segment += 1
                             await self._update_progress()
 
-                        if end:
-                            logger.debug(
-                                "Downloaded range: {range_start}/{range_end}",
-                                range_start=start,
-                                range_end=end,
-                            )
                         return
 
                     except Exception:

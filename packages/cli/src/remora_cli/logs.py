@@ -6,6 +6,7 @@ from rich.logging import RichHandler
 from rich.text import Text
 
 from remora import logs
+from remora.logs import LoggingLevels
 from remora.path import get_log_dir
 from remora.types import LIBRAY_NAME
 from remora_cli.ui.rich import CONSOLE
@@ -33,8 +34,9 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         enqueue=True,
         format=get_format,
         filter={
-            LIBRAY_NAME: "DEBUG" if is_verbose else "CRITICAL",
             "remora_cli": "DEBUG" if is_verbose else "INFO",
+            LIBRAY_NAME: "DEBUG" if is_verbose else False,
+            "yt-dlp": "WARNING" if is_verbose else False,
         },
     )
 
@@ -49,7 +51,8 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         format=partial(get_format, markup=False, lib_only=True),
         filter={
             LIBRAY_NAME: "DEBUG",
-            "remora_cli": "CRITICAL",
+            "yt-dlp": "WARNING",
+            "remora_cli": False,
         },
     )
 
@@ -58,7 +61,7 @@ def setup_logging(level: logs.LoggingLevels) -> None:
     logger.configure(extra={"run_id": run_id})
 
 
-LEVEL_COLORS: dict[logs.LoggingLevels, str] = {
+LEVEL_STYLE: dict[LoggingLevels, str] = {
     "DEBUG": "blue",
     "SUCCESS": "khaki1",
     "INFO": "khaki1",
@@ -72,7 +75,6 @@ def get_format(record, markup: bool = True, lib_only: bool = False) -> str:
     level = record["level"]
     extra = record.get("extra", {})
     icon = extra.get("icon") or getattr(record["level"], "icon", "")
-    is_lib = record["name"].startswith(f"{LIBRAY_NAME}.")
 
     # Prefixes
     status_prefix = ""
@@ -88,13 +90,18 @@ def get_format(record, markup: bool = True, lib_only: bool = False) -> str:
         title_prefix = f'"{title}" '
 
     # Colors
-    color = LEVEL_COLORS.get(level.name, "white")
+    color = LEVEL_STYLE.get(level.name, "white")
 
-    # Lib exclusive prefix
-    lib_prefix = ""
+    # Module prefix
+    is_lib = record["name"].startswith(f"{LIBRAY_NAME}.")
+    is_ydl = record["name"] == "yt-dlp"
+    module_prefix = ""
+
     if not lib_only and is_lib:
-        lib_prefix = "[dim]\\[LIB] "
+        module_prefix = "[dim]\\[LIB] "
+    if is_ydl:
+        module_prefix = "[dim]\\[YDL] "
 
     # Format
-    message = f"{icon} {lib_prefix}{status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
+    message = f"{icon} {module_prefix}{status_prefix}[{color}]{title_prefix}{{message}}[/{color}]"
     return message if markup else Text.from_markup(message).plain

@@ -93,7 +93,8 @@ def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
             filename=str(filepath),
         )
     except YDLDownloadError as e:
-        raise MetadataDownloaderError(str(e))
+        msg = sanitize_ydl_error(e)
+        raise MetadataDownloaderError(msg)
 
     if final:
         return Path(final[0][0])
@@ -122,7 +123,8 @@ def download_subtitles(
             filename=str(filepath),
         )
     except YDLDownloadError as e:
-        raise MetadataDownloaderError(str(e))
+        msg = sanitize_ydl_error(e)
+        raise MetadataDownloaderError(msg)
 
     if final:
         result = [Path(entry[0]) for entry in final]
