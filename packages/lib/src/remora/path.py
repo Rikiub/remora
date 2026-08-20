@@ -4,7 +4,7 @@ from pathlib import Path
 
 from platformdirs import PlatformDirs
 
-from remora.types import LIBRAY_NAME
+from remora.constants import LIBRAY_NAME
 
 _DIRS = PlatformDirs(LIBRAY_NAME, appauthor=False, ensure_exists=True)
 

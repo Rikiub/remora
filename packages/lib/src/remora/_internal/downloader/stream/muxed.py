@@ -8,6 +8,7 @@ from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora._internal.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.types import StreamContext
+from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     BatchStreamCompleted,
@@ -16,7 +17,6 @@ from remora.models.progress import (
     StreamProgressState,
 )
 from remora.models.stream import AudioStream, VideoStream
-from remora.types import DEFAULT_RETRIES
 
 
 @dataclass(slots=True)

@@ -6,11 +6,11 @@ from pathvalidate import sanitize_filepath
 from remora._internal.template.generator import flatten_dict
 from remora._internal.template.key import PlaylistNested
 from remora._internal.template.key import get_keys as _get_keys
+from remora.constants import DEFAULT_TEMPLATE
 from remora.exceptions import OutputTemplateError
 from remora.models.media import Media, Playlist
 from remora.models.stream import Stream
 from remora.models.types import StrPath
-from remora.types import DEFAULT_TEMPLATE
 
 _OUTPUT_EXCLUDED_KEYS = {
     "extension",

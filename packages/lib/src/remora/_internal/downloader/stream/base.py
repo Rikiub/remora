@@ -4,9 +4,9 @@ from anyio import Path
 from loguru import logger
 
 from remora._internal.downloader.state_streamer import AsyncStateStreamer
+from remora.constants import DEFAULT_RETRIES
 from remora.models.stream import Stream, VideoStream
 from remora.models.types import StrPath
-from remora.types import DEFAULT_RETRIES
 
 _DEFAULT_BUFFER_SIZE = 100
 _T = TypeVar("_T")

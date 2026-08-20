@@ -1,6 +1,6 @@
 # --- API ---
 
-from . import exceptions, logs, models, types
+from . import constants, exceptions, logs, models, path
 from ._internal.api import Remora
 from ._internal.extractor import MediaExtractor
 
@@ -23,8 +23,9 @@ __all__ = [
     "Stream",
     "StreamList",
     "VideoStream",
+    "constants",
     "exceptions",
     "logs",
     "models",
-    "types",
+    "path",
 ]

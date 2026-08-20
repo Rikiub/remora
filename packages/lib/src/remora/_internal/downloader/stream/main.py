@@ -3,11 +3,11 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
+from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError
 from remora.models.progress import StreamState
 from remora.models.stream import Stream
 from remora.models.types import StrPath
-from remora.types import DEFAULT_RETRIES
 
 
 class StreamDownloader(BaseStreamDownloader[StreamState]):

@@ -7,8 +7,8 @@ from typing import Annotated, Literal
 from cyclopts import App, CycloptsError, Parameter
 from loguru import logger
 
+from remora.constants import DEFAULT_TEMPLATE, DEFAULT_WORKERS
 from remora.models.container import AVContainerFormat, RichAVContainer
-from remora.types import DEFAULT_TEMPLATE, DEFAULT_WORKERS
 from remora_cli.options import (
     DisplayOptions,
     ExtractorOptions,

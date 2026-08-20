@@ -6,6 +6,7 @@ from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora._internal.ydl.types import DEFAULT_IMPERSONATE_TARGET
+from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,
@@ -16,7 +17,6 @@ from remora.models.progress import (
 from remora.models.protocol import Protocol
 from remora.models.stream import Stream
 from remora.models.types import StrPath
-from remora.types import DEFAULT_RETRIES
 
 
 class YDLStreamDownloader(BaseStreamDownloader[StreamState]):

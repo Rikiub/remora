@@ -4,15 +4,15 @@ from pydantic import AfterValidator
 
 from remora._internal.ffmpeg import validate_ffmpeg_dir
 from remora._internal.template.output import validate_template
-from remora.models._base import RemoraModel
-from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
-from remora.models.stream import StreamQuality
-from remora.models.types import StrPath
-from remora.types import (
+from remora.constants import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
     DEFAULT_WORKERS,
 )
+from remora.models._base import RemoraModel
+from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
+from remora.models.stream import StreamQuality
+from remora.models.types import StrPath
 
 
 class DownloadOptions(RemoraModel):

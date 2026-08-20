@@ -6,9 +6,9 @@ from rich.logging import RichHandler
 from rich.text import Text
 
 from remora import logs
+from remora.constants import LIBRAY_NAME
 from remora.logs import LoggingLevels
 from remora.path import get_log_dir
-from remora.types import LIBRAY_NAME
 from remora_cli.ui.rich import CONSOLE
 
 

@@ -8,7 +8,7 @@ from typing import Literal
 
 from loguru import logger
 
-from remora.types import LIBRAY_NAME
+from remora.constants import LIBRAY_NAME
 
 __all__ = ["LoggingLevels", "disable", "enable", "setup"]
 
