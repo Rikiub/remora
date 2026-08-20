@@ -17,7 +17,8 @@ from remora.models.progress import (
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import SizeType, Stream
-from remora.types import DEFAULT_RETRIES, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_RETRIES
 
 
 class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):

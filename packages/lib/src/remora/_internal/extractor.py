@@ -14,7 +14,7 @@ from remora.models.media import (
     _ExtractAdapter,
 )
 from remora.models.search import SearchService
-from remora.types import StrPath, StrUrl
+from remora.models.types import StrPath, StrUrl
 
 
 class MediaExtractor:

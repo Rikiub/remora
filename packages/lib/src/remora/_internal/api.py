@@ -18,7 +18,7 @@ from remora.models.media import (
 from remora.models.metadata import Subtitle, Thumbnail
 from remora.models.search import SearchService
 from remora.models.stream import Stream
-from remora.types import StrPath, StrUrl
+from remora.models.types import StrPath, StrUrl
 
 
 class Remora:

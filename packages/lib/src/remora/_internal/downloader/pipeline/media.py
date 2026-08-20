@@ -52,8 +52,8 @@ from remora.models.progress import (
     StreamProgressState,
 )
 from remora.models.stream import AudioStream, Stream, VideoStream
+from remora.models.types import StrPath
 from remora.path import create_temp_file
-from remora.types import StrPath
 
 
 @dataclass(slots=True)

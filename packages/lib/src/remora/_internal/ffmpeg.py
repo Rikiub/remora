@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import which
 
 from remora.exceptions import FFmpegError, FFmpegNotFoundError, FFprobeNotFoundError
-from remora.types import StrPath
+from remora.models.types import StrPath
 
 # Directories
 

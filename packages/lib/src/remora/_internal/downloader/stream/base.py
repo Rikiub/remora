@@ -5,7 +5,8 @@ from loguru import logger
 
 from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora.models.stream import Stream, VideoStream
-from remora.types import DEFAULT_RETRIES, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_RETRIES
 
 _DEFAULT_BUFFER_SIZE = 100
 _T = TypeVar("_T")

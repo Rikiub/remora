@@ -7,3 +7,4 @@ from .protocol import *
 from .rank import *
 from .search import *
 from .stream import *
+from .types import *

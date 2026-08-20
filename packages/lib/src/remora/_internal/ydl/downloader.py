@@ -9,7 +9,8 @@ from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_erro
 from remora._internal.ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import DownloaderError, MetadataDownloaderError
-from remora.types import DEFAULT_RETRIES, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_RETRIES
 
 
 def download_format(

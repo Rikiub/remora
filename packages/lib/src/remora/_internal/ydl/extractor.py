@@ -11,7 +11,7 @@ from remora._internal.ydl.types import YDLExtractInfo
 from remora._internal.ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
-from remora.types import StrPath, StrUrl
+from remora.models.types import StrPath, StrUrl
 
 
 @dataclass(slots=True, frozen=True)

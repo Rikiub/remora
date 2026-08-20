@@ -15,7 +15,8 @@ from remora.models.progress import (
 )
 from remora.models.protocol import Protocol
 from remora.models.stream import Stream
-from remora.types import DEFAULT_RETRIES, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_RETRIES
 
 
 class YDLStreamDownloader(BaseStreamDownloader[StreamState]):

@@ -1,12 +1,3 @@
-from os import PathLike
-
-from pydantic import HttpUrl
-
-# Unions
-StrPath = PathLike[str] | str
-StrUrl = HttpUrl | str
-
-# Extra
 LIBRAY_NAME = "remora"
 DEFAULT_TEMPLATE = "{uploader.name} - {title}"
 DEFAULT_WORKERS = 5

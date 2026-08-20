@@ -28,7 +28,7 @@ from remora.models.progress import (
     PlaylistInProgress,
     PlaylistStarted,
 )
-from remora.types import StrUrl
+from remora.models.types import StrUrl
 
 
 class BatchDownloader(Downloader[BatchState]):

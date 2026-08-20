@@ -9,7 +9,8 @@ from remora._internal.template.key import get_keys as _get_keys
 from remora.exceptions import OutputTemplateError
 from remora.models.media import Media, Playlist
 from remora.models.stream import Stream
-from remora.types import DEFAULT_TEMPLATE, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_TEMPLATE
 
 _OUTPUT_EXCLUDED_KEYS = {
     "extension",

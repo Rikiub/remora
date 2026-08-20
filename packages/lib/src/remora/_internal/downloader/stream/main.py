@@ -6,7 +6,8 @@ from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.progress import StreamState
 from remora.models.stream import Stream
-from remora.types import DEFAULT_RETRIES, StrPath
+from remora.models.types import StrPath
+from remora.types import DEFAULT_RETRIES
 
 
 class StreamDownloader(BaseStreamDownloader[StreamState]):

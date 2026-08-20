@@ -5,7 +5,7 @@ from typing import overload
 from anyio.to_thread import run_sync
 
 from remora.models.metadata import Subtitle, SubtitleList, Thumbnail
-from remora.types import StrPath
+from remora.models.types import StrPath
 
 
 async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path:

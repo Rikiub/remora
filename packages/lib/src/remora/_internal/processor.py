@@ -16,7 +16,7 @@ from remora.models.container import (
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
 from remora.models.stream import AudioStream, StreamQuality, VideoStream
-from remora.types import StrPath
+from remora.models.types import StrPath
 
 
 class MediaProcessor:
