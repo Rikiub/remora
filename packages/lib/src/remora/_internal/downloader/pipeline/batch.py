@@ -186,5 +186,5 @@ class BatchDownloader(Downloader[BatchState]):
             import uuid
 
             # Generate ID to have unique hash
-            id = str(uuid.uuid4)[:8]
+            id = str(uuid.uuid4())[:8]
             self.id = f"job-{id}"
