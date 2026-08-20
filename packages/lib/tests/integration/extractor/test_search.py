@@ -1,4 +1,4 @@
-from remora._internal.extractor import MediaExtractor
+from remora.extractor import MediaExtractor
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 

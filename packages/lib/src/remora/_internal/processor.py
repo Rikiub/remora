@@ -18,6 +18,8 @@ from remora.models.metadata import MusicMetadata
 from remora.models.stream import AudioStream, StreamQuality, VideoStream
 from remora.models.types import StrPath
 
+__all__ = ["MediaProcessor"]
+
 
 class MediaProcessor:
     def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None):

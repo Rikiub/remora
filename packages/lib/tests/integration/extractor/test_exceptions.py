@@ -1,7 +1,7 @@
 import pytest
 
-from remora._internal.extractor import MediaExtractor
 from remora.exceptions import ExtractorError
+from remora.extractor import MediaExtractor
 
 
 @pytest.mark.parametrize(

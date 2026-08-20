@@ -2,30 +2,23 @@ import string
 from pathlib import Path
 
 from pathvalidate import sanitize_filepath
+from pydantic import BaseModel
 
-from remora._internal.template.generator import flatten_dict
-from remora._internal.template.key import PlaylistNested
-from remora._internal.template.key import get_keys as _get_keys
 from remora.constants import DEFAULT_TEMPLATE
 from remora.exceptions import OutputTemplateError
 from remora.models.media import Media, Playlist
 from remora.models.stream import Stream
 from remora.models.types import StrPath
+from remora.template._generator import generate_keys
 
-_OUTPUT_EXCLUDED_KEYS = {
-    "extension",
-    "heatmap",
-    "chapters",
-    "subtitles",
-    "streams",
-    "thumbnails",
-    "playlist.thumbnails",
-}
-_KEYS = {
-    k
-    for k in _get_keys()
-    if not any(k == key or k.startswith(f"{key}.") for key in _OUTPUT_EXCLUDED_KEYS)
-}
+
+class _Nested(BaseModel):
+    playlist: Playlist | None = None
+    stream: Stream | None = None
+
+
+# Generate one time and keep copy
+_KEYS: set[str] = generate_keys([Media, _Nested])
 
 
 class _TemplateFormatter(string.Formatter):
@@ -67,12 +60,12 @@ def format_template(
     # Dump metadata
     data = {}
     if stream:
-        data |= flatten_dict(stream.model_dump())
+        data |= _flatten_dict(stream.model_dump())
     if media:
-        data |= flatten_dict(media.model_dump())
+        data |= _flatten_dict(media.model_dump())
     if playlist:
-        wrap_playlist = PlaylistNested(playlist=playlist)
-        data |= flatten_dict(wrap_playlist.model_dump())
+        wrap_playlist = _Nested(playlist=playlist)
+        data |= _flatten_dict(wrap_playlist.model_dump())
 
     # Format with metadata
     formatter = _TemplateFormatter(replace=default_missing)
@@ -99,7 +92,7 @@ def validate_template(output: StrPath):
     return output
 
 
-def validate_key(key: str):
+def validate_key(key: str) -> str:
     if key not in get_keys():
         raise OutputTemplateError(f"Key '{{{key}}}' is invalid")
     return key
@@ -107,3 +100,17 @@ def validate_key(key: str):
 
 def get_keys() -> set[str]:
     return _KEYS
+
+
+def _flatten_dict(d: dict, prefix: str = "") -> dict:
+    items = {}
+
+    for k, v in d.items():
+        new_key = f"{prefix}{k}"
+        if isinstance(v, dict):
+            # Recursively flatten, but also keep the parent if it has data
+            items.update(_flatten_dict(v, prefix=f"{new_key}."))
+        else:
+            items[new_key] = v
+
+    return items

@@ -16,6 +16,8 @@ from remora.models.media import (
 from remora.models.search import SearchService
 from remora.models.types import StrPath, StrUrl
 
+__all__ = ["MediaExtractor"]
+
 
 class MediaExtractor:
     def __init__(

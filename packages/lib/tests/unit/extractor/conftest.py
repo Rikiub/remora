@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from remora._internal.extractor import MediaExtractor
+from remora.extractor import MediaExtractor
 
 
 @pytest.fixture

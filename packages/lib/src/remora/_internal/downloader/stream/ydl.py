@@ -5,7 +5,6 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora._internal.ydl.types import DEFAULT_IMPERSONATE_TARGET
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
@@ -38,6 +37,8 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
+        from remora._internal.ydl.types import DEFAULT_IMPERSONATE_TARGET
+
         try:
             path = await self._downloader()
         except DownloaderError as error:

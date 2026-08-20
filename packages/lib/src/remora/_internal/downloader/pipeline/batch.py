@@ -7,8 +7,7 @@ from typing_extensions import override
 from remora._internal.downloader.pipeline._logs import log_event_playlist
 from remora._internal.downloader.pipeline.base import Downloader
 from remora._internal.downloader.pipeline.media import MediaDownloader
-from remora._internal.extractor import MediaExtractor
-from remora._internal.template.output import format_template
+from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 from remora.models.media import (
     AnyExtractResult,
@@ -29,6 +28,7 @@ from remora.models.progress import (
     PlaylistStarted,
 )
 from remora.models.types import StrUrl
+from remora.template import format_template
 
 
 class BatchDownloader(Downloader[BatchState]):

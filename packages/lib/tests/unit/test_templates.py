@@ -1,12 +1,12 @@
 import pytest
 
-from remora._internal.template.output import format_template
 from remora.models.container import CodecInfo
 from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 from remora.models.metadata.social import Channel, Metrics, Uploader
 from remora.models.stream.item import VideoInfo, VideoStream
+from remora.template import format_template
 
 
 @pytest.fixture

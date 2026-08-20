@@ -1,4 +1,4 @@
-from remora._internal.extractor import MediaExtractor
+from remora.extractor import MediaExtractor
 
 
 async def test_youtube(extractor: MediaExtractor):

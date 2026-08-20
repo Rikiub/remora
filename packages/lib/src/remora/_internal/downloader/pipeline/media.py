@@ -12,15 +12,12 @@ from remora._internal.downloader.metadata import download_subtitles, download_th
 from remora._internal.downloader.pipeline._logs import log_event_media
 from remora._internal.downloader.pipeline.base import Downloader
 from remora._internal.downloader.selector import StreamSelector
-from remora._internal.downloader.stream.main import StreamDownloader
-from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
-from remora._internal.extractor import MediaExtractor
+from remora._internal.downloader.stream import MuxedStreamDownloader, StreamDownloader
 from remora._internal.ffmpeg import (
     find_system_ffmpeg_dir,
     find_wheel_ffmpeg_dir,
 )
 from remora._internal.processor import MediaProcessor
-from remora._internal.template.output import format_template
 from remora._internal.types import StreamContext
 from remora.exceptions import (
     DownloaderError,
@@ -28,6 +25,7 @@ from remora.exceptions import (
     MetadataDownloaderError,
     ProcessorError,
 )
+from remora.extractor import MediaExtractor
 from remora.models.container import (
     AVContainer,
 )
@@ -54,6 +52,7 @@ from remora.models.progress import (
 from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.models.types import StrPath
 from remora.path import create_temp_file
+from remora.template import format_template
 
 
 @dataclass(slots=True)

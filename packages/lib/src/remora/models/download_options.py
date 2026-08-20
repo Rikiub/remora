@@ -3,7 +3,6 @@ from typing import Annotated
 from pydantic import AfterValidator
 
 from remora._internal.ffmpeg import validate_ffmpeg_dir
-from remora._internal.template.output import validate_template
 from remora.constants import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
@@ -13,6 +12,7 @@ from remora.models._base import RemoraModel
 from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
 from remora.models.stream import StreamQuality
 from remora.models.types import StrPath
+from remora.template import validate_template
 
 
 class DownloadOptions(RemoraModel):

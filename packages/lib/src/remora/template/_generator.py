@@ -1,25 +1,11 @@
 from collections.abc import Sequence
 from types import UnionType
-from typing import Annotated, Union, get_args, get_origin
+from typing import Annotated, Any, Union, get_args, get_origin
 
 from pydantic import BaseModel, RootModel
 
 
-def flatten_dict(d: dict, prefix: str = "") -> dict:
-    items = {}
-
-    for k, v in d.items():
-        new_key = f"{prefix}{k}"
-        if isinstance(v, dict):
-            # Recursively flatten, but also keep the parent if it has data
-            items.update(flatten_dict(v, prefix=f"{new_key}."))
-        else:
-            items[new_key] = v
-
-    return items
-
-
-def get_keys(models: Sequence[type[BaseModel]], flat: bool = False) -> set[str]:
+def generate_keys(models: Sequence[type[BaseModel]], flat: bool = False) -> set[str]:
     """Generate keys from model fields."""
 
     keys = set()
@@ -35,7 +21,7 @@ def _extract_recursive(
     prefix: str = "",
     flat: bool = False,
 ) -> set[str]:
-    keys = set()
+    keys: set[str] = set()
     if not hasattr(model, "model_fields"):
         return keys
 
@@ -49,6 +35,10 @@ def _extract_recursive(
             )
 
     for name, info in model.model_fields.items():
+        # Exclude list/sequence fields completely
+        if _is_sequence_type(info.annotation):
+            continue
+
         full_key = f"{prefix}{name}"
         target_type = _unwrap_type(info.annotation)
 
@@ -68,7 +58,31 @@ def _extract_recursive(
     return keys
 
 
-def _unwrap_type(t):
+def _is_sequence_type(t: Any) -> bool:
+    """Check if a type annotation represents a list, set, tuple, or Sequence."""
+    if t is None:
+        return False
+
+    origin = get_origin(t)
+
+    if origin is Annotated:
+        return _is_sequence_type(get_args(t)[0])
+
+    if origin in (Union, UnionType):
+        valid_args = [a for a in get_args(t) if a is not type(None)]
+        return any(_is_sequence_type(a) for a in valid_args)
+
+    target = origin if origin is not None else t
+    if isinstance(target, type):
+        return issubclass(target, (list, set, tuple, Sequence)) and target not in (
+            str,
+            bytes,
+        )
+
+    return False
+
+
+def _unwrap_type(t: Any) -> Any:
     if t is None:
         return None
 

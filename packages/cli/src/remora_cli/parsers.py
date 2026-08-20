@@ -31,13 +31,13 @@ def parse_queries(
 
 
 def parse_keys(keys: Iterable[str]) -> set[str]:
-    from remora._internal.template.key import validate_key
     from remora.exceptions import OutputTemplateError
+    from remora.template import validate_key
 
     results = set()
     for key in keys:
         try:
-            validate_key(key, True)
+            key = validate_key(key)
             results.add(key)
         except OutputTemplateError as e:
             raise CycloptsError(str(e))

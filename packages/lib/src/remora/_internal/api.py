@@ -2,10 +2,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
-from remora._internal.downloader.pipeline.batch import BatchDownloader
-from remora._internal.downloader.pipeline.media import MediaDownloader
-from remora._internal.downloader.stream.main import StreamDownloader
-from remora._internal.extractor import MediaExtractor
+from remora._internal.downloader.pipeline import BatchDownloader, MediaDownloader
+from remora._internal.downloader.stream import StreamDownloader
+from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 from remora.models.media import (
     AnyExtractResult,
