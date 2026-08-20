@@ -227,7 +227,7 @@ class MediaDownloader(Downloader[MediaState]):
     ) -> DownloadContext:
         context = DownloadContext()
 
-        async def format():
+        async def streams():
             if not (video_stream or audio_stream):
                 raise ValueError("At least one stream type must be provided")
 
@@ -290,24 +290,6 @@ class MediaDownloader(Downloader[MediaState]):
                     path=context.audio.path,
                 )
 
-        async def thumbnail():
-            if media.thumbnails:
-                try:
-                    logger.debug("Downloading thumbnail")
-                    context.thumbnail = await download_thumbnail(
-                        media.thumbnails[0],
-                        create_temp_file(),
-                    )
-                    logger.debug("Thumbnail downloaded")
-                except MetadataDownloaderError as error:
-                    await self._emit(
-                        MediaWarning(
-                            id=self.id,
-                            media=self.media,
-                            message=str(error),
-                        )
-                    )
-
         async def subtitles():
             if media.subtitles:
                 try:
@@ -326,11 +308,30 @@ class MediaDownloader(Downloader[MediaState]):
                         )
                     )
 
+        async def thumbnail():
+            if media.thumbnails:
+                try:
+                    logger.debug("Downloading thumbnail")
+                    context.thumbnail = await download_thumbnail(
+                        media.thumbnails[0],
+                        create_temp_file(),
+                    )
+                    logger.debug("Thumbnail downloaded")
+                except MetadataDownloaderError as error:
+                    await self._emit(
+                        MediaWarning(
+                            id=self.id,
+                            media=self.media,
+                            message=str(error),
+                        )
+                    )
+
         try:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(format)
-                tg.start_soon(thumbnail)
-                tg.start_soon(subtitles)
+                name = self.__class__.__name__
+                tg.start_soon(streams, name=f"{name}.streams({self.id})")
+                tg.start_soon(subtitles, name=f"{name}.subtitles({self.id})")
+                tg.start_soon(thumbnail, name=f"{name}.thumbnail({self.id})")
         except* DownloaderError as eg:
             raise eg.exceptions[0] from eg
 

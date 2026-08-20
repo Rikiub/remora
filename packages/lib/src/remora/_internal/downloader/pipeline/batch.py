@@ -96,7 +96,11 @@ class BatchDownloader(Downloader[BatchState]):
                         self.config,
                         self.extractor,
                     )
-                    tg.start_soon(self._worker, worker)
+                    tg.start_soon(
+                        self._worker,
+                        worker,
+                        name=f"{self.__class__.__name__}.worker({media.id})",
+                    )
 
         await self._emit(
             PlaylistCompleted(

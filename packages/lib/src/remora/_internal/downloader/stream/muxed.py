@@ -7,7 +7,7 @@ from typing_extensions import override
 from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora._internal.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora._internal.downloader.stream.main import StreamDownloader
-from remora._internal.types import StreamContext
+from remora._internal.types import _T, StreamContext
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
@@ -20,7 +20,7 @@ from remora.models.stream import AudioStream, VideoStream
 
 
 @dataclass(slots=True)
-class StreamManager(StreamContext):
+class StreamManager(StreamContext[_T]):
     state: StreamProgressState | None = None
 
 
@@ -35,8 +35,8 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
     ):
         super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
 
-        self.video = StreamManager(stream=video.stream, path=video.path)
-        self.audio = StreamManager(stream=audio.stream, path=audio.path)
+        self.video = StreamManager[VideoStream](stream=video.stream, path=video.path)
+        self.audio = StreamManager[AudioStream](stream=audio.stream, path=audio.path)
 
         self.retries = retries
         self.last_sync_time = 0.0
@@ -45,8 +45,15 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
     async def _run_pipeline(self) -> None:
         try:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(self._download_video, name="Muxed-Video")
-                tg.start_soon(self._download_audio, name="Muxed-Audio")
+                name = self.__class__.__name__
+                tg.start_soon(
+                    self._download_video,
+                    name=f"{name}.video({self.video.stream.id})",
+                )
+                tg.start_soon(
+                    self._download_audio,
+                    name=f"{name}.audio({self.audio.stream.id})",
+                )
         except* DownloaderError as eg:
             raise eg.exceptions[0]
         finally:
