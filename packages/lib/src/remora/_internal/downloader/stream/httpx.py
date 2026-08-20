@@ -159,6 +159,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                             start,
                             end,
                             True,
+                            name=f"Stream-Part-{i}",
                         )
                 else:
                     # Single-stream download
@@ -242,6 +243,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                     0,
                     None,
                     False,
+                    name=f"Stream-Segment-{index}",
                 )
 
         file = await self._build_parts(part_files)

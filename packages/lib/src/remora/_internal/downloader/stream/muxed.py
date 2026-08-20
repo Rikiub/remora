@@ -45,8 +45,8 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
     async def _run_pipeline(self) -> None:
         try:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(self._download_video)
-                tg.start_soon(self._download_audio)
+                tg.start_soon(self._download_video, name="Muxed-Video")
+                tg.start_soon(self._download_audio, name="Muxed-Audio")
         except* DownloaderError as eg:
             raise eg.exceptions[0]
         finally:
