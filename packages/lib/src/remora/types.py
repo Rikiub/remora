@@ -1,8 +1,8 @@
 from os import PathLike
 
-from pydantic.networks import HttpUrl
+from pydantic import HttpUrl
 
-# Generics
+# Unions
 StrPath = PathLike[str] | str
 StrUrl = HttpUrl | str
 
