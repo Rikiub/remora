@@ -62,12 +62,12 @@ def setup_logging(level: logs.LoggingLevels) -> None:
 
 
 LEVEL_STYLE: dict[LoggingLevels, str] = {
-    "DEBUG": "blue",
+    "DEBUG": "cyan",
     "SUCCESS": "khaki1",
     "INFO": "khaki1",
     "WARNING": "yellow italic",
-    "ERROR": "red",
-    "CRITICAL": "bold red",
+    "ERROR": "bright_red",
+    "CRITICAL": "bold white on red",
 }
 
 
