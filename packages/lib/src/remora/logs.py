@@ -1,8 +1,6 @@
-"""
-Remora default logger.
-Disabled by default.
-"""
+"""Remora built-in logger."""
 
+import sys
 import uuid
 from typing import Literal
 
@@ -29,8 +27,6 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
     enable()
 
     # Configure logger
-    import sys
-
     is_verbose = level != "INFO"
     logger.remove()
     logger.add(

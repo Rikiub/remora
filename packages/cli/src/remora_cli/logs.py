@@ -44,8 +44,9 @@ def setup_logging(level: logs.LoggingLevels) -> None:
     logger.add(
         get_log_dir() / "remora.jsonl",
         level="DEBUG",
-        rotation="10 MB",
         retention=1,
+        rotation="10 MB",
+        compression="zip",
         serialize=True,
         enqueue=True,
         format=partial(get_format, markup=False, lib_only=True),
