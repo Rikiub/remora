@@ -50,6 +50,7 @@ app = App()
 @app.command
 async def extract(
     query: QueryParameter,
+    *,
     format: Annotated[
         Literal["table", "json"] | None,
         Parameter(

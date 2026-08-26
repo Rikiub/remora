@@ -30,8 +30,8 @@ app = App()
 
 @app.command
 async def download(
-    # ARGUMENTS
     query: QueryParameter,
+    *,
     # FILTER
     type: Annotated[
         AVContainerFormat | None,

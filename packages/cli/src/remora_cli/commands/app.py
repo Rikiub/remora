@@ -6,7 +6,6 @@ from rich import traceback
 from remora_cli.commands.download import download
 from remora_cli.commands.extract import extract
 from remora_cli.options import DisplayOptions
-from remora_cli.ui.help import AppFormatter
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -15,7 +14,6 @@ def create() -> App:
     app = App(
         help="Fishy data extractor/downloader ✨",
         help_format="rich",
-        help_formatter=AppFormatter,
         help_on_error=True,
         error_console=CONSOLE,
         default_parameter=Parameter(
