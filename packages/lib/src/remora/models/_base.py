@@ -28,7 +28,7 @@ Impersonate = bool | list[str]
 _T = TypeVar("_T")
 
 
-class BaseList(RootModel[list[_T]], Sequence[_T], Generic[_T]):
+class BaseList(RootModel[Sequence], Sequence[_T], Generic[_T]):
     root: list[_T] = []
 
     def __contains__(self, other) -> bool:
@@ -49,12 +49,13 @@ class BaseList(RootModel[list[_T]], Sequence[_T], Generic[_T]):
     @overload
     def __getitem__(self, index: slice) -> Self: ...
 
-    def __getitem__(self, index) -> _T | Self:
-        match index:
-            case int() | slice():
-                return self.root[index]  # type: ignore
-            case _:
-                raise TypeError(index)
+    def __getitem__(self, index: int | slice) -> _T | Self:
+        if isinstance(index, slice):
+            return self.__class__(self.root[index])
+        elif isinstance(index, int):
+            return self.root[index]
+        else:
+            raise TypeError(f"Invalid argument type: {type(index)}")
 
 
 def _validate_or_none(v, handler):
