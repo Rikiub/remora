@@ -1,6 +1,5 @@
-from remora.extractor import MediaExtractor
-from remora.models.media.item import Media
-from remora.models.media.list import Playlist
+from remora import MediaExtractor
+from remora.models.media import Media, Playlist
 
 DEFAULT_QUERY = "Sub Urban - Rabbit Hole"
 

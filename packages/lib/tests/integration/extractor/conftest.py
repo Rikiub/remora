@@ -1,6 +1,6 @@
 import pytest
 
-from remora.extractor import MediaExtractor
+from remora import MediaExtractor
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 # --- API ---
 
 from . import constants, exceptions, logs, models, path
-from ._internal.api import Remora
+from .api import Remora
 from .extractor import MediaExtractor
 
 # --- TYPES ---

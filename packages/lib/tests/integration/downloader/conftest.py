@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from remora._internal.api import Remora
-from remora.models.download_options import DownloadOptions
+from remora import DownloadOptions, Remora
 
 
 @pytest.fixture
