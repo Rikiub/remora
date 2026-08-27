@@ -4,7 +4,7 @@ from pathlib import Path
 
 from platformdirs import PlatformDirs
 
-from remora.constants import LIBRAY_NAME
+import remora
 
 __all__ = [
     "create_temp_file",
@@ -14,7 +14,7 @@ __all__ = [
     "get_session_temp_dir",
 ]
 
-_DIRS = PlatformDirs(LIBRAY_NAME, appauthor=False, ensure_exists=True)
+_DIRS = PlatformDirs(remora.__name__, appauthor=False, ensure_exists=True)
 
 
 def get_config_dir() -> Path:

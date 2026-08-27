@@ -6,7 +6,7 @@ from typing import Literal
 
 from loguru import logger
 
-from remora.constants import LIBRAY_NAME
+import remora
 
 __all__ = ["LoggingLevels", "disable", "enable", "setup"]
 
@@ -16,11 +16,11 @@ LoggingLevels = Literal[
 
 
 def enable() -> None:
-    logger.enable(LIBRAY_NAME)
+    logger.enable(remora.__name__)
 
 
 def disable() -> None:
-    logger.disable(LIBRAY_NAME)
+    logger.disable(remora.__name__)
 
 
 def setup(level: LoggingLevels = "DEBUG") -> None:
@@ -37,7 +37,7 @@ def setup(level: LoggingLevels = "DEBUG") -> None:
         "| <level>{message}</level>",
         enqueue=True,
         filter={
-            LIBRAY_NAME: "DEBUG" if is_verbose else "INFO",
+            remora.__name__: "DEBUG" if is_verbose else "INFO",
             "yt-dlp": "WARNING" if is_verbose else False,
         },
     )

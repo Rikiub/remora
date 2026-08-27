@@ -5,8 +5,9 @@ from loguru import logger
 from rich.logging import RichHandler
 from rich.text import Text
 
+import remora
+import remora_cli
 from remora import logs
-from remora.constants import LIBRAY_NAME
 from remora.logs import LoggingLevels
 from remora.path import get_log_dir
 from remora_cli.ui.rich import CONSOLE
@@ -34,8 +35,8 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         enqueue=True,
         format=get_format,
         filter={
-            "remora_cli": "DEBUG" if is_verbose else "INFO",
-            LIBRAY_NAME: "DEBUG" if is_verbose else False,
+            remora_cli.__name__: "DEBUG" if is_verbose else "INFO",
+            remora.__name__: "DEBUG" if is_verbose else False,
             "yt-dlp": "WARNING" if is_verbose else False,
         },
     )
@@ -51,9 +52,9 @@ def setup_logging(level: logs.LoggingLevels) -> None:
         enqueue=True,
         format=partial(get_format, markup=False, lib_only=True),
         filter={
-            LIBRAY_NAME: "DEBUG",
+            remora.__name__: "DEBUG",
             "yt-dlp": "WARNING",
-            "remora_cli": False,
+            remora_cli.__name__: False,
         },
     )
 
@@ -94,7 +95,7 @@ def get_format(record, markup: bool = True, lib_only: bool = False) -> str:
     color = LEVEL_STYLE.get(level.name, "white")
 
     # Module prefix
-    is_lib = record["name"].startswith(f"{LIBRAY_NAME}.")
+    is_lib = record["name"].startswith(f"{remora.__name__}.")
     is_ydl = record["name"] == "yt-dlp"
     module_prefix = ""
 
