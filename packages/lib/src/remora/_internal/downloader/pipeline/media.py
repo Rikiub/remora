@@ -8,6 +8,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
+from remora import ffmpeg, processor
 from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
 from remora._internal.downloader.pipeline._logs import log_event_media
 from remora._internal.downloader.pipeline.base import Downloader
@@ -21,10 +22,6 @@ from remora.exceptions import (
     ProcessorError,
 )
 from remora.extractor import MediaExtractor
-from remora.ffmpeg import (
-    find_system_ffmpeg_dir,
-    find_wheel_ffmpeg_dir,
-)
 from remora.models.container import (
     AVContainer,
 )
@@ -51,7 +48,6 @@ from remora.models.progress import (
 from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.models.types import StrPath
 from remora.path import create_temp_file
-from remora.processor import MediaProcessor
 from remora.template import format_template
 
 
@@ -364,7 +360,7 @@ class MediaDownloader(Downloader[MediaState]):
             ),
         )
         await self._emit(merging)
-        prc = MediaProcessor(file_path, self.ffmpeg_dir)
+        prc = processor.MediaProcessor(file_path, self.ffmpeg_dir)
 
         # Start merging
         try:
@@ -400,7 +396,7 @@ class MediaDownloader(Downloader[MediaState]):
         thumbnail: Path | None = None,
         subtitles: list[Path] | None = None,
     ) -> Path:
-        prc = MediaProcessor(
+        prc = processor.MediaProcessor(
             file_path=file_path,
             ffmpeg_dir=self.ffmpeg_dir,
         )
@@ -475,11 +471,11 @@ class MediaDownloader(Downloader[MediaState]):
     def _determine_ffmpeg_dir(self) -> Path | None:
         if ffmpeg_dir := self.config.ffmpeg_location:
             logger.info('Using "ffmpeg" and "ffprobe" binaries from provided path')
-        elif ffmpeg_dir := find_wheel_ffmpeg_dir():
+        elif ffmpeg_dir := ffmpeg.find_wheel_ffmpeg_dir():
             logger.info(
                 'Using "ffmpeg" and "ffprobe" binaries from wheel for post-processing'
             )
-        elif ffmpeg_dir := find_system_ffmpeg_dir():
+        elif ffmpeg_dir := ffmpeg.find_system_ffmpeg_dir():
             logger.info(
                 'Using "ffmpeg" and "ffprobe" binaries from system for post-processing'
             )

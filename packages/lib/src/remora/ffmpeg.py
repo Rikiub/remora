@@ -1,8 +1,8 @@
 import importlib
+import shutil
 import subprocess
 from functools import cache
 from pathlib import Path
-from shutil import which
 
 from remora.exceptions import FFmpegError, FFmpegNotFoundError, FFprobeNotFoundError
 from remora.models.types import StrPath
@@ -51,8 +51,8 @@ def find_system_ffmpeg_dir() -> Path | None:
     """Find FFmpeg and FFprobe binaries directory from system."""
 
     try:
-        ffmpeg = which("ffmpeg")
-        ffprobe = which("ffprobe")
+        ffmpeg = get_system_ffmpeg_binary()
+        ffprobe = get_system_ffprobe_binary()
 
         ffmpeg = validate_ffmpeg(ffmpeg)
         ffprobe = validate_ffprobe(ffprobe)
@@ -66,13 +66,27 @@ def find_system_ffmpeg_dir() -> Path | None:
         return None
 
 
+@cache
+def get_system_ffmpeg_binary() -> Path | None:
+    if path := shutil.which("ffmpeg"):
+        return Path(path)
+    return None
+
+
+@cache
+def get_system_ffprobe_binary() -> Path | None:
+    if path := shutil.which("ffprobe"):
+        return Path(path)
+    return None
+
+
 def validate_ffmpeg_dir(ffmpeg_dir: StrPath | None) -> Path:
     if not ffmpeg_dir:
         raise FFmpegNotFoundError("FFmpeg directory not found.")
     ffmpeg_dir = Path(ffmpeg_dir)
 
-    ffmpeg = which("ffmpeg", path=ffmpeg_dir)
-    ffprobe = which("ffprobe", path=ffmpeg_dir)
+    ffmpeg = shutil.which("ffmpeg", path=ffmpeg_dir)
+    ffprobe = shutil.which("ffprobe", path=ffmpeg_dir)
 
     ffmpeg = validate_ffmpeg(ffmpeg)
     ffprobe = validate_ffprobe(ffprobe)
@@ -87,8 +101,8 @@ def validate_ffmpeg_dir(ffmpeg_dir: StrPath | None) -> Path:
 
 @cache
 def _validate_ffmpeg_dir(ffmpeg_dir: Path) -> Path:
-    ffmpeg = which("ffmpeg", path=ffmpeg_dir)
-    ffprobe = which("ffprobe", path=ffmpeg_dir)
+    ffmpeg = shutil.which("ffmpeg", path=ffmpeg_dir)
+    ffprobe = shutil.which("ffprobe", path=ffmpeg_dir)
 
     ffmpeg = validate_ffmpeg(ffmpeg)
     ffprobe = validate_ffprobe(ffprobe)

@@ -6,8 +6,9 @@ import pytest
 from pytest_mock import MockerFixture
 from typing_extensions import override
 
+import remora._internal.downloader.pipeline.media as downloader
 from remora._internal.downloader.pipeline.media import MediaDownloader
-from remora._internal.downloader.selector import SelectorContext, StreamSelector
+from remora._internal.downloader.selector import SelectorContext
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
 from remora.models.container import CodecInfo
@@ -32,7 +33,7 @@ from remora.models.progress.stream import (
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 from remora.processor import MediaProcessor
 
-MODULE_PATH = "remora._internal.downloader.pipeline.media"
+MODULE_PATH = downloader.__name__
 
 
 # Fake dependencies
@@ -125,14 +126,18 @@ def mock_pipeline(
     """Mocks all network, filesystem, and subprocess calls."""
 
     def _(media: Media) -> MediaDownloader:
-        # Mock Processor Dependencies
-        mock_processor(MODULE_PATH)
-
         # Mock File System Paths
-        mocker.patch(f"{MODULE_PATH}.create_temp_file", return_value=tmp_path / "temp")
+        mocker.patch.object(
+            downloader,
+            downloader.create_temp_file.__name__,
+            return_value=tmp_path / "temp",
+        )
 
         # Mock Shutil to prevent file moving
-        mocker.patch(f"{MODULE_PATH}.shutil.move")
+        mocker.patch.object(
+            downloader.shutil,
+            downloader.shutil.move.__name__,
+        )
 
         # Mock Stream Selectors to return dummy streams
         try:
@@ -145,23 +150,36 @@ def mock_pipeline(
         except IndexError:
             audio = None
 
-        mock_selector = mocker.patch(f"{MODULE_PATH}.{StreamSelector.__name__}")
+        mock_selector = mocker.patch.object(
+            downloader,
+            downloader.StreamSelector.__name__,
+        )
         mock_selector.return_value.resolve.return_value = SelectorContext(
             video=video, audio=audio
         )
 
-        # Mock the Heavy Downloaders
-        mocker.patch(f"{MODULE_PATH}.{StreamDownloader.__name__}", FakeStreamDownloader)
-        mocker.patch(
-            f"{MODULE_PATH}.{MuxedStreamDownloader.__name__}", FakeBatchDownloader
+        # Mock stream downloaders
+        mocker.patch.object(
+            downloader,
+            downloader.StreamDownloader.__name__,
+            FakeStreamDownloader,
         )
-        mocker.patch(
-            f"{MODULE_PATH}.download_thumbnail",
+        mocker.patch.object(
+            downloader,
+            downloader.MuxedStreamDownloader.__name__,
+            FakeBatchDownloader,
+        )
+
+        # Mock metadata downloaders
+        mocker.patch.object(
+            downloader,
+            downloader.download_thumbnail.__name__,
             new_callable=AsyncMock,
             return_value=tmp_path / "thumbnail.jpg",
         )
-        mocker.patch(
-            f"{MODULE_PATH}.download_subtitles",
+        mocker.patch.object(
+            downloader,
+            downloader.download_subtitles.__name__,
             new_callable=AsyncMock,
             return_value=[tmp_path / "subtitle.srt"],
         )
@@ -174,16 +192,18 @@ def mock_pipeline(
         pipeline = MediaDownloader(
             media=media,
             extractor=mock_extractor,
-            config=DownloadOptions(output_template=tmp_path, embed_metadata=True),
+            config=DownloadOptions(
+                output_template=tmp_path,
+                embed_metadata=True,
+            ),
         )
-
         return pipeline
 
     return _
 
 
 # Tests
-async def test_download_pipeline_muxed(
+async def test_download_states(
     mock_pipeline: MockPipeline,
     dummy_media: Media,
 ):
@@ -192,34 +212,17 @@ async def test_download_pipeline_muxed(
     from video and audio.
     """
 
-    pipeline = mock_pipeline(dummy_media)
+    downloader = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async with pipeline as progress:
-        events = [type(state) async for state in progress]
+    async with downloader as progress:
+        states = [type(state) async for state in progress]
 
-    assert MediaStarted in events
-    assert MediaDownloading in events
-    assert MediaProcessing in events
-    assert MediaCompleted in events
-    assert MediaEnded in events
-
-
-async def test_download_pipeline_single(
-    mock_pipeline: MockPipeline,
-    dummy_media: Media,
-):
-    """Test that the pipeline correctly extracts, downloads and completes."""
-
-    dummy_media.streams = dummy_media.streams.audio_only()  # ty:ignore[invalid-assignment]
-    pipeline = mock_pipeline(dummy_media)
-
-    # Consume the async generator
-    events = []
-
-    async with pipeline as progress:
-        async for state in progress:
-            events.append(state)
+    assert MediaStarted in states
+    assert MediaDownloading in states
+    assert MediaProcessing in states
+    assert MediaCompleted in states
+    assert MediaEnded in states
 
 
 # Media Processor
@@ -231,19 +234,14 @@ async def test_processor_merge(
 ):
     """Test that the pipeline merges the streams."""
 
-    # Get media proccesor
-    processor: MediaProcessor = mock_processor(MODULE_PATH)
-
-    # Init pipeline
-    pipeline = mock_pipeline(dummy_media)
+    downloader = mock_pipeline(dummy_media)
 
     # Consume the async generator
-    async with pipeline as progress:
-        async for _ in progress:
-            pass
+    async with downloader as progress:
+        [_ async for _ in progress]
 
     # Verify specific inner methods were called
-    processor.merge_streams.assert_called_once()  # ty: ignore[unresolved-attribute]
+    mock_processor.merge_streams.assert_called_once()
 
 
 @pytest.mark.skip("Hard to test right now")
@@ -255,7 +253,7 @@ async def test_processor_no_merge(
     """Test that the pipeline NOT merges the streams."""
 
     # Get media proccesor
-    processor: MediaProcessor = mock_processor(MODULE_PATH)
+    processor: MediaProcessor = mock_processor()
 
     # Init pipeline
     pipeline = mock_pipeline(dummy_media)
@@ -281,7 +279,7 @@ async def test_full_processor_metadata(
     """Test that the pipeline correctly applies post-processing."""
 
     # Get media proccesor
-    processor: MediaProcessor = mock_processor(MODULE_PATH)
+    processor: MediaProcessor = mock_processor()
 
     # Init pipeline
     pipeline = mock_pipeline(dummy_media)
@@ -305,7 +303,7 @@ async def test_empty_processor_metadata(
     """Test that the pipeline correctly extracts, downloads and completes."""
 
     # Get media proccesor
-    processor: MediaProcessor = mock_processor(MODULE_PATH)
+    processor: MediaProcessor = mock_processor()
 
     # Init pipeline
     # And remove metadata
