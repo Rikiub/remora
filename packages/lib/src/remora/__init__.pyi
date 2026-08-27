@@ -1,6 +1,6 @@
 # --- API ---
 
-from . import constants, exceptions, logs, models, path
+from . import constants, exceptions, ffmpeg, logs, models, path, template
 from .api import Remora
 from .extractor import MediaExtractor
 
@@ -19,7 +19,9 @@ __all__ = [
     "SearchList",
     "constants",
     "exceptions",
+    "ffmpeg",
     "logs",
     "models",
     "path",
+    "template",
 ]
