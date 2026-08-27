@@ -48,7 +48,7 @@ class MediaExtractor:
             logger.info("Extracting URL: {url}", url=url)
 
             # Extract info
-            from remora._internal.ydl.extractor import extract_info
+            from remora._ydl.extractor import extract_info
 
             if self.cookies_file:
                 logger.info(
@@ -84,7 +84,7 @@ class MediaExtractor:
             )
 
             # Extract info
-            from remora._internal.ydl.extractor import extract_query
+            from remora._ydl.extractor import extract_query
 
             info = await run_sync(extract_query, query, service, limit)
             result = SearchList.model_validate(

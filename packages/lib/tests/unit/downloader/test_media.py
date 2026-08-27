@@ -6,11 +6,11 @@ import pytest
 from pytest_mock import MockerFixture
 from typing_extensions import override
 
-import remora._internal.downloader.pipeline.media as downloader
-from remora._internal.downloader.pipeline.media import MediaDownloader
-from remora._internal.downloader.selector import SelectorContext
-from remora._internal.downloader.stream.main import StreamDownloader
-from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
+import remora.downloader.pipeline.media as downloader
+from remora.downloader.pipeline.media import MediaDownloader
+from remora.downloader.selector import SelectorContext
+from remora.downloader.stream.main import StreamDownloader
+from remora.downloader.stream.muxed import MuxedStreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
 from remora.models.media import Extractor

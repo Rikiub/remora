@@ -3,7 +3,7 @@ import tempfile
 from loguru import logger
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from remora._internal.ydl.types import YDLParams
+from remora._ydl.types import YDLParams
 from remora.path import get_cache_dir
 
 

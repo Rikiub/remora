@@ -2,8 +2,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
-from remora._internal.downloader.pipeline import BatchDownloader, MediaDownloader
-from remora._internal.downloader.stream import StreamDownloader
+from remora.downloader.pipeline import BatchDownloader, MediaDownloader
+from remora.downloader.stream import StreamDownloader
 from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 from remora.models.media import (
@@ -94,6 +94,6 @@ class Remora:
         item: Thumbnail | Subtitle | Sequence[Subtitle],
         output_path: StrPath,
     ) -> Path | list[Path]:
-        from remora._internal.downloader.metadata import download_resource
+        from remora.downloader.metadata import download_resource
 
         return await download_resource(item, output_path)

@@ -1,9 +1,9 @@
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.stream.base import BaseStreamDownloader
-from remora._internal.downloader.stream.httpx import HttpxStreamDownloader
 from remora.constants import DEFAULT_RETRIES
+from remora.downloader.stream.base import BaseStreamDownloader
+from remora.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.progress import StreamState
 from remora.models.stream import Stream
@@ -60,7 +60,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                     raise
 
             # Fallback downloader
-            from remora._internal.downloader.stream.ydl import YDLStreamDownloader
+            from remora.downloader.stream.ydl import YDLStreamDownloader
 
             logger.debug("Retrying with YDL downloader")
 

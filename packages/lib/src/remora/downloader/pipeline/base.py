@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from remora._internal.downloader.state_streamer import AsyncStateStreamer
+from remora.downloader._state_streamer import AsyncStateStreamer
 from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 

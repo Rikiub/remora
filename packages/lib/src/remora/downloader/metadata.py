@@ -9,7 +9,7 @@ from remora.models.types import StrPath
 
 
 async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path:
-    from remora._internal.ydl.downloader import download_thumbnail as ydl
+    from remora._ydl.downloader import download_thumbnail as ydl
 
     path = await run_sync(ydl, output_path, thumbnail._to_ydl_dict())
     return path
@@ -29,7 +29,7 @@ async def download_subtitles(
     subtitles: Sequence[Subtitle] | Subtitle,
     output_path: StrPath,
 ) -> Path | list[Path]:
-    from remora._internal.ydl.downloader import download_subtitles as ydl
+    from remora._ydl.downloader import download_subtitles as ydl
 
     data = SubtitleList(subtitles)
     info = data._to_ydl_dict()

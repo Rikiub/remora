@@ -9,12 +9,12 @@ from loguru import logger
 from typing_extensions import override
 
 from remora import ffmpeg, processor
-from remora._internal.downloader.metadata import download_subtitles, download_thumbnail
-from remora._internal.downloader.pipeline._logs import log_event_media
-from remora._internal.downloader.pipeline.base import Downloader
-from remora._internal.downloader.selector import StreamSelector
-from remora._internal.downloader.stream import MuxedStreamDownloader, StreamDownloader
-from remora._internal.types import StreamContext
+from remora._types import StreamContext
+from remora.downloader.metadata import download_subtitles, download_thumbnail
+from remora.downloader.pipeline._logs import log_event_media
+from remora.downloader.pipeline.base import Downloader
+from remora.downloader.selector import StreamSelector
+from remora.downloader.stream import MuxedStreamDownloader, StreamDownloader
 from remora.exceptions import (
     DownloaderError,
     ExtractorError,

@@ -3,8 +3,8 @@ from typing import TypeVar
 from anyio import Path
 from loguru import logger
 
-from remora._internal.downloader.state_streamer import AsyncStateStreamer
 from remora.constants import DEFAULT_RETRIES
+from remora.downloader._state_streamer import AsyncStateStreamer
 from remora.models.stream import Stream, VideoStream
 from remora.models.types import StrPath
 

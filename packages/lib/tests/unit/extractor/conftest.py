@@ -1,6 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
+from remora._ydl.wrapper import YDL
 from remora.extractor import MediaExtractor
 
 
@@ -19,8 +20,9 @@ def mock_extractor(mocker: MockerFixture, ydl_data):
 
     def _mock(filename: str):
         data = ydl_data(filename)
-        return mocker.patch(
-            "remora._internal.ydl.wrapper.YDL.extract_info",
+        return mocker.patch.object(
+            YDL,
+            YDL.extract_info.__name__,
             return_value=data,
         )
 

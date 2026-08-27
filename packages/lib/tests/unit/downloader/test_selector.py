@@ -1,4 +1,4 @@
-from remora._internal.downloader.selector import SelectorContext, StreamSelector
+from remora.downloader.selector import SelectorContext, StreamSelector
 from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
 from remora.models.media import Extractor

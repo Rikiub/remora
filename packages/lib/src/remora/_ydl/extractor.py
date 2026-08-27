@@ -6,9 +6,9 @@ from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
-from remora._internal.ydl.messages import extract_status_code, sanitize_ydl_error
-from remora._internal.ydl.types import YDLExtractInfo
-from remora._internal.ydl.wrapper import YDL
+from remora._ydl.messages import extract_status_code, sanitize_ydl_error
+from remora._ydl.types import YDLExtractInfo
+from remora._ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
 from remora.models.types import StrPath, StrUrl

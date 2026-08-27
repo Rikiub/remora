@@ -7,8 +7,8 @@ from anyio import Path
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.constants import DEFAULT_RETRIES
+from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,

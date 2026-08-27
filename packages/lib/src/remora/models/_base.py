@@ -11,7 +11,7 @@ from pydantic import (
     WrapValidator,
 )
 
-from remora._internal.ydl.types import YDLExtractInfo
+from remora._ydl.types import YDLExtractInfo
 
 
 class RemoraModel(BaseModel):

@@ -13,9 +13,9 @@ from yt_dlp.postprocessor.ffmpeg import (
     FFmpegVideoRemuxerPP,
 )
 
-from remora._internal.ydl.messages import sanitize_ydl_error
-from remora._internal.ydl.types import YDLExtractInfo
-from remora._internal.ydl.wrapper import YDL
+from remora._ydl.messages import sanitize_ydl_error
+from remora._ydl.types import YDLExtractInfo
+from remora._ydl.wrapper import YDL
 from remora.exceptions import ProcessorError
 from remora.ffmpeg import validate_ffmpeg_dir
 from remora.models.types import StrPath

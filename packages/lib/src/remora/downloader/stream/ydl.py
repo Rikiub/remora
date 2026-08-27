@@ -4,8 +4,8 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
-from remora._internal.downloader.stream.base import BaseStreamDownloader
 from remora.constants import DEFAULT_RETRIES
+from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,
@@ -37,7 +37,7 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
-        from remora._internal.ydl.types import DEFAULT_IMPERSONATE_TARGET
+        from remora._ydl.types import DEFAULT_IMPERSONATE_TARGET
 
         try:
             path = await self._downloader()
@@ -55,7 +55,7 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
         await self._emit(StreamCompleted(file_path=path))
 
     async def _downloader(self, impersonate: str | None = None) -> Path:
-        from remora._internal.ydl.downloader import download_format
+        from remora._ydl.downloader import download_format
 
         return await run_sync(
             download_format,
