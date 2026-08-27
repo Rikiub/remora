@@ -16,21 +16,21 @@ class _LoguruYDLWrapper:
         self.logger = logger.patch(lambda record: record.update(name="yt-dlp"))
 
     def debug(self, msg: str):
-        if self._exclude(msg):
+        if self.exclude(msg):
             return
         self.logger.debug(msg)
 
     def warning(self, msg: str):
-        if self._exclude(msg):
+        if self.exclude(msg):
             return
         self.logger.warning(msg)
 
     def error(self, msg: str):
-        if self._exclude(msg):
+        if self.exclude(msg):
             return
         self.logger.error(msg)
 
-    def _exclude(self, msg: str) -> bool:
+    def exclude(self, msg: str) -> bool:
         for excluded in self.EXCLUDED_LOGS:
             if msg.startswith(excluded):
                 return True
