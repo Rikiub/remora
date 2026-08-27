@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from remora._internal.ffmpeg import (
+from remora.exceptions import FFmpegNotFoundError
+from remora.ffmpeg import (
     _validate_ffmpeg,
     _validate_ffmpeg_dir,
     _validate_ffprobe,
@@ -10,9 +11,8 @@ from remora._internal.ffmpeg import (
     find_wheel_ffmpeg_dir,
     validate_ffmpeg,
 )
-from remora.exceptions import FFmpegNotFoundError
 
-MODULE = "remora._internal.ffmpeg"
+MODULE = "remora.ffmpeg"
 
 
 @pytest.fixture(autouse=True)

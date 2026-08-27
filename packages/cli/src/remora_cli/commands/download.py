@@ -152,8 +152,8 @@ async def download(
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from remora import DownloadOptions, MediaExtractor, Remora
-        from remora._internal.ffmpeg import get_ffmpeg_dir
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
+        from remora.ffmpeg import get_ffmpeg_dir
         from remora.models.media import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
 

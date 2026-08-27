@@ -10,7 +10,6 @@ from remora._internal.downloader.pipeline.media import MediaDownloader
 from remora._internal.downloader.selector import SelectorContext, StreamSelector
 from remora._internal.downloader.stream.main import StreamDownloader
 from remora._internal.downloader.stream.muxed import MuxedStreamDownloader
-from remora._internal.processor import MediaProcessor
 from remora.models.container import CodecInfo
 from remora.models.download_options import DownloadOptions
 from remora.models.media import Extractor
@@ -31,6 +30,7 @@ from remora.models.progress.stream import (
     StreamContinuous,
 )
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
+from remora.processor import MediaProcessor
 
 MODULE_PATH = "remora._internal.downloader.pipeline.media"
 

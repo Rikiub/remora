@@ -4,10 +4,10 @@ from typing import Self
 
 from anyio.to_thread import run_sync
 
-from remora._internal.ffmpeg import get_ffmpeg_dir
 from remora._internal.types import StreamContext
 from remora._internal.ydl.processor import RequestedFormat, YDLProcessor
 from remora._internal.ydl.types import YDLExtractInfo
+from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
     AVContainer,
     RichAudioContainer,

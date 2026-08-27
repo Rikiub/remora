@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from remora._internal.processor import MediaProcessor
+from remora.processor import MediaProcessor
 
 
 @pytest.fixture

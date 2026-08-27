@@ -2,12 +2,12 @@ from typing import Annotated
 
 from pydantic import AfterValidator
 
-from remora._internal.ffmpeg import validate_ffmpeg_dir
 from remora.constants import (
     DEFAULT_RETRIES,
     DEFAULT_TEMPLATE,
     DEFAULT_WORKERS,
 )
+from remora.ffmpeg import validate_ffmpeg_dir
 from remora.models._base import RemoraModel
 from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
 from remora.models.stream import StreamQuality
