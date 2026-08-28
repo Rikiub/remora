@@ -7,6 +7,12 @@ from anyio.to_thread import run_sync
 from remora.models.metadata import Subtitle, SubtitleList, Thumbnail
 from remora.models.types import StrPath
 
+__all__ = [
+    "download_resource",
+    "download_subtitles",
+    "download_thumbnail",
+]
+
 
 async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path:
     from remora._ydl.downloader import download_thumbnail as ydl

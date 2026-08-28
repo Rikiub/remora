@@ -12,6 +12,12 @@ from remora.models.stream import (
     VideoStream,
 )
 
+__all__ = [
+    "SelectorContext",
+    "StreamSelector",
+]
+_T = TypeVar("_T", bound=Stream)
+
 
 @dataclass(slots=True)
 class SelectorContext:
@@ -21,9 +27,6 @@ class SelectorContext:
 
     def __bool__(self) -> bool:
         return bool(self.muxed or self.video or self.audio)
-
-
-_T = TypeVar("_T", bound=Stream)
 
 
 class StreamSelector:
