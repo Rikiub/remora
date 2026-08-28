@@ -1,15 +1,12 @@
-from typing import TypeVar
-
 from anyio import Path
 from loguru import logger
 
 from remora.constants import DEFAULT_RETRIES
-from remora.downloader._state_streamer import AsyncStateStreamer
+from remora.downloader._state_streamer import _T, AsyncStateStreamer
 from remora.models.stream import Stream, VideoStream
 from remora.models.types import StrPath
 
 _DEFAULT_BUFFER_SIZE = 100
-_T = TypeVar("_T")
 
 
 class BaseStreamDownloader(AsyncStateStreamer[_T]):
