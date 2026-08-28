@@ -1,11 +1,11 @@
-from remora.downloader._state_streamer import _T, AsyncStateStreamer
+from remora.downloader._state_streamer import AsyncStateStreamer, T
 from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 
 __all__ = ["Downloader"]
 
 
-class Downloader(AsyncStateStreamer[_T]):
+class Downloader(AsyncStateStreamer[T]):
     def __init__(
         self,
         config: DownloadOptions | None = None,

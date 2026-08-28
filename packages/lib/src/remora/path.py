@@ -13,7 +13,6 @@ __all__ = [
     "get_log_dir",
     "get_session_temp_dir",
 ]
-
 _DIRS = PlatformDirs(remora.__name__, appauthor=False, ensure_exists=True)
 
 

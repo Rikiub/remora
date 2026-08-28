@@ -14,6 +14,8 @@ from remora.models.stream import StreamQuality
 from remora.models.types import StrPath
 from remora.template import validate_template
 
+__all__ = ["DownloadOptions"]
+
 
 class DownloadOptions(RemoraModel):
     """Configuration to shape the streams to download.
@@ -53,6 +55,3 @@ class DownloadOptions(RemoraModel):
 
     max_workers: int = DEFAULT_WORKERS
     retries: int = DEFAULT_RETRIES
-
-
-__all__ = ["DownloadOptions"]

@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
+__all__ = ["Protocol", "ProtocolLike"]
+
 
 class Protocol(StrEnum):
     HTTP = "http"
@@ -70,5 +72,3 @@ _ProtocolLiteral = Literal[
     "bunnycdn",
 ]
 ProtocolLike = Protocol | _ProtocolLiteral
-
-__all__ = ["Protocol", "ProtocolLike"]

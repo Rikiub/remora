@@ -14,6 +14,7 @@ from pydantic import (
 from remora._ydl.types import YDLExtractInfo
 
 
+# Base Models
 class RemoraModel(BaseModel):
     model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
@@ -23,8 +24,10 @@ class YDLSerializable(RemoraModel):
         return self.model_dump(by_alias=True, mode="json")
 
 
+# Specializations
 Impersonate = bool | list[str]
 
+# BaseList
 _T = TypeVar("_T")
 
 
@@ -58,6 +61,17 @@ class BaseList(RootModel[Sequence], Sequence[_T], Generic[_T]):
             raise TypeError(f"Invalid argument type: {type(index)}")
 
 
+# Helpers
+def rgetattr(obj: object, attr: str, *args) -> object | None:
+    """Get attribute recursively."""
+
+    def _getattr(obj, attr):
+        return getattr(obj, attr, *args)
+
+    return functools.reduce(_getattr, attr.split("."), obj)
+
+
+# Validators
 def _validate_or_none(v, handler):
     """Models must implement __bool__ to ensure validation."""
 
@@ -77,12 +91,3 @@ EnsureNone = WrapValidator(_validate_or_none)
 
 EnsureList = BeforeValidator(lambda v: v if v else [])
 """Ensure data will be empty list if field not exists."""
-
-
-def rgetattr(obj: object, attr: str, *args) -> object | None:
-    """Get attribute recursively."""
-
-    def _getattr(obj, attr):
-        return getattr(obj, attr, *args)
-
-    return functools.reduce(_getattr, attr.split("."), obj)

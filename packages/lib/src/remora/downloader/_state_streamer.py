@@ -8,10 +8,10 @@ from anyio import AsyncContextManagerMixin, CancelScope
 from anyio.streams.memory import MemoryObjectSendStream
 
 _DEFAULT_BUFFER_SIZE = 25
-_T = TypeVar("_T")
+T = TypeVar("T")
 
 
-class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
+class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[T]):
     """
     Base class that safely manages AnyIO background tasks, state streams,
     and cancellation propagation natively using AnyIO's Context Manager Mixin.
@@ -19,7 +19,7 @@ class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
 
     def __init__(self, buffer_size: int | None = None):
         self._buffer_size = _DEFAULT_BUFFER_SIZE if buffer_size is None else buffer_size
-        self._send_stream: MemoryObjectSendStream[_T] | None = None
+        self._send_stream: MemoryObjectSendStream[T] | None = None
         self._cancel_scope: CancelScope | None = None
 
     def cancel(self):
@@ -28,12 +28,12 @@ class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
             self._cancel_scope.cancel()
 
     @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[AsyncIterable[_T], None]:
+    async def __asynccontextmanager__(self) -> AsyncGenerator[AsyncIterable[T], None]:
         """AnyIO's internal mixin hook. This runs the background process and yields the receive stream safely."""
         if self._send_stream:
             raise RuntimeError(f"{self.__class__.__name__} can only be started once.")
 
-        send_stream, receive_stream = anyio.create_memory_object_stream[_T](
+        send_stream, receive_stream = anyio.create_memory_object_stream[T](
             self._buffer_size
         )
         self._send_stream = send_stream
@@ -76,7 +76,7 @@ class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         """Subclasses MUST implement their main logic here."""
         raise NotImplementedError
 
-    async def _emit(self, state: _T) -> None:
+    async def _emit(self, state: T) -> None:
         """Safely pushes an state to the stream."""
         if not self._send_stream:
             return
@@ -85,7 +85,7 @@ class AsyncStateStreamer(AsyncContextManagerMixin, ABC, Generic[_T]):
         except anyio.ClosedResourceError:
             pass  # Stream closed early, safe to ignore
 
-    def _emit_nowait(self, state: _T) -> None:
+    def _emit_nowait(self, state: T) -> None:
         """Safely pushes an state to the stream without blocking."""
         if not self._send_stream:
             return
