@@ -14,12 +14,14 @@ from remora.models.media import (
     EntriesList,
     LazyMedia,
     LazyPlaylist,
+    Media,
     Playlist,
 )
 from remora.models.media.list import _BaseList
 from remora.models.progress import (
     BatchState,
     MediaEnded,
+    MediaExtracting,
     MediaFailed,
     PlaylistCancelled,
     PlaylistCompleted,
@@ -41,10 +43,8 @@ class BatchDownloader(Downloader[BatchState]):
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        super().__init__(
-            config=config,
-            extractor=extractor,
-        )
+        super().__init__(config=config)
+        self.extractor = extractor or MediaExtractor()
         self._buffer_size = 100 * self.config.max_workers
 
         self.limiter = anyio.CapacityLimiter(self.config.max_workers)
@@ -93,14 +93,9 @@ class BatchDownloader(Downloader[BatchState]):
         ):
             async with anyio.create_task_group() as tg:
                 for media in self.medias:
-                    worker = MediaDownloader(
-                        media,
-                        self.config,
-                        self.extractor,
-                    )
                     tg.start_soon(
                         self._worker,
-                        worker,
+                        media,
                         name=f"{self.__class__.__name__}.worker({media.id})",
                     )
 
@@ -120,9 +115,25 @@ class BatchDownloader(Downloader[BatchState]):
             )
         )
 
-    async def _worker(self, downloader: MediaDownloader):
+    async def _worker(self, media: LazyMedia):
         async with self.limiter:
-            async with downloader as progress:
+            # Resolve media
+            if issubclass(type(media), LazyMedia):
+                await self._emit(
+                    MediaExtracting(
+                        id=self.id,
+                        media=media,
+                    )
+                )
+                resolved_media = await self.extractor.extract(media)
+            elif isinstance(media, Media):
+                resolved_media = media
+
+            # Start downloader
+            async with MediaDownloader(
+                resolved_media,
+                self.config,
+            ) as progress:
                 async for state in progress:
                     if isinstance(state, MediaFailed):
                         self.failed += 1
@@ -180,13 +191,9 @@ class BatchDownloader(Downloader[BatchState]):
         # Set config
         if playlist:
             self.id = playlist.id
-
-            template = format_template(
+            self.config.output_template = format_template(
                 self.config.output_template,
                 playlist=playlist,
-            )
-            self.config = self.config.model_copy(
-                update={"output_template": template},
             )
         else:
             import uuid

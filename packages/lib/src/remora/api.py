@@ -56,12 +56,8 @@ class Remora:
         """Extract media from search service."""
         return await self.extractor.extract_search(query, service, limit)
 
-    def download_media(self, item: LazyMedia) -> MediaDownloader:
-        return MediaDownloader(
-            item,
-            config=self.download_options,
-            extractor=self.extractor,
-        )
+    def download_media(self, item: Media) -> MediaDownloader:
+        return MediaDownloader(item, config=self.download_options)
 
     def download_batch(self, item: StrUrl | AnyExtractResult) -> BatchDownloader:
         return BatchDownloader(

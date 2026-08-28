@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Annotated, Literal, TypeVar
+from typing import Annotated, Literal, Union
 
 from pydantic import AliasChoices, Field, HttpUrl
+from typing_extensions import TypeVar
 
 from remora.models._base import BaseList
 from remora.models.media._base import URL_CHOICES, BaseExtract, ExtractID
@@ -11,7 +12,8 @@ from remora.models.media.item import LazyMedia
 from remora.models.metadata import ThumbnailList
 
 # Entries List
-_Entry = TypeVar("_Entry", LazyMedia, "LazyPlaylist")
+_EntryType = Union[LazyMedia, "LazyPlaylist"]
+_Entry = TypeVar("_Entry", bound=_EntryType, default=_EntryType)
 
 
 class EntriesList(BaseList[_Entry]):

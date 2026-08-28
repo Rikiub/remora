@@ -184,14 +184,9 @@ def mock_pipeline(
             return_value=[tmp_path / "subtitle.srt"],
         )
 
-        # Arrange
-        mock_extractor = AsyncMock()
-        mock_extractor.extract.return_value = media
-
         # Init pipeline
         pipeline = MediaDownloader(
             media=media,
-            extractor=mock_extractor,
             config=DownloadOptions(
                 output_template=tmp_path,
                 embed_metadata=True,

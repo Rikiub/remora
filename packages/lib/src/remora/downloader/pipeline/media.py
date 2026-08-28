@@ -21,12 +21,11 @@ from remora.exceptions import (
     MetadataDownloaderError,
     ProcessorError,
 )
-from remora.extractor import MediaExtractor
 from remora.models.container import (
     AVContainer,
 )
 from remora.models.download_options import DownloadOptions
-from remora.models.media import LazyMedia, Media
+from remora.models.media import Media
 from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
@@ -34,7 +33,6 @@ from remora.models.progress import (
     MediaCompleted,
     MediaDownloading,
     MediaEnded,
-    MediaExtracting,
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
@@ -66,52 +64,38 @@ class MediaDownloader(Downloader[MediaState]):
 
     def __init__(
         self,
-        media: LazyMedia | Media,
+        media: Media,
         config: DownloadOptions | None = None,
-        extractor: MediaExtractor | None = None,
     ):
-        super().__init__(config=config, extractor=extractor)
+        super().__init__(config=config)
 
         self.id: str = media.id
-        self.media: Media = media  # ty: ignore[invalid-assignment]
-        self._unresolved_item = media
+        self.media: Media = media
 
         self.ffmpeg_dir = self._determine_ffmpeg_dir()
         self.has_missing_data = False
 
-    async def _resolve_media(self) -> None:
-        item = self._unresolved_item
-
-        if type(item) is LazyMedia:
-            await self._emit(MediaExtracting(id=item.id, media=item))
-            item = await self.extractor.extract(item)
-
-            self.id = item.id
-            self.media = item
-
     @override
     async def _run_pipeline(self):
-        try:
-            await self._emit(MediaStarted(id=self.id, media=self.media))
-            await self._resolve_media()
-
-            with logger.contextualize(media_id=self.id, media_title=self.media.title):
+        with logger.contextualize(media_id=self.id, media_title=self.media.title):
+            try:
+                await self._emit(MediaStarted(id=self.id, media=self.media))
                 await self._pipeline()
-        except (DownloaderError, ExtractorError, ProcessorError) as error:
-            await self._emit(
-                MediaFailed(
-                    id=self.id,
-                    media=self.media,
-                    message=str(error),
+            except (DownloaderError, ExtractorError, ProcessorError) as error:
+                await self._emit(
+                    MediaFailed(
+                        id=self.id,
+                        media=self.media,
+                        message=str(error),
+                    )
                 )
-            )
-        finally:
-            await self._emit(
-                MediaEnded(
-                    id=self.id,
-                    media=self.media,
+            finally:
+                await self._emit(
+                    MediaEnded(
+                        id=self.id,
+                        media=self.media,
+                    )
                 )
-            )
 
     @override
     async def _on_cancelled(self):
