@@ -6,7 +6,6 @@ from loguru import logger
 from remora.models.media import LazyMedia
 from remora.models.progress import (
     BatchState,
-    MediaCancelled,
     MediaCompleted,
     MediaDownloading,
     MediaEnded,
@@ -17,7 +16,6 @@ from remora.models.progress import (
     MediaStarted,
     MediaState,
     MediaWarning,
-    PlaylistCancelled,
     PlaylistCompleted,
     PlaylistInProgress,
     PlaylistStarted,
@@ -62,21 +60,20 @@ class ProgressCallback:
                     logger.success("Download completed")
                 case PlaylistCompleted(result="partial"):
                     logger.success("Download completed (Some items failed)")
-                case PlaylistCancelled():
-                    logger.warning("Download cancelled")
 
                 # Media
                 case MediaStarted():
-                    self.progress.add_task(
+                    self.progress.update(
                         state.id,
                         description=media_title,
                         status="Starting[blink]...[/]",
                     )
                 case MediaExtracting():
+                    placeholder = "Extracting[blink]...[/]"
                     self.progress.update(
                         state.id,
-                        description=media_title or "Extracting[blink]...[/]",
-                        status="Extracting[blink]...[/]",
+                        description=media_title or placeholder,
+                        status=placeholder,
                     )
                 case MediaDownloading():
                     self.progress.update(
@@ -90,9 +87,6 @@ class ProgressCallback:
                     self._processor_callback(state.id, state.progress)
                 case MediaWarning():
                     logger.warning("Warning: {}", state.message)
-                case MediaCancelled():
-                    logger.error("Download cancelled")
-                    self.progress.update(state.id, status="Cancelled")
                 case MediaFailed():
                     logger.error("Download failed: {}", state.message)
                     self.progress.update(state.id, status="Error")

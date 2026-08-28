@@ -118,10 +118,10 @@ class BatchDownloader(Downloader[BatchState]):
     async def _worker(self, media: LazyMedia):
         async with self.limiter:
             # Resolve media
-            if issubclass(type(media), LazyMedia):
+            if type(media) is LazyMedia:
                 await self._emit(
                     MediaExtracting(
-                        id=self.id,
+                        id=media.id,
                         media=media,
                     )
                 )

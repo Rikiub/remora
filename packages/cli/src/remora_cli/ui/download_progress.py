@@ -93,13 +93,6 @@ class DownloadProgress:
         )
         self.tasks: dict[str, TaskID] = {}
 
-    def add_task(self, id: str, description: str, status: str):
-        task_id = self._progress.add_task(description, status=status, total=None)
-        self.tasks[id] = task_id
-
-    def remove_task(self, id: str):
-        self._progress.remove_task(self.tasks[id])
-
     def update(
         self,
         id: str,
@@ -108,13 +101,25 @@ class DownloadProgress:
         completed: float | None = None,
         total: float | None = None,
     ):
-        self._progress.update(
-            self.tasks[id],
-            description=description,
-            status=status,
-            completed=completed,
-            total=total,
-        )
+        if id in self.tasks:
+            self._progress.update(
+                self.tasks[id],
+                description=description,
+                status=status,
+                completed=completed,
+                total=total,
+            )
+        else:
+            self.tasks[id] = self._progress.add_task(
+                description=description or "",
+                status=status,
+                completed=int(completed or 0),
+                total=total,
+            )
+
+    def remove_task(self, id: str):
+        task_id = self.tasks.pop(id)
+        self._progress.remove_task(task_id)
 
     def start(self):
         if not self.disable:
