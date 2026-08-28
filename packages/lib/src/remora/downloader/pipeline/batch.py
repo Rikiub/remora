@@ -30,6 +30,8 @@ from remora.models.progress import (
 from remora.models.types import StrUrl
 from remora.template import format_template
 
+__all__ = ["BatchDownloader"]
+
 
 class BatchDownloader(Downloader[BatchState]):
     def __init__(

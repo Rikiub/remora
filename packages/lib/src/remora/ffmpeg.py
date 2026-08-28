@@ -7,6 +7,17 @@ from pathlib import Path
 from remora.exceptions import FFmpegError, FFmpegNotFoundError, FFprobeNotFoundError
 from remora.models.types import StrPath
 
+__all__ = [
+    "find_system_ffmpeg_dir",
+    "find_wheel_ffmpeg_dir",
+    "get_ffmpeg_dir",
+    "get_system_ffmpeg_binary",
+    "get_system_ffprobe_binary",
+    "validate_ffmpeg",
+    "validate_ffmpeg_dir",
+    "validate_ffprobe",
+]
+
 # Directories
 
 

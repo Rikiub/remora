@@ -11,6 +11,8 @@ from remora.models.stream import Stream
 from remora.models.types import StrPath
 from remora.template._generator import generate_keys
 
+__all__ = ["format_template", "get_keys", "validate_key", "validate_template"]
+
 
 class _Nested(BaseModel):
     playlist: Playlist | None = None

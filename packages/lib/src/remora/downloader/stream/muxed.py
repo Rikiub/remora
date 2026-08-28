@@ -18,6 +18,8 @@ from remora.models.progress import (
 )
 from remora.models.stream import AudioStream, VideoStream
 
+__all__ = ["MuxedStreamDownloader"]
+
 
 @dataclass(slots=True)
 class StreamManager(StreamContext[_T]):

@@ -4,6 +4,7 @@ from remora.downloader._state_streamer import AsyncStateStreamer
 from remora.extractor import MediaExtractor
 from remora.models.download_options import DownloadOptions
 
+__all__ = ["Downloader"]
 _T = TypeVar("_T")
 
 

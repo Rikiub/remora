@@ -1,4 +1,2 @@
-from .batch import BatchDownloader
-from .media import MediaDownloader
-
-__all__ = ["BatchDownloader", "MediaDownloader"]
+from .batch import *
+from .media import *

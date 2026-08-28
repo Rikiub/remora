@@ -50,9 +50,11 @@ from remora.models.types import StrPath
 from remora.path import create_temp_file
 from remora.template import format_template
 
+__all__ = ["MediaDownloader"]
+
 
 @dataclass(slots=True)
-class DownloadContext:
+class _DownloadContext:
     video: StreamContext[VideoStream] | None = None
     audio: StreamContext[AudioStream] | None = None
     thumbnail: Path | None = None
@@ -220,8 +222,8 @@ class MediaDownloader(Downloader[MediaState]):
         media: Media,
         video_stream: VideoStream | None,
         audio_stream: AudioStream | None,
-    ) -> DownloadContext:
-        context = DownloadContext()
+    ) -> _DownloadContext:
+        context = _DownloadContext()
 
         async def streams():
             if not (video_stream or audio_stream):

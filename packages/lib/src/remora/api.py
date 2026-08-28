@@ -19,6 +19,8 @@ from remora.models.search import SearchService
 from remora.models.stream import Stream
 from remora.models.types import StrPath, StrUrl
 
+__all__ = ["Remora"]
+
 
 class Remora:
     def __init__(

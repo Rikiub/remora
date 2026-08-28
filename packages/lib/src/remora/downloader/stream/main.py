@@ -9,6 +9,8 @@ from remora.models.progress import StreamState
 from remora.models.stream import Stream
 from remora.models.types import StrPath
 
+__all__ = ["StreamDownloader"]
+
 
 class StreamDownloader(BaseStreamDownloader[StreamState]):
     def __init__(

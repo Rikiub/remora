@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generic, TypeVar
 
-from remora.models.stream.item import Stream
+from remora.models.stream import Stream
 
 _T = TypeVar("_T", bound=Stream)
 

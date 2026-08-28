@@ -4,6 +4,8 @@ from typing import Annotated, Any, Union, get_args, get_origin
 
 from pydantic import BaseModel, RootModel
 
+__all__ = ["generate_keys"]
+
 
 def generate_keys(models: Sequence[type[BaseModel]], flat: bool = False) -> set[str]:
     """Generate keys from model fields."""

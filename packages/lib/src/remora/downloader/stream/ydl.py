@@ -17,6 +17,8 @@ from remora.models.protocol import Protocol
 from remora.models.stream import Stream
 from remora.models.types import StrPath
 
+__all__ = ["YDLStreamDownloader"]
+
 
 class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(Protocol)

@@ -20,6 +20,8 @@ from remora.models.protocol import Protocol
 from remora.models.stream import SizeType, Stream
 from remora.models.types import StrPath
 
+__all__ = ["HttpxStreamDownloader"]
+
 
 class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(
