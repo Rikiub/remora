@@ -1,8 +1,12 @@
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+
 import pytest
 from pydantic import ValidationError
 
 from remora.models.container import CodecInfo
 from remora.models.metadata.size import Resolution
+from remora.models.stream import Stream
 from remora.models.stream.item import (
     AudioInfo,
     AudioStream,
@@ -84,31 +88,47 @@ def streams() -> StreamList:
 
 
 # Filters: Video and Audio
-@pytest.mark.parametrize(
-    "method, expected_class",
-    [
-        ("muxed", MuxedStream),
-        ("videos", (VideoStream, MuxedStream)),
-        ("audios", (AudioStream, MuxedStream)),
-    ],
-)
-def test_stream_type_filters(streams: StreamList, method, expected_class):
-    filtered = getattr(streams, method)()
-    assert len(filtered) > 0, f"No streams returned for .{method}()"
-    assert all(isinstance(s, expected_class) for s in filtered)
+@dataclass
+class Case:
+    name: str
+    filter_streams: Callable[[StreamList], Sequence[Stream]]
+    expected_class: type | tuple[type, ...]
 
 
-@pytest.mark.parametrize(
-    "method, expected_class",
-    [
-        ("video_only", VideoStream),
-        ("audio_only", AudioStream),
-    ],
-)
-def test_stream_strict_type_filters(streams: StreamList, method, expected_class):
-    filtered = getattr(streams, method)()
-    assert len(filtered) > 0, f"No streams returned for .{method}()"
-    assert all(type(s) is expected_class for s in filtered)
+CASES = [
+    Case("muxed", lambda s: s.muxed(), MuxedStream),
+    Case("videos", lambda s: s.videos(), (VideoStream, MuxedStream)),
+    Case("audios", lambda s: s.audios(), (AudioStream, MuxedStream)),
+]
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
+def test_stream_type_filters(streams: StreamList, case: Case):
+    filtered = case.filter_streams(streams)
+
+    assert len(filtered) > 0, f"No streams returned for {case.name}"
+    assert all(isinstance(s, case.expected_class) for s in filtered)
+
+
+# Filters: Video-only and Audio-only
+@dataclass
+class Case:
+    name: str
+    filter_streams: Callable[[StreamList], Sequence[Stream]]
+    expected_class: type
+
+
+CASES = [
+    Case("video_only", lambda s: s.video_only(), VideoStream),
+    Case("audio_only", lambda s: s.audio_only(), AudioStream),
+]
+
+
+@pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
+def test_stream_strict_type_filters(streams: StreamList, case: Case):
+    filtered = case.filter_streams(streams)
+    assert len(filtered) > 0, f"No streams returned for {case.name}()"
+    assert all(type(s) is case.expected_class for s in filtered)
 
 
 # Filters: General
@@ -146,7 +166,7 @@ def test_filter_language(streams: StreamList):
     )
 
 
-def test_filter_video_codec(streams: StreamList):
+def test_filter_video_codec_family(streams: StreamList):
     """Test filter of partial video codec strings."""
 
     codec = "vp9"
@@ -154,14 +174,12 @@ def test_filter_video_codec(streams: StreamList):
 
     assert len(filtered) > 0
     assert all(
-        isinstance(s, VideoStream)
-        and (c := s.video.codec)
-        and c.original.startswith(codec)
+        isinstance(s, VideoStream) and (c := s.video.codec) and c.family == "VP9"
         for s in filtered
     )
 
 
-def test_filter_audio_codec(streams: StreamList):
+def test_filter_audio_codec_family(streams: StreamList):
     """Test filter of partial audio codec strings."""
 
     codec = "opus"
@@ -169,9 +187,7 @@ def test_filter_audio_codec(streams: StreamList):
 
     assert len(filtered) > 0
     assert all(
-        isinstance(s, AudioStream)
-        and (c := s.audio.codec)
-        and c.original.startswith(codec)
+        isinstance(s, AudioStream) and (c := s.audio.codec) and c.family == "Opus"
         for s in filtered
     )
 
