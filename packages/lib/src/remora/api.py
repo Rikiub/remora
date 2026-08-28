@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
+from remora.constants import DEFAULT_SEGMENT_WORKERS
 from remora.downloader.pipeline import BatchDownloader, MediaDownloader
 from remora.downloader.stream import StreamDownloader
 from remora.extractor import MediaExtractor
@@ -74,11 +75,13 @@ class Remora:
         item: Stream,
         output_path: StrPath,
         retries: int | None = None,
+        max_workers: int | None = None,
     ) -> StreamDownloader:
         return StreamDownloader(
             output_path,
             stream=item,
             retries=retries or self.download_options.retries,
+            max_workers=max_workers or DEFAULT_SEGMENT_WORKERS,
         )
 
     @overload
