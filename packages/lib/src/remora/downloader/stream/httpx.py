@@ -75,13 +75,29 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
+        # Setup impersonate
         transport = None
+
         if self.network_options.impersonate:
             transport = AsyncCurlTransport(impersonate=self.network_options.impersonate)  # ty: ignore[invalid-argument-type]
 
+        # Parse cookies
+        cookies = None
+
+        if c := self.stream.request_context.cookies:
+            cookies = httpx.Cookies()
+            for cookie in c:
+                cookies.set(
+                    name=cookie.name,
+                    value=cookie.value,
+                    domain=cookie.domain,
+                    path=cookie.path,
+                )
+
+        # Initialize client
         self.client = httpx.AsyncClient(
             headers=self.stream.request_context.headers,
-            cookies=self._get_cookies(),
+            cookies=cookies,
             proxy=str(self.network_options.proxy)
             if self.network_options.proxy
             else None,
@@ -368,39 +384,6 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                     total_segments=self.total_segments,
                 )
             )
-
-    def _get_cookies(self) -> dict[str, str]:
-        cookie_dict = {}
-        if not self.stream.request_context.cookies:
-            return cookie_dict
-
-        # Clean the string and split
-        # yt-dlp cookie strings often have multiple cookies separated by '; '
-        parts = self.stream.request_context.cookies.split(";")
-
-        for part in parts:
-            if "=" not in part:
-                continue
-
-            key, val = part.split("=", 1)
-            key = key.strip()
-            val = val.strip()
-
-            # Skip metadata attributes entirely
-            # We only want the actual data keys
-            if key.lower() in (
-                "domain",
-                "path",
-                "expires",
-                "secure",
-                "httponly",
-                "samesite",
-            ):
-                continue
-
-            cookie_dict[key] = val
-
-        return cookie_dict
 
     def _gen_part_file(self, index) -> Path:
         return Path(f"{self.file_path}.part{index}")

@@ -21,6 +21,7 @@ from remora.models.container import (
     CodecInfo,
     VideoCodecFamily,
 )
+from remora.models.cookies import CookieList
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
@@ -76,7 +77,7 @@ class VideoInfo(RemoraModel):
 class StreamRequestContext(RemoraModel):
     data: Annotated[bytes | None, Field(alias="request_data")] = None
     headers: Annotated[dict | None, Field(alias="http_headers")] = None
-    cookies: str | None = None
+    cookies: CookieList | None = None
     impersonate: Impersonate = False
     downloader: Annotated[dict | None, Field(alias="downloader_options")] = None
 
@@ -169,7 +170,9 @@ class _BaseStream(ABC, YDLSerializable):
             # Request Context
             "request_data": self.request_context.data,
             "http_headers": self.request_context.headers,
-            "cookies": self.request_context.cookies,
+            "cookies": self.request_context.cookies.to_http_cookies()
+            if self.request_context.cookies
+            else None,
             "impersonate": self.request_context.impersonate,
             "downloader_options": self.request_context.downloader,
         }
@@ -179,7 +182,12 @@ class _BaseStream(ABC, YDLSerializable):
     def _validate_ydl_base(cls, data) -> dict:
         if _is_ydl_format(data):
             data["id"] = data.get("format_id")
-            data["request_context"] = data
+            data["request_context"] = {
+                **data,
+                "cookies": CookieList.from_http_cookies(cookies)
+                if (cookies := data.get("cookies"))
+                else None,
+            }
 
             # Map size
             size_type: SizeType

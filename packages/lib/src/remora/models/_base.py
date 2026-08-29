@@ -91,3 +91,6 @@ EnsureNone = WrapValidator(_validate_or_none)
 
 EnsureList = BeforeValidator(lambda v: v if v else [])
 """Ensure data will be empty list if field not exists."""
+
+EnsureBool = BeforeValidator(lambda v: bool(v))
+"""Ensure data will be False if field not exists."""
