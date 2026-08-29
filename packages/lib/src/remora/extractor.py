@@ -41,18 +41,23 @@ class MediaExtractor:
         url = str(item if isinstance(item, StrUrl) else item.url)
 
         with logger.contextualize(status="extracting", url=url):
+            # Logs
             logger.info("Extracting URL: {url}", url=url)
-
-            # Extract info
-            from remora._ydl.extractor import extract_info
 
             if cookies := self.network_options.cookies:
                 logger.info(
-                    'Using cookies file "{cookies_file}"',
-                    cookies=cookies,
+                    "Using cookies list with {cookies_length} items",
+                    cookies_length=len(cookies),
                 )
             if proxy := self.network_options.proxy:
                 logger.info('Using proxy: "{proxy_url}"', proxy=proxy)
+            if impersonate := self.network_options.impersonate:
+                logger.info(
+                    'Using impersonate target: "{impersonate}"', impersonate=impersonate
+                )
+
+            # Extract info
+            from remora._ydl.extractor import extract_info
 
             info = await run_sync(extract_info, url, self.network_options)
             result = _ExtractAdapter.validate_python(info, by_alias=True)

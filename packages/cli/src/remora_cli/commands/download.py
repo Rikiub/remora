@@ -154,6 +154,7 @@ async def download(
         from remora import DownloadOptions, NetworkOptions, Remora
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.ffmpeg import get_ffmpeg_dir
+        from remora.models.cookies import CookieList
         from remora.models.media import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
 
@@ -175,7 +176,9 @@ async def download(
                     embed_metadata=embed_metadata,
                 ),
                 network_options=NetworkOptions(
-                    cookies=auth.cookies,
+                    cookies=CookieList.from_file(auth.cookies)
+                    if auth.cookies
+                    else None,
                     proxy=auth.proxy,
                 ),
             )

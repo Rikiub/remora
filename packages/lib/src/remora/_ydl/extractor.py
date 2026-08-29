@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from io import StringIO
 from typing import cast
 
 from yt_dlp.extractor import get_info_extractor
@@ -60,7 +61,9 @@ def extract_info(
             params={
                 "extract_flat": "in_playlist",
                 "skip_download": True,
-                "cookiefile": network_options.cookies,
+                "cookiefile": StringIO(cookies.to_netscape_cookies())
+                if (cookies := network_options.cookies)
+                else None,
                 "proxy": str(network_options.proxy) if network_options.proxy else None,
                 "impersonate": ImpersonateTarget.from_str(network_options.impersonate)
                 if network_options.impersonate

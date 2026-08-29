@@ -4,7 +4,7 @@ name = "id"
 value = "1"
 domain = ".example.com"
 path = "/"
-expires = "2026-05-02 00:00:00"
+expires = 1999999
 
 http_cookies = f"{name}={value}; Domain={domain}; Path={path}; Expires={expires}"
 data_cookies = Cookie(

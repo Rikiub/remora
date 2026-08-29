@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -56,10 +57,12 @@ def download_from_info(
     config: YDLParams = {
         "retries": retries,
         "fragment_retries": retries,
-        "cookiefile": network_options.cookies,
-        "proxy": str(network_options.proxy) if network_options.proxy else None,
-        "impersonate": ImpersonateTarget.from_str(network_options.impersonate)
-        if network_options.impersonate
+        "cookiefile": StringIO(cookies.to_netscape_cookies())
+        if (cookies := network_options.cookies)
+        else None,
+        "proxy": str(proxy) if (proxy := network_options.proxy) else None,
+        "impersonate": ImpersonateTarget.from_str(impersonate)
+        if (impersonate := network_options.impersonate)
         else None,
     }
 

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 from typing import Annotated
 
 from cyclopts import Parameter
@@ -70,8 +71,8 @@ class ExtractorOptions:
     """Commons authentication options for specific commands."""
 
     cookies: Annotated[
-        str | None,
-        Parameter(help="Browser name or path to a [green]cookies.txt[/] file."),
+        Path | None,
+        Parameter(help="Path to a [green]cookies.txt[/] file."),
     ] = None
     proxy: Annotated[
         str | None,

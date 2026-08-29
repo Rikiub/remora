@@ -1,11 +1,12 @@
-from datetime import UTC, datetime
 from http.cookiejar import MozillaCookieJar
 from io import StringIO
+from pathlib import Path
 from typing import Annotated, Self
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel
 
-from remora.models._base import BaseList, EnsureNone
+from remora.models._base import BaseList, EnsureBool, EnsureNone
+from remora.models.types import StrPath
 
 __all__ = ["Cookie", "CookieList"]
 
@@ -15,14 +16,28 @@ class Cookie(BaseModel):
     value: str
     domain: str
     path: str = "/"
-    expires: Annotated[datetime | None, EnsureNone] = None
-
-    @field_serializer("expires")
-    def _serialize_expires_to_timestamp(self, dt: datetime | None) -> float | None:
-        return dt.timestamp() if dt else None
+    secure: Annotated[bool, EnsureBool] = False
+    expires: Annotated[int | None, EnsureNone] = None
 
 
 class CookieList(BaseList[Cookie]):
+    @classmethod
+    def from_file(cls, file_path: StrPath) -> Self:
+        file_path = Path(file_path)
+        content = file_path.read_text()
+        extension = file_path.suffix[1:]
+
+        match extension:
+            case "txt":
+                return cls.from_netscape_cookies(content)
+            case "json":
+                return cls.from_json(content)
+        raise ValueError("Unable to determine cookies file format")
+
+    @classmethod
+    def from_json(cls, data: str | bytes | bytearray) -> Self:
+        return cls.model_validate_json(data)
+
     @classmethod
     def from_netscape_cookies(cls, data: str) -> Self:
         jar = MozillaCookieJar()
@@ -34,9 +49,8 @@ class CookieList(BaseList[Cookie]):
                 value=cookie.value or "",
                 domain=cookie.domain,
                 path=cookie.path,
-                expires=datetime.fromtimestamp(cookie.expires, tz=UTC)
-                if cookie.expires
-                else None,
+                secure=cookie.secure,
+                expires=cookie.expires,
             )
             for cookie in jar
         )
@@ -53,8 +67,8 @@ class CookieList(BaseList[Cookie]):
             domain = cookie.domain
             include_subdomains = "TRUE" if domain.startswith(".") else "FALSE"
             path = cookie.path
-            secure = "FALSE"
-            expires = str(int(cookie.expires.timestamp())) if cookie.expires else "0"
+            secure = "TRUE" if cookie.secure else "FALSE"
+            expires = str(cookie.expires if cookie.expires else "0")
 
             lines.append(
                 f"{domain}\t{include_subdomains}\t{path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}"

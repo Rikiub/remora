@@ -89,12 +89,13 @@ async def extract(
         from rich.json import JSON
 
         from remora import MediaExtractor, NetworkOptions
+        from remora.models.cookies import CookieList
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
         extractor = MediaExtractor(
             NetworkOptions(
-                cookies=auth.cookies,
+                cookies=CookieList.from_file(auth.cookies) if auth.cookies else None,
                 proxy=auth.proxy,
                 impersonate=auth.impersonate,
             )
