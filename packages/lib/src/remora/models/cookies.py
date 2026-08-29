@@ -1,23 +1,23 @@
-from http.cookiejar import MozillaCookieJar
-from io import StringIO
+import re
 from pathlib import Path
-from typing import Annotated, Self
+from typing import Annotated, Any, Self
 
 from pydantic import BaseModel
 
 import remora
-from remora.models._base import BaseList, EnsureBool, EnsureNone
+from remora.models._base import BaseList, EnsureNone
 from remora.models.types import StrPath
 
 __all__ = ["Cookie", "CookieList"]
+_NETSCAPE_HEADER = re.compile("#( Netscape)? HTTP Cookie File")
 
 
 class Cookie(BaseModel):
     name: str
-    value: str
+    value: str = ""
     domain: str
     path: str = "/"
-    secure: Annotated[bool, EnsureBool] = False
+    secure: bool = False
     expires: Annotated[int | None, EnsureNone] = None
 
 
@@ -39,22 +39,57 @@ class CookieList(BaseList[Cookie]):
     def from_json(cls, data: str | bytes | bytearray) -> Self:
         return cls.model_validate_json(data)
 
+    def to_json(self) -> str:
+        return self.model_dump_json()
+
     @classmethod
     def from_netscape_cookies(cls, data: str) -> Self:
-        jar = MozillaCookieJar()
-        jar._really_load(StringIO(data), "<memory>", False, False)  # ty: ignore[unresolved-attribute]
+        lines = data.splitlines()
+        cookies = []
 
-        return cls(
-            Cookie(
-                name=cookie.name,
-                value=cookie.value or "",
-                domain=cookie.domain,
-                path=cookie.path,
-                secure=cookie.secure,
-                expires=cookie.expires,
-            )
-            for cookie in jar
-        )
+        # Keys in the order required by Netscape format
+        keys = [
+            "domain",
+            "include_subdomains",
+            "path",
+            "secure",
+            "expires",
+            "name",
+            "value",
+        ]
+
+        # Check that the content have Netscape header
+        if not _NETSCAPE_HEADER.match(lines[0]):
+            raise ValueError("Content doesn't look like Netscape cookies format")
+
+        for line in lines:
+            line = line.strip()
+
+            if not line:
+                continue
+
+            # Handle the standard Netscape HttpOnly prefix
+            if line.startswith("#HttpOnly_"):
+                line = line[10:]
+            elif line.startswith("#"):
+                continue
+
+            # Netscape cookies are strictly tab-separated
+            parts = line.split("\t")
+
+            # zip() will safely map only as many parts as are available.
+            cookie: dict[str, Any] = dict(zip(keys, parts))
+
+            # Pre-process specific fields
+            if secure := cookie.get("secure"):
+                cookie["secure"] = secure.upper() == "TRUE"
+
+            # In Netscape format, an expiration of 0 typically means a session cookie
+            if (expires := cookie.get("expires")) and not (expires or expires == "0"):
+                cookie["expires"] = None
+
+            cookies.append(cookie)
+        return cls.model_validate(cookies)
 
     def to_netscape_cookies(self) -> str:
         lines = [
@@ -82,14 +117,14 @@ class CookieList(BaseList[Cookie]):
 
         parsed = LenientSimpleCookie(data)
         return cls(
-            Cookie(
-                name=name,
-                value=morsel.value,
-                domain=morsel["domain"],
-                path=morsel["path"],
-                secure=morsel["secure"],
-                expires=morsel["expires"],
-            )
+            {
+                "name": name,
+                "value": morsel.value,
+                "domain": morsel["domain"],
+                "path": morsel["path"],
+                "secure": morsel["secure"],
+                "expires": morsel["expires"],
+            }
             for name, morsel in parsed.items()
         )
 
