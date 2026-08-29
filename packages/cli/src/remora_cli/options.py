@@ -64,22 +64,20 @@ class DisplayOptions:
         setup_logging(self.log_level)
 
 
-@Parameter(name="*")
+@Parameter(name="*", group=OptionsPanel.EXTRACTOR)
 @dataclass(slots=True)
 class ExtractorOptions:
     """Commons authentication options for specific commands."""
 
     cookies: Annotated[
         str | None,
-        Parameter(
-            help="Browser name or path to a [green]cookies.txt[/] file.",
-            group=OptionsPanel.EXTRACTOR,
-        ),
+        Parameter(help="Browser name or path to a [green]cookies.txt[/] file."),
     ] = None
     proxy: Annotated[
         str | None,
-        Parameter(
-            help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/].",
-            group=OptionsPanel.EXTRACTOR,
-        ),
+        Parameter(help="HTTP/HTTPS/SOCKS5 proxy [green]URL[/]."),
+    ] = None
+    impersonate: Annotated[
+        str | None,
+        Parameter(help="Target browser to impersonate."),
     ] = None

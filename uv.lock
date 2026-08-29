@@ -574,6 +574,20 @@ wheels = [
 ]
 
 [[package]]
+name = "httpx-curl-cffi"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "curl-cffi" },
+    { name = "httpx" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/64/1f/158975d2541effa30f0d7634542dce50e8280ab283e7efc8d221ebf8a949/httpx_curl_cffi-0.1.5.tar.gz", hash = "sha256:177ee9968e9da142407017816cc3fb08ab281b134f773a9359b6a4650a6c81f3", size = 7937, upload-time = "2025-12-02T08:59:13.656Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6e/13/82039e3df58e0d52a6f82cc73d958400a2777d78c6cd6378c937a707afd0/httpx_curl_cffi-0.1.5-py3-none-any.whl", hash = "sha256:be414a97ac1f627693f4c8a8631f2852bb1c09456e61ff8ad996ad050a11fb53", size = 8933, upload-time = "2025-12-02T08:59:12.447Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.19"
 source = { registry = "https://pypi.org/simple" }
@@ -1224,6 +1238,7 @@ source = { editable = "packages/lib" }
 dependencies = [
     { name = "anyio" },
     { name = "httpx" },
+    { name = "httpx-curl-cffi" },
     { name = "lazy-loader" },
     { name = "loguru" },
     { name = "pathvalidate" },
@@ -1244,6 +1259,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "ffmpeg-binaries", marker = "extra == 'standard'", specifier = ">=1.1.0" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "httpx-curl-cffi", specifier = ">=0.1.5" },
     { name = "lazy-loader", specifier = ">=0.5" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pathvalidate", specifier = ">=3.2.1" },

@@ -24,8 +24,9 @@ from remora.exceptions import (
 from remora.models.container import (
     AVContainer,
 )
-from remora.models.download_options import DownloadOptions
 from remora.models.media import Media
+from remora.models.options.download import DownloadOptions
+from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
@@ -65,9 +66,11 @@ class MediaDownloader(Downloader[MediaState]):
     def __init__(
         self,
         media: Media,
-        config: DownloadOptions | None = None,
+        download_options: DownloadOptions | None = None,
+        network_options: NetworkOptions | None = None,
     ):
-        super().__init__(config=config)
+        super().__init__(download_options=download_options)
+        self.network_options = network_options
 
         self.id: str = media.id
         self.media: Media = media
@@ -118,7 +121,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Select Best Streams
         selected = StreamSelector(
-            self.config,
+            self.download_options,
             merge_available=bool(self.ffmpeg_dir),
         ).resolve(self.media)
 
@@ -128,7 +131,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Calculate Path & Check Existence
         output = format_template(
-            self.config.output_template,
+            self.download_options.output_template,
             stream=metadata_stream,
             media=self.media,
             default_missing="NA",
@@ -137,7 +140,9 @@ class MediaDownloader(Downloader[MediaState]):
         await output.parent.mkdir(parents=True, exist_ok=True)
 
         # Skip if option is enabled and a duplicate is found
-        if self.config.skip_existing and await self._check_output_duplicate(output):
+        if self.download_options.skip_existing and await self._check_output_duplicate(
+            output
+        ):
             return
 
         # Download resources like streams, subtitles and thumbnail
@@ -325,7 +330,7 @@ class MediaDownloader(Downloader[MediaState]):
         audio: StreamContext[AudioStream],
     ) -> Path:
         # Get container and extension
-        convert = AVContainer.get(self.config.convert_to)
+        convert = AVContainer.get(self.download_options.convert_to)
 
         if convert and not convert.is_audio_only:
             container = convert
@@ -388,7 +393,9 @@ class MediaDownloader(Downloader[MediaState]):
         )
         container = AVContainer(prc.file_path.suffix.lstrip("."))
         convert_container = (
-            AVContainer(self.config.convert_to) if self.config.convert_to else None
+            AVContainer(self.download_options.convert_to)
+            if self.download_options.convert_to
+            else None
         )
 
         @asynccontextmanager
@@ -444,7 +451,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Metadata
         # Must run before embed the thumbnail.
-        if self.config.embed_metadata:
+        if self.download_options.embed_metadata:
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
@@ -455,7 +462,7 @@ class MediaDownloader(Downloader[MediaState]):
         return Path(prc.file_path)
 
     def _determine_ffmpeg_dir(self) -> Path | None:
-        if ffmpeg_dir := self.config.ffmpeg_location:
+        if ffmpeg_dir := self.download_options.ffmpeg_location:
             logger.info('Using "ffmpeg" and "ffprobe" binaries from provided path')
         elif ffmpeg_dir := ffmpeg.find_wheel_ffmpeg_dir():
             logger.info(

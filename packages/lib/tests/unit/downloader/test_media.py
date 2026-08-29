@@ -12,11 +12,11 @@ from remora.downloader.selector import SelectorContext
 from remora.downloader.stream.main import StreamDownloader
 from remora.downloader.stream.muxed import MuxedStreamDownloader
 from remora.models.container import CodecInfo
-from remora.models.download_options import DownloadOptions
 from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
 from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
+from remora.models.options.download import DownloadOptions
 from remora.models.progress import MediaStarted
 from remora.models.progress.media import (
     MediaCompleted,
@@ -187,7 +187,7 @@ def mock_pipeline(
         # Init pipeline
         pipeline = MediaDownloader(
             media=media,
-            config=DownloadOptions(
+            download_options=DownloadOptions(
                 output_template=tmp_path,
                 embed_metadata=True,
             ),

@@ -4,12 +4,14 @@ from urllib.parse import urljoin
 import anyio
 import httpx
 from anyio import Path
+from httpx_curl_cffi import AsyncCurlTransport
 from loguru import logger
 from typing_extensions import override
 
 from remora.constants import DEFAULT_RETRIES, DEFAULT_SEGMENT_WORKERS
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
+from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
     StreamCompleted,
     StreamContinuous,
@@ -41,8 +43,14 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = DEFAULT_SEGMENT_WORKERS,
+        network_options: NetworkOptions | None = None,
     ):
-        super().__init__(output_path, stream, retries)
+        super().__init__(
+            output_path,
+            stream,
+            retries=retries,
+            network_options=network_options,
+        )
 
         # Workers
         self.max_workers = max_workers
@@ -67,9 +75,17 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
+        transport = None
+        if self.network_options.impersonate:
+            transport = AsyncCurlTransport(impersonate=self.network_options.impersonate)  # ty: ignore[invalid-argument-type]
+
         self.client = httpx.AsyncClient(
             headers=self.stream.request_context.headers,
             cookies=self._get_cookies(),
+            proxy=str(self.network_options.proxy)
+            if self.network_options.proxy
+            else None,
+            transport=transport,
             follow_redirects=True,
         )
 

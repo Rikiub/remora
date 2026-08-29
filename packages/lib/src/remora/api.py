@@ -6,7 +6,6 @@ from remora.constants import DEFAULT_SEGMENT_WORKERS
 from remora.downloader.pipeline import BatchDownloader, MediaDownloader
 from remora.downloader.stream import StreamDownloader
 from remora.extractor import MediaExtractor
-from remora.models.download_options import DownloadOptions
 from remora.models.media import (
     AnyExtractResult,
     LazyMedia,
@@ -16,6 +15,8 @@ from remora.models.media import (
     SearchList,
 )
 from remora.models.metadata import Subtitle, Thumbnail
+from remora.models.options.download import DownloadOptions
+from remora.models.options.network import NetworkOptions
 from remora.models.search import SearchService
 from remora.models.stream import Stream
 from remora.models.types import StrPath, StrUrl
@@ -27,10 +28,10 @@ class Remora:
     def __init__(
         self,
         download_options: DownloadOptions | None = None,
-        extractor: MediaExtractor | None = None,
+        network_options: NetworkOptions | None = None,
     ):
         self.download_options = download_options or DownloadOptions()
-        self.extractor = extractor or MediaExtractor()
+        self.extractor = MediaExtractor(network_options)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -57,12 +58,12 @@ class Remora:
         return await self.extractor.extract_search(query, service, limit)
 
     def download_media(self, item: Media) -> MediaDownloader:
-        return MediaDownloader(item, config=self.download_options)
+        return MediaDownloader(item, download_options=self.download_options)
 
     def download_batch(self, item: StrUrl | AnyExtractResult) -> BatchDownloader:
         return BatchDownloader(
             item,
-            config=self.download_options,
+            download_options=self.download_options,
             extractor=self.extractor,
         )
 

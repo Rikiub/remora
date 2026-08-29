@@ -1,11 +1,8 @@
-# --- API ---
 from . import constants, downloader, exceptions, ffmpeg, logs, models, path, template
 from .api import Remora
 from .extractor import MediaExtractor
-
-# --- TYPES ---
-from .models.download_options import DownloadOptions
 from .models.media import LazyMedia, LazyPlaylist, Media, Playlist, SearchList
+from .models.options import DownloadOptions, NetworkOptions
 
 __all__ = [
     "DownloadOptions",
@@ -13,6 +10,7 @@ __all__ = [
     "LazyPlaylist",
     "Media",
     "MediaExtractor",
+    "NetworkOptions",
     "Playlist",
     "Remora",
     "SearchList",

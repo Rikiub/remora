@@ -13,20 +13,16 @@ from remora.models.media import (
     SearchList,
     _ExtractAdapter,
 )
+from remora.models.options.network import NetworkOptions
 from remora.models.search import SearchService
-from remora.models.types import StrPath, StrUrl
+from remora.models.types import StrUrl
 
 __all__ = ["MediaExtractor"]
 
 
 class MediaExtractor:
-    def __init__(
-        self,
-        cookies_file: StrPath | None = None,
-        proxy_url: StrUrl | None = None,
-    ):
-        self.cookies_file = cookies_file
-        self.proxy_url = proxy_url
+    def __init__(self, network_options: NetworkOptions | None = None):
+        self.network_options = network_options or NetworkOptions()
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -50,15 +46,15 @@ class MediaExtractor:
             # Extract info
             from remora._ydl.extractor import extract_info
 
-            if self.cookies_file:
+            if cookies := self.network_options.cookies:
                 logger.info(
                     'Using cookies file "{cookies_file}"',
-                    cookies_file=self.cookies_file,
+                    cookies=cookies,
                 )
-            if self.proxy_url:
-                logger.info('Using proxy: "{proxy_url}"', proxy_url=self.proxy_url)
+            if proxy := self.network_options.proxy:
+                logger.info('Using proxy: "{proxy_url}"', proxy=proxy)
 
-            info = await run_sync(extract_info, url, self.cookies_file, self.proxy_url)
+            info = await run_sync(extract_info, url, self.network_options)
             result = _ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")

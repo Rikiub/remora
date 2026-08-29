@@ -1,7 +1,7 @@
 import pytest
 
 from remora.exceptions import FFmpegNotFoundError
-from remora.models.download_options import DownloadOptions
+from remora.models.options.download import DownloadOptions
 
 
 def test_output_template():

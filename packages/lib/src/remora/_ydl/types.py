@@ -5,5 +5,3 @@ YDLDict = Dict
 YDLExtractInfo = Dict
 YDLFormatInfo = Dict
 YDLParams = Dict
-
-DEFAULT_IMPERSONATE_TARGET = "chrome"

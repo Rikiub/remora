@@ -10,8 +10,8 @@ from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo
 from remora._ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
+from remora.models.options import NetworkOptions
 from remora.models.search import SearchService
-from remora.models.types import StrPath, StrUrl
 
 
 @dataclass(slots=True, frozen=True)
@@ -34,12 +34,16 @@ def extract_query(
     query: str,
     service: str | SearchService,
     limit: int = 20,
+    network_options: NetworkOptions | None = None,
 ) -> YDLExtractInfo:
     """Extract info from search service."""
 
     for item in SEARCH_QUERIES:
         if item.service == service:
-            result = extract_info(item.build(query, limit))
+            result = extract_info(
+                item.build(query, limit),
+                network_options,
+            )
             return result
 
     raise ValueError(f"{service} is invalid. Should be: {SearchService}")
@@ -47,19 +51,19 @@ def extract_query(
 
 def extract_info(
     query: str,
-    cookies_file: StrPath | None = None,
-    proxy_url: StrUrl | None = None,
-    impersonate: str | None = None,
+    network_options: NetworkOptions | None = None,
 ) -> YDLExtractInfo:
     try:
+        network_options = network_options or NetworkOptions()
+
         ydl = YDL(
             params={
                 "extract_flat": "in_playlist",
                 "skip_download": True,
-                "cookiefile": cookies_file,
-                "proxy": str(proxy_url) if proxy_url else None,
-                "impersonate": ImpersonateTarget.from_str(impersonate)
-                if impersonate
+                "cookiefile": network_options.cookies,
+                "proxy": str(network_options.proxy) if network_options.proxy else None,
+                "impersonate": ImpersonateTarget.from_str(network_options.impersonate)
+                if network_options.impersonate
                 else None,
             },
             auto_init=True,

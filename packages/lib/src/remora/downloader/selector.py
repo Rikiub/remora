@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import TypeVar, cast
 
-from remora.models.download_options import DownloadOptions
 from remora.models.media import Media
+from remora.models.options.download import DownloadOptions
 from remora.models.rank import get_audio_rank, get_video_rank
 from remora.models.stream import (
     AudioStream,
@@ -30,10 +30,10 @@ class SelectorContext:
 
 
 class StreamSelector:
-    """Responsible for selecting the best video/audio streams based on config."""
+    """Responsible for selecting the best video/audio streams based on options."""
 
-    def __init__(self, config: DownloadOptions, merge_available: bool = True):
-        self.config = config
+    def __init__(self, download_options: DownloadOptions, merge_available: bool = True):
+        self.download_options = download_options
         self.merge_available = merge_available
 
     def resolve(self, media: Media) -> SelectorContext:
@@ -46,7 +46,9 @@ class StreamSelector:
         muxed = self.extract_best(media.streams, MuxedStream)
         audio = self.extract_best(media.streams, AudioStream)
 
-        if audio and (media._is_audio_only or self.config.format_type == "audio"):
+        if audio and (
+            media._is_audio_only or self.download_options.format_type == "audio"
+        ):
             return SelectorContext(audio=audio)
 
         video = self.extract_best(media.streams, VideoStream)
@@ -96,13 +98,13 @@ class StreamSelector:
         }[type]
 
         # Resolve quality
-        if self.config.quality and (
+        if self.download_options.quality and (
             # If format type is declared, then filter only that type
-            self.config.format_type == literal_type
+            self.download_options.format_type == literal_type
             # If format type isn't declared, then default to filter only videos
             or issubclass(type, VideoStream)
         ):
-            result = candidates.get_closest_quality(self.config.quality)
+            result = candidates.get_closest_quality(self.download_options.quality)
 
         return cast(_T, result)
 

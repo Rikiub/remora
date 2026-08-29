@@ -151,7 +151,7 @@ async def download(
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import DownloadOptions, MediaExtractor, Remora
+        from remora import DownloadOptions, NetworkOptions, Remora
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.ffmpeg import get_ffmpeg_dir
         from remora.models.media import Playlist, SearchList
@@ -163,26 +163,24 @@ async def download(
             logger.warning("FFmpeg binaries not found, post-processing disabled")
 
         try:
-            config = DownloadOptions(
-                output_template=output,
-                skip_existing=skip_existing,
-                format_type=type,
-                convert_to=convert,
-                quality=quality,
-                ffmpeg_location=ffmpeg_location,
-                max_workers=max_workers,
-                embed_metadata=embed_metadata,
+            remora = Remora(
+                download_options=DownloadOptions(
+                    output_template=output,
+                    skip_existing=skip_existing,
+                    format_type=type,
+                    convert_to=convert,
+                    quality=quality,
+                    ffmpeg_location=ffmpeg_location,
+                    max_workers=max_workers,
+                    embed_metadata=embed_metadata,
+                ),
+                network_options=NetworkOptions(
+                    cookies=auth.cookies,
+                    proxy=auth.proxy,
+                ),
             )
         except OutputTemplateError as error:
             raise CycloptsError(str(error))
-
-        remora = Remora(
-            download_options=config,
-            extractor=MediaExtractor(
-                cookies_file=auth.cookies,
-                proxy_url=auth.proxy,
-            ),
-        )
 
     async for target, result in extract_queries(query, remora.extractor):
         if isinstance(result, (Playlist, SearchList)) and not result.entries.medias():

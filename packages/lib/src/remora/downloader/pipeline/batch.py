@@ -8,7 +8,6 @@ from remora.downloader.pipeline._logs import log_event_playlist
 from remora.downloader.pipeline.base import Downloader
 from remora.downloader.pipeline.media import MediaDownloader
 from remora.extractor import MediaExtractor
-from remora.models.download_options import DownloadOptions
 from remora.models.media import (
     AnyExtractResult,
     EntriesList,
@@ -18,6 +17,7 @@ from remora.models.media import (
     Playlist,
 )
 from remora.models.media.list import _BaseList
+from remora.models.options.download import DownloadOptions
 from remora.models.progress import (
     BatchState,
     MediaEnded,
@@ -39,15 +39,15 @@ class BatchDownloader(Downloader[BatchState]):
     def __init__(
         self,
         item: StrUrl | AnyExtractResult,
-        config: DownloadOptions | None = None,
+        download_options: DownloadOptions | None = None,
         extractor: MediaExtractor | None = None,
     ):
         # Internals
-        super().__init__(config=config)
+        super().__init__(download_options=download_options)
         self.extractor = extractor or MediaExtractor()
-        self._buffer_size = 100 * self.config.max_workers
+        self._buffer_size = 100 * self.download_options.max_workers
 
-        self.limiter = anyio.CapacityLimiter(self.config.max_workers)
+        self.limiter = anyio.CapacityLimiter(self.download_options.max_workers)
         self._unresolved_item = item
 
         # Fields
@@ -132,7 +132,7 @@ class BatchDownloader(Downloader[BatchState]):
             # Start downloader
             async with MediaDownloader(
                 resolved_media,
-                self.config,
+                self.download_options,
             ) as progress:
                 async for state in progress:
                     if isinstance(state, MediaFailed):
@@ -191,8 +191,8 @@ class BatchDownloader(Downloader[BatchState]):
         # Set config
         if playlist:
             self.id = playlist.id
-            self.config.output_template = format_template(
-                self.config.output_template,
+            self.download_options.output_template = format_template(
+                self.download_options.output_template,
                 playlist=playlist,
             )
         else:

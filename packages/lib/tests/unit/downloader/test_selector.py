@@ -1,9 +1,9 @@
 from remora.downloader.selector import SelectorContext, StreamSelector
 from remora.models.container import CodecInfo
-from remora.models.download_options import DownloadOptions
 from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.metadata.size import Resolution
+from remora.models.options.download import DownloadOptions
 from remora.models.stream.item import (
     AudioInfo,
     AudioStream,
@@ -67,7 +67,7 @@ def test_prefers_muxed_when_merge_not_available():
     )
 
     result = StreamSelector(
-        config=DownloadOptions(),
+        download_options=DownloadOptions(),
         merge_available=False,
     ).resolve(media)
 

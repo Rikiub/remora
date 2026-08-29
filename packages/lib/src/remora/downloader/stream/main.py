@@ -5,6 +5,7 @@ from remora.constants import DEFAULT_RETRIES, DEFAULT_SEGMENT_WORKERS
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
+from remora.models.options.network import NetworkOptions
 from remora.models.progress import StreamState
 from remora.models.stream import Stream
 from remora.models.types import StrPath
@@ -19,11 +20,13 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
         stream: Stream,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = DEFAULT_SEGMENT_WORKERS,
+        network_options: NetworkOptions | None = None,
     ):
         super().__init__(
             output_path,
             stream,
             retries=retries,
+            network_options=network_options,
         )
         self.max_workers = max_workers
 

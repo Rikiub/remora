@@ -10,6 +10,7 @@ from remora._ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
 from remora._ydl.wrapper import YDL
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
+from remora.models.options import NetworkOptions
 from remora.models.types import StrPath
 
 
@@ -18,7 +19,7 @@ def download_format(
     format_info: YDLFormatInfo,
     callback: Callable[[dict[str, Any]], None] | None = None,
     retries: int = DEFAULT_RETRIES,
-    impersonate: str | None = None,
+    network_options: NetworkOptions | None = None,
 ) -> Path:
     filepath = Path(filepath)
     params = {}
@@ -40,7 +41,7 @@ def download_format(
         info,
         params,
         retries=retries,
-        impersonate=impersonate,
+        network_options=network_options,
     )
 
 
@@ -48,12 +49,18 @@ def download_from_info(
     info: YDLExtractInfo,
     params: YDLParams,
     retries: int = DEFAULT_RETRIES,
-    impersonate: str | None = None,
+    network_options: NetworkOptions | None = None,
 ) -> Path:
+    network_options = network_options or NetworkOptions()
+
     config: YDLParams = {
         "retries": retries,
         "fragment_retries": retries,
-        "impersonate": ImpersonateTarget.from_str(impersonate) if impersonate else None,
+        "cookiefile": network_options.cookies,
+        "proxy": str(network_options.proxy) if network_options.proxy else None,
+        "impersonate": ImpersonateTarget.from_str(network_options.impersonate)
+        if network_options.impersonate
+        else None,
     }
 
     try:

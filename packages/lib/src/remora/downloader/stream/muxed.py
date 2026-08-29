@@ -10,6 +10,7 @@ from remora.downloader._state_streamer import AsyncStateStreamer
 from remora.downloader.stream.base import _DEFAULT_BUFFER_SIZE
 from remora.downloader.stream.main import StreamDownloader
 from remora.exceptions import DownloaderError
+from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
@@ -34,12 +35,14 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
         retries: int = DEFAULT_RETRIES,
+        network_options: NetworkOptions | None = None,
     ):
         super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
 
         self.video = StreamManager[VideoStream](stream=video.stream, path=video.path)
         self.audio = StreamManager[AudioStream](stream=audio.stream, path=audio.path)
 
+        self.network_options = network_options
         self.retries = retries
         self.last_sync_time = 0.0
 
@@ -74,6 +77,7 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
             output_path=self.video.path,
             stream=self.video.stream,
             retries=self.retries,
+            network_options=self.network_options,
         ) as progress:
             async for state in progress:
                 if state.status == "downloading":
@@ -88,6 +92,7 @@ class MuxedStreamDownloader(AsyncStateStreamer[BatchStreamState]):
             output_path=self.audio.path,
             stream=self.audio.stream,
             retries=self.retries,
+            network_options=self.network_options,
         ) as progress:
             async for state in progress:
                 if state.status == "downloading":

@@ -1,5 +1,5 @@
 from remora.downloader._state_streamer import AsyncStateStreamer, T
-from remora.models.download_options import DownloadOptions
+from remora.models.options.download import DownloadOptions
 
 __all__ = ["Downloader"]
 
@@ -7,8 +7,8 @@ __all__ = ["Downloader"]
 class Downloader(AsyncStateStreamer[T]):
     def __init__(
         self,
-        config: DownloadOptions | None = None,
+        download_options: DownloadOptions | None = None,
         buffer_size: int | None = None,
     ):
         super().__init__(buffer_size=buffer_size)
-        self.config = config or DownloadOptions()
+        self.download_options = download_options or DownloadOptions()
