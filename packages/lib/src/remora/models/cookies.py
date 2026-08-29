@@ -87,6 +87,7 @@ class CookieList(BaseList[Cookie]):
                 value=morsel.value,
                 domain=morsel["domain"],
                 path=morsel["path"],
+                secure=morsel["secure"],
                 expires=morsel["expires"],
             )
             for name, morsel in parsed.items()
@@ -104,5 +105,7 @@ class CookieList(BaseList[Cookie]):
             values.append(f"{c.name}={encoded_value}")
             values.append(f"Domain={c.domain}")
             values.append(f"Path={c.path}")
+            if c.secure:
+                values.append("Secure")
             values.append(f"Expires={c.expires}")
         return "; ".join(values)
