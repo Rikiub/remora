@@ -170,7 +170,7 @@ class _BaseStream(ABC, YDLSerializable):
             # Request Context
             "request_data": self.request_context.data,
             "http_headers": self.request_context.headers,
-            "cookies": self.request_context.cookies.to_http_cookies()
+            "cookies": self.request_context.cookies.to_cookie_header()
             if self.request_context.cookies
             else None,
             "impersonate": self.request_context.impersonate,
@@ -184,7 +184,7 @@ class _BaseStream(ABC, YDLSerializable):
             data["id"] = data.get("format_id")
             data["request_context"] = {
                 **data,
-                "cookies": CookieList.from_http_cookies(cookies)
+                "cookies": CookieList.from_cookie_header(cookies)
                 if (cookies := data.get("cookies"))
                 else None,
             }

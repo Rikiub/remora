@@ -1,4 +1,6 @@
-from datetime import datetime
+from datetime import UTC, datetime
+from http.cookiejar import MozillaCookieJar
+from io import StringIO
 from typing import Annotated, Self
 
 from pydantic import BaseModel, field_serializer
@@ -22,7 +24,46 @@ class Cookie(BaseModel):
 
 class CookieList(BaseList[Cookie]):
     @classmethod
-    def from_http_cookies(cls, data: str) -> Self:
+    def from_netscape_cookies(cls, data: str) -> Self:
+        jar = MozillaCookieJar()
+        jar._really_load(StringIO(data), "<memory>", False, False)  # ty: ignore[unresolved-attribute]
+
+        return cls(
+            Cookie(
+                name=cookie.name,
+                value=cookie.value or "",
+                domain=cookie.domain,
+                path=cookie.path,
+                expires=datetime.fromtimestamp(cookie.expires, tz=UTC)
+                if cookie.expires
+                else None,
+            )
+            for cookie in jar
+        )
+
+    def to_netscape_cookies(self) -> str:
+        lines = [
+            "# Netscape HTTP Cookie File",
+            "# https://curl.se/rfc/cookie_spec.html",
+            "# This is a generated file!  Do not edit.",
+            "",
+        ]
+
+        for cookie in self:
+            domain = cookie.domain
+            include_subdomains = "TRUE" if domain.startswith(".") else "FALSE"
+            path = cookie.path
+            secure = "FALSE"
+            expires = str(int(cookie.expires.timestamp())) if cookie.expires else "0"
+
+            lines.append(
+                f"{domain}\t{include_subdomains}\t{path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}"
+            )
+
+        return "\n".join(lines) + "\n"
+
+    @classmethod
+    def from_cookie_header(cls, data: str) -> Self:
         from remora._ydl.cookies import LenientSimpleCookie
 
         parsed = LenientSimpleCookie(data)
@@ -37,7 +78,7 @@ class CookieList(BaseList[Cookie]):
             for name, morsel in parsed.items()
         )
 
-    def to_http_cookies(self) -> str:
+    def to_cookie_header(self) -> str:
         from remora._ydl.cookies import LenientSimpleCookie
 
         encoder = LenientSimpleCookie()

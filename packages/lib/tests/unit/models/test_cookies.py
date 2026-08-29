@@ -17,11 +17,11 @@ data_cookies = Cookie(
 
 
 def test_from_http_cookies():
-    parsed = CookieList.from_http_cookies(http_cookies)
+    parsed = CookieList.from_cookie_header(http_cookies)
     assert parsed[0] == data_cookies
 
 
 def test_to_http_cookies():
     parsed = CookieList([data_cookies])
-    parsed = parsed.to_http_cookies()
+    parsed = parsed.to_cookie_header()
     assert parsed == http_cookies
