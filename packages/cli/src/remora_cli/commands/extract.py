@@ -76,31 +76,23 @@ async def extract(
         ),
     ] = None,
     # SHARED
+    network: NetworkOptions | None = None,
     display: DisplayOptions | None = None,
-    auth: NetworkOptions | None = None,
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
 
     display = display or DisplayOptions()
-    auth = auth or NetworkOptions()
+    network = network or NetworkOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from rich.json import JSON
 
-        from remora import MediaExtractor
-        from remora import NetworkOptions as Network
-        from remora.models.cookies import CookieList
+        from remora.extractor import MediaExtractor
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
-        extractor = MediaExtractor(
-            Network(
-                cookies=CookieList.from_file(auth.cookies) if auth.cookies else None,
-                proxy=auth.proxy,
-                impersonate=auth.impersonate,
-            )
-        )
+        extractor = MediaExtractor(network.build_options())
 
     # Determine user intent
     sel_format = format

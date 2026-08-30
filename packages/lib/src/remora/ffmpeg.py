@@ -73,7 +73,7 @@ def find_system_ffmpeg_dir() -> Path | None:
             return None
 
         return ffmpeg.parent
-    except (FFmpegNotFoundError, FFprobeNotFoundError):
+    except FFmpegNotFoundError:
         return None
 
 

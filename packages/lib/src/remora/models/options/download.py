@@ -7,7 +7,6 @@ from remora.constants import (
     DEFAULT_TEMPLATE,
     DEFAULT_WORKERS,
 )
-from remora.ffmpeg import validate_ffmpeg_dir
 from remora.models._base import RemoraModel
 from remora.models.container import AVContainer, AVContainerFormat, RichAVContainer
 from remora.models.stream import StreamQuality
@@ -15,6 +14,15 @@ from remora.models.types import StrPath
 from remora.template import validate_template
 
 __all__ = ["DownloadOptions"]
+
+
+def _validate_ffmpeg(value):
+    if value:
+        from remora.ffmpeg import validate_ffmpeg_dir
+
+        return validate_ffmpeg_dir(value)
+    else:
+        return None
 
 
 class DownloadOptions(RemoraModel):
@@ -48,10 +56,7 @@ class DownloadOptions(RemoraModel):
 
     convert_to: RichAVContainer | AVContainer | None = None
     embed_metadata: bool = True
-    ffmpeg_location: Annotated[
-        StrPath | None,
-        AfterValidator(lambda v: validate_ffmpeg_dir(v) if v else v),
-    ] = None
+    ffmpeg_location: Annotated[StrPath | None, AfterValidator(_validate_ffmpeg)] = None
 
     max_workers: int = DEFAULT_WORKERS
     retries: int = DEFAULT_RETRIES

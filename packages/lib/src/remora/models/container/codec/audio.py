@@ -50,13 +50,13 @@ class AudioCodecFamily(GetterEnum):
 
 AudioCodec = Literal[
     # Common
-    "pcm",
-    "alac",
-    "flac",
-    "opus",
-    "vorbis",
     "aac",
     "mp3",
+    "opus",
+    "vorbis",
+    "flac",
+    "alac",
+    "pcm",
     # Extra
     "ac4",
     "ac3",

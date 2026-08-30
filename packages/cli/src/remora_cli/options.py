@@ -4,10 +4,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
-from cyclopts import Parameter
+from cyclopts import Parameter, validators
 
 from remora.logs import LoggingLevels
-from remora.models.search import SearchService
+from remora.models import (
+    CookieList,
+    ImpersonateClient,
+    SearchService,
+    validate_impersonate_target,
+)
+from remora.models import NetworkOptions as Network
 
 QueryParameter = Annotated[
     list[str | SearchService],
@@ -63,13 +69,37 @@ class NetworkOptions:
 
     cookies: Annotated[
         Path | None,
-        Parameter(help="Path to a cookies file."),
+        Parameter(
+            help="Path to a cookies file.",
+            validator=validators.Path(
+                exists=True,
+                file_okay=True,
+                dir_okay=False,
+                ext=["txt", "json"],
+            ),
+        ),
     ] = None
     proxy: Annotated[
         str | None,
         Parameter(help="HTTP/HTTPS/SOCKS5 proxy URL."),
     ] = None
     impersonate: Annotated[
-        str | None,
-        Parameter(help="Target browser to impersonate."),
+        ImpersonateClient | str | None,
+        Parameter(
+            help="Target browser to impersonate.",
+            validator=lambda type, v: validate_impersonate_target(v) if v else None,
+        ),
     ] = None
+
+    def build_options(self) -> Network:
+        # Init options
+        network = Network(
+            cookies=CookieList.from_file(self.cookies) if self.cookies else None,
+            proxy=self.proxy,
+        )
+
+        # Replace directly to avoid trigger validation again
+        network.impersonate = self.impersonate
+
+        # Return validated options
+        return network

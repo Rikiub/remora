@@ -4,11 +4,22 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
 
-from cyclopts import App, CycloptsError, Parameter
+from cyclopts import App, Parameter, validators
 from loguru import logger
 
 from remora.constants import DEFAULT_TEMPLATE, DEFAULT_WORKERS
-from remora.models.container import AVContainerFormat, RichAVContainer
+from remora.exceptions import FFmpegNotFoundError
+from remora.ffmpeg import get_ffmpeg_dir, validate_ffmpeg_dir
+from remora.models import (
+    AudioCodec,
+    AVContainerFormat,
+    DownloadOptions,
+    Playlist,
+    RichAVContainer,
+    SearchList,
+    VideoCodec,
+)
+from remora.template import validate_template
 from remora_cli.options import (
     DisplayOptions,
     NetworkOptions,
@@ -26,6 +37,16 @@ class Panel(StrEnum):
 
 FormatQuality = Literal[144, 240, 360, 480, 720, 1080]
 app = App()
+
+
+def _validate_ffmpeg(type_, value):
+    if value:
+        validators.Path(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+        )(type_, value)
+        validate_ffmpeg_dir(value)
 
 
 @app.command
@@ -51,7 +72,7 @@ async def download(
         ),
     ] = None,
     video_codec: Annotated[
-        str | None,
+        VideoCodec | str | None,
         Parameter(
             help="Prefered video codec.",
             alias="--vcodec",
@@ -59,7 +80,7 @@ async def download(
         ),
     ] = None,
     audio_codec: Annotated[
-        str | None,
+        AudioCodec | str | None,
         Parameter(
             help="Prefered audio codec.",
             alias="--acodec",
@@ -73,6 +94,7 @@ async def download(
             help="Path or template for the saved file.",
             short_alias=True,
             group=Panel.DOWNLOADER,
+            validator=lambda type, v: validate_template(v),
         ),
     ] = DEFAULT_TEMPLATE,
     skip_existing: Annotated[
@@ -138,54 +160,42 @@ async def download(
             help="FFmpeg executable to use.",
             show_default=False,
             group=Panel.POST_PROCESS,
+            validator=_validate_ffmpeg,
         ),
     ] = None,
     # SHARED
-    auth: NetworkOptions | None = None,
+    network: NetworkOptions | None = None,
     display: DisplayOptions | None = None,
 ):
     """Download video/audio from [green]URL[/] or search [green]service[/]."""
 
-    auth = auth or NetworkOptions()
+    network = network or NetworkOptions()
     display = display or DisplayOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import DownloadOptions as Download
-        from remora import NetworkOptions as Network
         from remora import Remora
-        from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
-        from remora.ffmpeg import get_ffmpeg_dir
-        from remora.models.cookies import CookieList
-        from remora.models.media import Playlist, SearchList
         from remora_cli.ui.extractor import extract_queries
 
         try:
             get_ffmpeg_dir(ffmpeg_location)
         except FFmpegNotFoundError:
             logger.warning("FFmpeg binaries not found, post-processing disabled")
+            ffmpeg_location = None
 
-        try:
-            remora = Remora(
-                download_options=Download(
-                    output_template=output,
-                    skip_existing=skip_existing,
-                    format_type=type,
-                    convert_to=convert,
-                    quality=quality,
-                    ffmpeg_location=ffmpeg_location,
-                    max_workers=max_workers,
-                    embed_metadata=embed_metadata,
-                ),
-                network_options=Network(
-                    cookies=CookieList.from_file(auth.cookies)
-                    if auth.cookies
-                    else None,
-                    proxy=auth.proxy,
-                ),
-            )
-        except OutputTemplateError as error:
-            raise CycloptsError(str(error))
+        remora = Remora(
+            download_options=DownloadOptions(
+                output_template=output,
+                skip_existing=skip_existing,
+                format_type=type,
+                convert_to=convert,
+                quality=quality,
+                ffmpeg_location=ffmpeg_location,
+                max_workers=max_workers,
+                embed_metadata=embed_metadata,
+            ),
+            network_options=network.build_options(),
+        )
 
     async for target, result in extract_queries(query, remora.extractor):
         if isinstance(result, (Playlist, SearchList)) and not result.entries.medias():
