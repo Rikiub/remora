@@ -447,7 +447,7 @@ class MediaDownloader(Downloader[MediaState]):
                         await prc.change_container(convert_container)
                 except ProcessorError:
                     async with track_prc("convert_audio"):
-                        await prc.convert_audio(container)
+                        await prc.convert_audio(convert_container)
 
         # Metadata
         # Must run before embed the thumbnail.

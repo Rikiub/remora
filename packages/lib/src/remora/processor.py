@@ -34,7 +34,9 @@ class MediaProcessor:
         return self.file_path.suffix[1:]
 
     async def change_container(self, container: RichAVContainer | AVContainer) -> Self:
-        result = await run_sync(self._prc.video_remuxer, str(container))
+        extension = AVContainer(container).get_extension()
+        result = await run_sync(self._prc.video_remuxer, extension)
+
         self._update_file(result)
         return self
 
@@ -43,7 +45,9 @@ class MediaProcessor:
         container: RichAudioContainer | AVContainer | None = None,
         quality: StreamQuality | int | None = None,
     ) -> Self:
-        result = await run_sync(self._prc.extract_audio, str(container), quality)
+        extension = AVContainer(container).get_extension()
+        result = await run_sync(self._prc.extract_audio, extension, quality)
+
         self._update_file(result)
         return self
 
