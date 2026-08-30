@@ -14,7 +14,7 @@ _NETSCAPE_HEADER = re.compile("#( Netscape)? HTTP Cookie File")
 
 class Cookie(BaseModel):
     name: str
-    value: str = ""
+    value: str
     domain: str
     path: str = "/"
     secure: bool = False
@@ -80,6 +80,10 @@ class CookieList(BaseList[Cookie]):
             # zip() will safely map only as many parts as are available.
             cookie: dict[str, Any] = dict(zip(keys, parts))
 
+            # Fallback for missing "value" field
+            if not cookie.get("value"):
+                cookie["value"] = ""
+
             # Pre-process specific fields
             if secure := cookie.get("secure"):
                 cookie["secure"] = secure.upper() == "TRUE"
@@ -104,9 +108,11 @@ class CookieList(BaseList[Cookie]):
             path = cookie.path
             secure = "TRUE" if cookie.secure else "FALSE"
             expires = str(cookie.expires if cookie.expires else "0")
+            name = cookie.name
+            value = cookie.value
 
             lines.append(
-                f"{domain}\t{include_subdomains}\t{path}\t{secure}\t{expires}\t{cookie.name}\t{cookie.value}"
+                f"{domain}\t{include_subdomains}\t{path}\t{secure}\t{expires}\t{name}\t{value}"
             )
 
         return "\n".join(lines) + "\n"
