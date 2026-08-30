@@ -33,7 +33,7 @@ class ProcessorError(RemoraError):
     """Base exception for post-processing and media transcoding errors."""
 
 
-class FFmpegError(ValueError):
+class FFmpegError(RemoraError, ValueError):
     """Base exception for FFmpeg related errors."""
 
 
