@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from cyclopts import App, Parameter
 from loguru import logger
 
-from remora_cli.options import DisplayOptions, ExtractorOptions, QueryParameter
+from remora_cli.options import DisplayOptions, NetworkOptions, QueryParameter
 from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
@@ -77,24 +77,25 @@ async def extract(
     ] = None,
     # SHARED
     display: DisplayOptions | None = None,
-    auth: ExtractorOptions | None = None,
+    auth: NetworkOptions | None = None,
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
 
     display = display or DisplayOptions()
-    auth = auth or ExtractorOptions()
+    auth = auth or NetworkOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from rich.json import JSON
 
-        from remora import MediaExtractor, NetworkOptions
+        from remora import MediaExtractor
+        from remora import NetworkOptions as Network
         from remora.models.cookies import CookieList
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
         extractor = MediaExtractor(
-            NetworkOptions(
+            Network(
                 cookies=CookieList.from_file(auth.cookies) if auth.cookies else None,
                 proxy=auth.proxy,
                 impersonate=auth.impersonate,

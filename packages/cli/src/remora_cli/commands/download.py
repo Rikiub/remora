@@ -11,7 +11,7 @@ from remora.constants import DEFAULT_TEMPLATE, DEFAULT_WORKERS
 from remora.models.container import AVContainerFormat, RichAVContainer
 from remora_cli.options import (
     DisplayOptions,
-    ExtractorOptions,
+    NetworkOptions,
     QueryParameter,
 )
 from remora_cli.ui.download_handler import ProgressCallback
@@ -141,17 +141,19 @@ async def download(
         ),
     ] = None,
     # SHARED
-    auth: ExtractorOptions | None = None,
+    auth: NetworkOptions | None = None,
     display: DisplayOptions | None = None,
 ):
     """Download video/audio from [green]URL[/] or search [green]service[/]."""
 
-    auth = auth or ExtractorOptions()
+    auth = auth or NetworkOptions()
     display = display or DisplayOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import DownloadOptions, NetworkOptions, Remora
+        from remora import DownloadOptions as Download
+        from remora import NetworkOptions as Network
+        from remora import Remora
         from remora.exceptions import FFmpegNotFoundError, OutputTemplateError
         from remora.ffmpeg import get_ffmpeg_dir
         from remora.models.cookies import CookieList
@@ -165,7 +167,7 @@ async def download(
 
         try:
             remora = Remora(
-                download_options=DownloadOptions(
+                download_options=Download(
                     output_template=output,
                     skip_existing=skip_existing,
                     format_type=type,
@@ -175,7 +177,7 @@ async def download(
                     max_workers=max_workers,
                     embed_metadata=embed_metadata,
                 ),
-                network_options=NetworkOptions(
+                network_options=Network(
                     cookies=CookieList.from_file(auth.cookies)
                     if auth.cookies
                     else None,
