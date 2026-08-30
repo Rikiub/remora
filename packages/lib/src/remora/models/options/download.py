@@ -21,8 +21,7 @@ def _validate_ffmpeg(value):
         from remora.ffmpeg import validate_ffmpeg_dir
 
         return validate_ffmpeg_dir(value)
-    else:
-        return None
+    return None
 
 
 class DownloadOptions(RemoraModel):
