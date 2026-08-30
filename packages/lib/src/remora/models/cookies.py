@@ -5,7 +5,7 @@ from typing import Annotated, Any, Self
 from pydantic import BaseModel
 
 import remora
-from remora.models._base import BaseList, EnsureNone
+from remora.models._base import BaseList, EnsureBool, EnsureNone
 from remora.models.types import StrPath
 
 __all__ = ["Cookie", "CookieList"]
@@ -17,7 +17,7 @@ class Cookie(BaseModel):
     value: str
     domain: str
     path: str = "/"
-    secure: bool = False
+    secure: Annotated[bool, EnsureBool] = False
     expires: Annotated[int | None, EnsureNone] = None
 
 

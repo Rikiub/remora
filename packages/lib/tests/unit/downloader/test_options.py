@@ -1,6 +1,5 @@
 import pytest
 
-from remora.exceptions import FFmpegNotFoundError
 from remora.models.options.download import DownloadOptions
 
 
@@ -10,8 +9,8 @@ def test_output_template():
 
 
 def test_ffmpeg():
-    with pytest.raises(FFmpegNotFoundError):
-        DownloadOptions(ffmpeg_location="{wrong_key}")
+    with pytest.raises(ValueError):
+        DownloadOptions(ffmpeg_location="/invalid_dir/")
 
 
 def test_format():
