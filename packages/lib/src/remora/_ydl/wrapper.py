@@ -1,6 +1,7 @@
 import tempfile
 
 from loguru import logger
+from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.YoutubeDL import YoutubeDL
 
 from remora._ydl.types import YDLParams
@@ -73,3 +74,12 @@ class YDL(YoutubeDL):
             opts,  # type: ignore
             auto_init,
         )
+
+
+def parse_impersonate_target(target: str) -> ImpersonateTarget:
+    available_target, _ = YDL()._parse_impersonate_targets(target)
+
+    if available_target and available_target.client:
+        return available_target
+    else:
+        raise ValueError(f"Invalid impersonate target '{target}'")
