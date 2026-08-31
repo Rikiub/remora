@@ -4,7 +4,7 @@ version = "3.0.0"
 requires-python = ">=3.11"
 description = "Download any video/audio you want from a simple URL ✨"
 dependencies = [
-    "yt-dlp[default,curl_cffi]>=2026.7.4",
+    "yt-dlp[default,curl_cffi]>=2026.8.19",
     "pydantic>=2.9.2",
     "typing-extensions>=4.12.2",
     "pathvalidate>=3.2.1",
