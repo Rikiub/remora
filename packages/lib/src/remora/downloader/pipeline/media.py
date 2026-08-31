@@ -129,6 +129,11 @@ class MediaDownloader(Downloader[MediaState]):
         if not metadata_stream:
             raise DownloaderError("Streams not found")
 
+        logger.debug(
+            "Primary selected stream: '{selected_stream}'",
+            selected_stream=type(metadata_stream).__name__,
+        )
+
         # Calculate Path & Check Existence
         output = format_template(
             self.download_options.output_template,
@@ -141,7 +146,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Skip if option is enabled and a duplicate is found
         if self.download_options.skip_existing and await self._check_output_duplicate(
-            output
+            output, type(metadata_stream)
         ):
             return
 
@@ -187,24 +192,33 @@ class MediaDownloader(Downloader[MediaState]):
         # Complete (Move file to target)
         await self._move_to_final(file_path, output)
 
-    async def _check_output_duplicate(self, output: StrPath) -> Path | None:
+    async def _check_output_duplicate(
+        self,
+        output: StrPath,
+        stream_type: type[Stream],
+    ) -> Path | None:
         output = anyio.Path(output)
 
         async for path in output.parent.iterdir():
             if (
+                # File name match
                 await path.is_file()
                 and path.stem == output.name
-                and AVContainer.get(path.suffix.lstrip("."))
+                # Normalize file extension
+                and (container := AVContainer.get(path.suffix.lstrip(".")))
             ):
-                path = Path(path)
-                await self._emit(
-                    MediaSkipped(
-                        id=self.id,
-                        media=self.media,
-                        file_path=path,
+                file_type = AudioStream if container.is_audio_only else VideoStream
+
+                if stream_type == file_type:
+                    path = Path(path)
+                    await self._emit(
+                        MediaSkipped(
+                            id=self.id,
+                            media=self.media,
+                            file_path=path,
+                        )
                     )
-                )
-                return path
+                    return path
 
     async def _download_resources(
         self,
