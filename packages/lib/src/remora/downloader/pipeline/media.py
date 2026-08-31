@@ -125,19 +125,19 @@ class MediaDownloader(Downloader[MediaState]):
             merge_available=bool(self.ffmpeg_dir),
         ).resolve(self.media)
 
-        metadata_stream = selected.muxed or selected.video or selected.audio
-        if not metadata_stream:
+        primary_stream = selected.muxed or selected.video or selected.audio
+        if not primary_stream:
             raise DownloaderError("Streams not found")
 
         logger.debug(
             "Primary selected stream: '{selected_stream}'",
-            selected_stream=type(metadata_stream).__name__,
+            selected_stream=type(primary_stream).__name__,
         )
 
         # Calculate Path & Check Existence
         output = format_template(
             self.download_options.output_template,
-            stream=metadata_stream,
+            stream=primary_stream,
             media=self.media,
             default_missing="NA",
         )
@@ -146,7 +146,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Skip if option is enabled and a duplicate is found
         if self.download_options.skip_existing and await self._check_output_duplicate(
-            output, type(metadata_stream)
+            output, type(primary_stream)
         ):
             return
 
@@ -176,7 +176,7 @@ class MediaDownloader(Downloader[MediaState]):
             with logger.contextualize(status="processing"):
                 file_path = await self._post_process(
                     file_path,
-                    metadata_stream,
+                    primary_stream,
                     results.thumbnail,
                     results.subtitles,
                 )
