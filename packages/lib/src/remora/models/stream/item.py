@@ -122,20 +122,13 @@ class _BaseStream(ABC, YDLSerializable):
     @abstractmethod
     def _has_video(self) -> bool: ...
 
-    @property
-    @abstractmethod
-    def _audio_codec(self) -> CodecInfo | None: ...
-
     @model_validator(mode="after")
     def _build_container_and_extension(self) -> Self:
         raw_ext = self.extension
 
         # Compute the container using the raw value
         container = AVContainer(raw_ext)
-        normalized_ext = container.get_extension(
-            has_video=self._has_video,
-            audio_codec=self._audio_codec.normalized if self._audio_codec else None,
-        )
+        normalized_ext = container.get_extension(has_video=self._has_video)
 
         # Mutate the extension field to hold the normalized value
         self.container = container
@@ -270,11 +263,6 @@ class AudioStream(_BaseStream):
     def _has_video(self) -> bool:
         return False
 
-    @property
-    @override
-    def _audio_codec(self) -> CodecInfo[AudioCodecFamily] | None:
-        return self.audio.codec
-
     @override
     def _quality(self) -> float:
         if b := self.audio.bitrate:
@@ -296,11 +284,6 @@ class VideoStream(_BaseStream):
     @override
     def _has_video(self) -> bool:
         return True
-
-    @property
-    @override
-    def _audio_codec(self) -> None:
-        return None
 
 
 class MuxedStream(VideoStream, AudioStream):

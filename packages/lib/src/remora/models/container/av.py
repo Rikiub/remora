@@ -5,7 +5,6 @@ from typing import Literal, Self
 from typing_extensions import override
 
 from remora.models.container._base import GetterEnum
-from remora.models.container.codec.audio import AudioCodecFamily
 
 
 class AVContainer(GetterEnum):
@@ -35,37 +34,21 @@ class AVContainer(GetterEnum):
     AAC = "AAC"
     APE = "APE"
 
-    def get_extension(
-        self,
-        has_video: bool = True,
-        audio_codec: AudioCodecFamily | str | None = None,
-    ) -> str:
+    def get_extension(self, has_video: bool = True) -> str:
         """
         Dynamically calculates the correct file extension based on the container
         and the streams it holds.
 
         Args:
             has_video: `True` if a video stream is present.
-            audio_codec: Pass the string or `AudioCodecFamily` enum.
         """
-        ac = AudioCodecFamily(audio_codec) if audio_codec else None
 
         match self:
             case AVContainer.MP4:
-                if not has_video:
-                    return "m4a"
-                return "mp4"
+                return "mp4" if has_video else "m4a"
             case AVContainer.MKV:
-                if not has_video:
-                    return "mka"
-                return "mkv"
+                return "mkv" if has_video else "mka"
             case AVContainer.OGG:
-                if not has_video and ac in (
-                    AudioCodecFamily.OPUS,
-                    AudioCodecFamily.VORBIS,
-                    AudioCodecFamily.SPX,
-                ):
-                    return ac if ac == AudioCodecFamily.OPUS else "ogg"
                 return "ogv" if has_video else "ogg"
             case AVContainer.TS:
                 return "m2ts" if has_video else "ts"
