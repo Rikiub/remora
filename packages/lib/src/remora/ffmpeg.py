@@ -45,7 +45,7 @@ def find_wheel_ffmpeg_dir() -> Path | None:
     """Find FFmpeg and FFprobe binaries directory from wheel."""
 
     try:
-        package = importlib.import_module("ffmpeg")
+        package = importlib.import_module("ffmpeg_binaries")
 
         ffmpeg = validate_ffmpeg(package.FFMPEG_PATH)
         ffprobe = validate_ffprobe(package.FFPROBE_PATH)

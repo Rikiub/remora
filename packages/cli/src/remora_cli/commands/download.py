@@ -180,7 +180,9 @@ async def download(
         try:
             get_ffmpeg_dir(ffmpeg_location)
         except FFmpegNotFoundError:
-            logger.warning("FFmpeg binaries not found, post-processing disabled")
+            logger.warning(
+                "FFmpeg binaries not found. Download quality could be degraded and post-processing will be disabled."
+            )
             ffmpeg_location = None
 
         remora = Remora(

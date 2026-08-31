@@ -500,19 +500,19 @@ wheels = [
 ]
 
 [[package]]
-name = "ffmpeg-binaries"
+name = "ffmpeg-binaries-compat"
 version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "patool" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/7e/aa13a00d52437f6748c38e8793e427dee26348636eeee5f2237a2b90feef/ffmpeg_binaries-1.1.0.tar.gz", hash = "sha256:c8eb4e3113b1e471252461ab10aab3d36daa7266b2fc15bc6ec479d104060ba2", size = 8002, upload-time = "2026-01-04T00:25:03.194Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/69/6ed8091a3b0a120fe078c0fc3ae06954a308067cfbf3450e57be847e3fd1/ffmpeg_binaries_compat-1.1.0.tar.gz", hash = "sha256:552b2809e9c37f03985539e0be4e6c211964eff74803a27ec4a443ab05079011", size = 8058, upload-time = "2026-01-04T00:25:04.409Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/66/132fd861852e345684a65b9dae093f842352d21384f3c33292a486380dbe/ffmpeg_binaries-1.1.0-py3-none-any.whl", hash = "sha256:056cf2b3a6025f4f6fdbf8680a50a986fbdbc93ac58f1929388447db147528cd", size = 10396, upload-time = "2026-01-04T00:24:34.522Z" },
-    { url = "https://files.pythonhosted.org/packages/93/da/acf26c164c837856014a1c7db6d0421cbdc132eae3d5d2ec17ca1200be2d/ffmpeg_binaries-1.1.0-py3-none-macosx_10_15_universal2.whl", hash = "sha256:a3e5a57dbd29d9739b0f42f8342739966a069b6f0ac48ab72a75d9a0625808a5", size = 50289865, upload-time = "2026-01-04T00:24:36.919Z" },
-    { url = "https://files.pythonhosted.org/packages/59/e0/bc323ac2de7630f6d5dd5f0a2e737fd267a6b02eb904faddc9003b9bb3a7/ffmpeg_binaries-1.1.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:b8a6d67f5895a8a105e25746db3bb3a4d6b76629cde22814f9866fd9af76a399", size = 60253578, upload-time = "2026-01-04T00:24:41.014Z" },
-    { url = "https://files.pythonhosted.org/packages/00/ba/b3b0bc096cf3662a7a771976145d060e6fdc5d51360d18adfc918ebdd017/ffmpeg_binaries-1.1.0-py3-none-win_amd64.whl", hash = "sha256:8d5fbaf2d28fcc72e8d2c22628977cf8863641592c9ec15358290490f9195b9e", size = 91169531, upload-time = "2026-01-04T00:24:45.809Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/ac/2cff7293ae643afcef7bdae748d18b7ad9faf1b8a67e2291222815306cf3/ffmpeg_binaries_compat-1.1.0-py3-none-any.whl", hash = "sha256:9e44fe9ab87218c8ee62eff0bf6486cba96cc8f070d4bbb9a2272ccd0aa3afe7", size = 10770, upload-time = "2026-01-04T00:24:48.983Z" },
+    { url = "https://files.pythonhosted.org/packages/75/ea/bfd7532fc7793fcb018fc8aaf15c1daaebfcb096c7e7bf49837451098a94/ffmpeg_binaries_compat-1.1.0-py3-none-macosx_10_15_universal2.whl", hash = "sha256:e25e79fd87e0908d1d859fba977f457dbfeda9d1e31a8059976ef17ce06ac643", size = 50290281, upload-time = "2026-01-04T00:24:51.621Z" },
+    { url = "https://files.pythonhosted.org/packages/af/5a/07b97828d625de84a61457596e54e7aa160d0ff5df059bcae71e2385d286/ffmpeg_binaries_compat-1.1.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:bfaa5e0a593a1604e404f91bafb41811b7e68e985bd5756f91246794bf95e895", size = 60258242, upload-time = "2026-01-04T00:24:55.551Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/8c/fd4ce27c9675872dfba87b80f34c1e4f9aab4273f1ad485f28b4271302de/ffmpeg_binaries_compat-1.1.0-py3-none-win_amd64.whl", hash = "sha256:07829e67ea484bb0eedf759c9c3a8de84aa132d9c8011aa272c7d7fa451dee3a", size = 91170670, upload-time = "2026-01-04T00:25:00.199Z" },
 ]
 
 [[package]]
@@ -1250,14 +1250,14 @@ dependencies = [
 
 [package.optional-dependencies]
 standard = [
-    { name = "ffmpeg-binaries" },
+    { name = "ffmpeg-binaries-compat" },
     { name = "yt-dlp", extra = ["deno"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
-    { name = "ffmpeg-binaries", marker = "extra == 'standard'", specifier = ">=1.1.0" },
+    { name = "ffmpeg-binaries-compat", marker = "extra == 'standard'", specifier = ">=1.1.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx-curl-cffi", specifier = ">=0.1.5" },
     { name = "lazy-loader", specifier = ">=0.5" },
