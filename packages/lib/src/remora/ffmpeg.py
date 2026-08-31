@@ -34,7 +34,9 @@ def get_ffmpeg_dir(ffmpeg_dir: StrPath | None = None) -> Path:
         ffmpeg_dir = find_wheel_ffmpeg_dir() or find_system_ffmpeg_dir()
 
         if not ffmpeg_dir:
-            raise FFmpegNotFoundError()
+            raise FFmpegNotFoundError(
+                "FFmpeg binaries not found neither in wheel of system"
+            )
         return ffmpeg_dir
 
 

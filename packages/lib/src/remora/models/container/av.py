@@ -21,7 +21,7 @@ class AVContainer(GetterEnum):
     V3GP = "3GP"
     MKV = "MKV"
     WEBM = "WEBM"
-    OGG = "OGG"
+    OGV = "OGV"
     MPG = "MPG"
     TS = "TS"
     WMV = "WMV"
@@ -29,31 +29,16 @@ class AVContainer(GetterEnum):
     # Audio-only
     AIFF = "AIFF"
     FLAC = "FLAC"
+    OGG = "OGG"
+    MKA = "MKA"
+    M4A = "M4A"
     MP3 = "MP3"
     WAV = "WAV"
     AAC = "AAC"
     APE = "APE"
 
-    def get_extension(self, has_video: bool = True) -> str:
-        """
-        Dynamically calculates the correct file extension based on the container
-        and the streams it holds.
-
-        Args:
-            has_video: `True` if a video stream is present.
-        """
-
-        match self:
-            case AVContainer.MP4:
-                return "mp4" if has_video else "m4a"
-            case AVContainer.MKV:
-                return "mkv" if has_video else "mka"
-            case AVContainer.OGG:
-                return "ogv" if has_video else "ogg"
-            case AVContainer.TS:
-                return "m2ts" if has_video else "ts"
-
-        # For all other formats
+    @property
+    def extension(self) -> str:
         return self.value.lower()
 
     @property
@@ -61,6 +46,9 @@ class AVContainer(GetterEnum):
         return self in {
             AVContainer.AIFF,
             AVContainer.FLAC,
+            AVContainer.MKA,
+            AVContainer.OGG,
+            AVContainer.M4A,
             AVContainer.MP3,
             AVContainer.WAV,
             AVContainer.AAC,
@@ -72,7 +60,9 @@ class AVContainer(GetterEnum):
         """Checks if container reliably supports embedded cover art."""
         return self in {
             AVContainer.MKV,
+            AVContainer.MKA,
             AVContainer.MP4,
+            AVContainer.M4A,
             AVContainer.MOV,
         }
 
@@ -81,7 +71,9 @@ class AVContainer(GetterEnum):
         """Checks if container reliably supports embedded subtitles."""
         return self in {
             AVContainer.MKV,
+            AVContainer.MKA,
             AVContainer.MP4,
+            AVContainer.M4A,
             AVContainer.MOV,
             AVContainer.WEBM,
         }
@@ -106,7 +98,6 @@ _ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
     AVContainer.MP4: (
         # Apple extensions
         "m4v",
-        "m4a",
         "m4b",
         "m4r",
         "alac",
@@ -120,8 +111,8 @@ _ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
     ),
     AVContainer.MOV: ("qt", "quicktime"),
     AVContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
-    AVContainer.MKV: ("mka", "mk3d"),
-    AVContainer.OGG: ("oga", "ogv", "ogx", "opus", "vorbis", "spx"),
+    AVContainer.MKV: ("mk3d",),
+    AVContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
     AVContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
     AVContainer.TS: ("m2ts", "mts"),
     AVContainer.WMV: ("wma", "asf"),

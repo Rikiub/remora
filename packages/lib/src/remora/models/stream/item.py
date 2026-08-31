@@ -125,14 +125,11 @@ class _BaseStream(ABC, YDLSerializable):
     @model_validator(mode="after")
     def _build_container_and_extension(self) -> Self:
         raw_ext = self.extension
-
-        # Compute the container using the raw value
         container = AVContainer(raw_ext)
-        normalized_ext = container.get_extension(has_video=self._has_video)
 
         # Mutate the extension field to hold the normalized value
         self.container = container
-        self.extension = normalized_ext
+        self.extension = container.extension
         return self
 
     # YDL parser/normalizer

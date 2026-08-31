@@ -337,7 +337,7 @@ class MediaDownloader(Downloader[MediaState]):
         else:
             container = AVContainer.MP4
 
-        extension = container.get_extension()
+        extension = container.extension
 
         # Setup events
         file_path = Path(f"{create_temp_file()}.{extension}")
