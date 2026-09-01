@@ -40,7 +40,7 @@ class BaseExtract(YDLSerializable):
     @classmethod
     def _validate_ydl_extractor(cls, data) -> dict:
         if is_ydl_media(data):
-            extractor = data.pop("extractor", None)
+            extractor = data.get("extractor", None)
             if isinstance(extractor, dict):
                 extractor = extractor.get("name")
 
