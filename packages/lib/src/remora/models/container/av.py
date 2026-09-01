@@ -136,7 +136,7 @@ def get_container(value: str | None) -> AVContainer:
 _VIDEO_MAP: dict[str, VideoContainer] = {
     alias: canonical
     for canonical, aliases in {
-        VideoContainer.MP4: (
+        VideoContainer.MP4: {
             # Apple extensions
             "m4v",
             "m4b",
@@ -149,25 +149,27 @@ _VIDEO_MAP: dict[str, VideoContainer] = {
             # Standard MPEG-4 aliases
             "mpg4",
             "mp4v",
-        ),
-        VideoContainer.MOV: ("qt", "quicktime"),
-        VideoContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
-        VideoContainer.MKV: ("mk3d",),
-        VideoContainer.TS: ("m2ts", "mts"),
-        VideoContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
-        VideoContainer.WMV: ("wma", "asf"),
+        },
+        VideoContainer.MOV: {"qt", "quicktime"},
+        VideoContainer.V3GP: {"3gpp", "3g2", "3gpp2"},
+        VideoContainer.MKV: {"mk3d"},
+        VideoContainer.TS: {"m2ts", "mts"},
+        VideoContainer.MPG: {"mpeg", "m2v", "m2p", "mpe", "vob"},
+        VideoContainer.WMV: {"wma", "asf"},
     }.items()
     for alias in aliases
 }
 _AUDIO_MAP: dict[str, AudioContainer] = {
     alias: canonical
     for canonical, aliases in {
-        AudioContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
-        AudioContainer.AIFF: ("aif", "aifc"),
-        AudioContainer.WAV: ("wave",),
-        AudioContainer.APE: ("mac",),
-        AudioContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
-        AudioContainer.WEBA: ("webm",),
+        AudioContainer.MKA: {"mkv"},
+        AudioContainer.WEBA: {"webm"},
+        AudioContainer.M4A: {"mp4"},
+        AudioContainer.MP3: {"mpeg3", "mpg3", "mp1", "mp2"},
+        AudioContainer.OGG: {"oga", "ogx", "opus", "vorbis", "spx"},
+        AudioContainer.AIFF: {"aif", "aifc"},
+        AudioContainer.WAV: {"wave"},
+        AudioContainer.APE: {"mac"},
     }.items()
     for alias in aliases
 }
