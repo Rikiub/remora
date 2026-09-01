@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AliasChoices, Field, HttpUrl, model_validator
+from pydantic import AliasChoices, AnyUrl, Field, model_validator
 from typing_extensions import TypeIs, override
 
 from remora.models._base import EnsureNone, RemoraModel, YDLSerializable
@@ -55,7 +55,7 @@ class ExtractID(BaseExtract):
     """Base identifier for media objects."""
 
     id: str
-    url: Annotated[HttpUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
+    url: Annotated[AnyUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
     modified_date: Annotated[datetime | None, EnsureNone] = None
     upload_date: Annotated[datetime | None, EnsureNone] = None

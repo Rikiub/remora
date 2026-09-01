@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import AfterValidator, HttpUrl
+from pydantic import AfterValidator, AnyUrl
 
 from remora.models._base import RemoraModel
 from remora.models.cookies import CookieList
@@ -10,7 +10,7 @@ __all__ = ["NetworkOptions"]
 
 
 class NetworkOptions(RemoraModel):
-    proxy: HttpUrl | None = None
+    proxy: AnyUrl | None = None
     cookies: CookieList | None = None
     impersonate: Annotated[
         ImpersonateClient | str | None,

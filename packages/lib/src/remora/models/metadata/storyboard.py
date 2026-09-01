@@ -1,6 +1,6 @@
 from typing import Generic, Literal, Self, TypeVar
 
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from remora.models._base import BaseList, RemoraModel, YDLSerializable
 from remora.models.metadata import Resolution
@@ -8,7 +8,7 @@ from remora.models.protocol import Protocol
 
 
 class StoryboardFragment(RemoraModel):
-    url: HttpUrl
+    url: AnyUrl
     duration: float
 
 

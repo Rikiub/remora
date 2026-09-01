@@ -1,6 +1,6 @@
 from os import PathLike
 
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 __all__ = [
     "StrPath",
@@ -8,4 +8,4 @@ __all__ = [
 ]
 
 StrPath = PathLike[str] | str
-StrUrl = HttpUrl | str
+StrUrl = AnyUrl | str

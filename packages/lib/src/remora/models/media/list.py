@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Annotated, Literal, Union
 
-from pydantic import AliasChoices, Field, HttpUrl
+from pydantic import AliasChoices, AnyUrl, Field
 from typing_extensions import TypeVar
 
 from remora.models._base import BaseList
@@ -41,7 +41,7 @@ class LazyPlaylist(_BaseList, ExtractID):
 
     id: Annotated[str, Field(alias="playlist_id")]
     url: Annotated[
-        HttpUrl,
+        AnyUrl,
         Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
     ]
     title: Annotated[str, Field(alias="playlist_title")] = ""

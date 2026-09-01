@@ -5,9 +5,9 @@ from urllib.parse import urljoin
 
 from pydantic import (
     AfterValidator,
+    AnyUrl,
     Discriminator,
     Field,
-    HttpUrl,
     Tag,
     computed_field,
     model_validator,
@@ -87,7 +87,7 @@ class StreamRequestContext(RemoraModel):
 
 # FRAGMENTS
 class StreamFragment(RemoraModel):
-    url: HttpUrl
+    url: AnyUrl
     duration: float | None = None
     size_bytes: Annotated[float | None, Field(alias="filesize")] = None
 
@@ -98,7 +98,7 @@ class _BaseStream(ABC, YDLSerializable):
 
     id: str
     protocol: Protocol
-    url: HttpUrl
+    url: AnyUrl
     fragments: list[StreamFragment] | None = None
     request_context: StreamRequestContext = StreamRequestContext()
 

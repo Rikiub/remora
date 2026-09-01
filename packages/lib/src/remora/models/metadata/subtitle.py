@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Generic, Literal, Self
 
-from pydantic import Field, HttpUrl
+from pydantic import AnyUrl, Field
 from typing_extensions import TypeVar, override
 
 from remora.models._base import BaseList, Impersonate, RemoraModel, YDLSerializable
@@ -34,7 +34,7 @@ class _BaseSubtitle(Metadata, YDLSerializable):
 
 class ExternalSubtitle(_BaseSubtitle):
     type: Literal["external"] = "external"
-    url: HttpUrl
+    url: AnyUrl
 
 
 class InlineSubtitle(_BaseSubtitle):

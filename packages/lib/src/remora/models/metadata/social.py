@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import AfterValidator, Field, HttpUrl
+from pydantic import AfterValidator, AnyUrl, Field
 
 from remora.models.metadata._base import Metadata, RemoraModel
 
@@ -18,13 +18,13 @@ class Uploader(Metadata):
         Field(alias="uploader"),
     ]
     id: Annotated[str | None, Field(alias="uploader_id")] = None
-    url: Annotated[HttpUrl | None, Field(alias="uploader_url")] = None
+    url: Annotated[AnyUrl | None, Field(alias="uploader_url")] = None
 
 
 class Channel(Metadata):
     name: Annotated[str, Field(alias="channel")]
     id: Annotated[str | None, Field(alias="channel_id")] = None
-    url: Annotated[HttpUrl | None, Field(alias="channel_url")] = None
+    url: Annotated[AnyUrl | None, Field(alias="channel_url")] = None
     is_verified: Annotated[bool | None, Field(alias="channel_is_verified")] = None
     followers: Annotated[int | None, Field(alias="channel_follower_count")] = None
 
