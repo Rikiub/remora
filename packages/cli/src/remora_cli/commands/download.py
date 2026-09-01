@@ -30,9 +30,9 @@ from remora_cli.ui.rich import CONSOLE
 
 
 class Panel(StrEnum):
-    FILTERS = "Filters"
-    DOWNLOADER = "Downloader"
-    POST_PROCESS = "Post-processing"
+    FILTERS = "Filter"
+    DOWNLOADER = "Download"
+    POST_PROCESS = "Post-process"
 
 
 FormatQuality = Literal[144, 240, 360, 480, 720, 1080]
