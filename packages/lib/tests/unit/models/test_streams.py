@@ -26,12 +26,12 @@ def streams() -> StreamList:
     return StreamList(
         [
             # Covers: muxed, find_by_id(id="2")
-            # Covers: quality=720, protocol="https", extension="mp4"
+            # Covers: quality=720, protocol="https", container="mp4"
             MuxedStream(
                 id="2",
                 url=URL,
                 protocol="https",
-                extension="mp4",
+                container="mp4",
                 size_type="estimated",
                 size_bytes=11832459,
                 video=VideoInfo(
@@ -53,7 +53,7 @@ def streams() -> StreamList:
                 id="1",
                 url=URL,
                 protocol="m3u8",
-                extension="webm",
+                container="webm",
                 video=VideoInfo(
                     codec=CodecInfo(original="vp9"),
                     resolution=Resolution(width=1920, height=1080),
@@ -64,7 +64,7 @@ def streams() -> StreamList:
                 id="3",
                 url=URL,
                 protocol="https",
-                extension="webm",
+                container="webm",
                 audio=AudioInfo(
                     codec=CodecInfo(original="opus"),
                     bitrate=160.0,
@@ -76,7 +76,7 @@ def streams() -> StreamList:
                 id="4",
                 url=URL,
                 protocol="m3u8",
-                extension="m4a",
+                container="m4a",
                 audio=AudioInfo(
                     codec=CodecInfo(original="mp4a.40.5"),
                     bitrate=64.0,
@@ -136,7 +136,7 @@ def test_stream_strict_type_filters(streams: StreamList, case: Case):
     "attribute, filter_value",
     [
         ("quality", 720),
-        ("protocol", "https"),
+        ("protocol", "HTTPS"),
         ("container", "WEBM"),
     ],
 )
@@ -229,7 +229,7 @@ def test_invalid_video_extension():
             id="1",
             url=URL,
             protocol="https",
-            extension="opus",  # This is a audio extension
+            container="opus",  # This is a audio extension
             video=VideoInfo(codec="vp9"),
         )
 
@@ -240,7 +240,7 @@ def test_invalid_audio_extension():
             id="2",
             url=URL,
             protocol="https",
-            extension="mp4",  # This is a video extension
+            container="mp4",  # This is a video extension
             audio=AudioInfo(codec="opus"),
         )
 
@@ -251,7 +251,7 @@ def test_none_video_codec():
             id="1",
             url=URL,
             protocol="https",
-            extension="mp4",
+            container="mp4",
             video=VideoInfo(codec="none"),
         )
 
@@ -262,6 +262,6 @@ def test_none_audio_codec():
             id="2",
             url=URL,
             protocol="https",
-            extension="m4a",
+            container="m4a",
             audio=AudioInfo(codec="none"),
         )

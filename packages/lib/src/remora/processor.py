@@ -9,9 +9,13 @@ from remora._ydl.processor import RequestedFormat, YDLProcessor
 from remora._ydl.types import YDLExtractInfo
 from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
-    AVContainer,
+    AudioContainer,
+    AVContainerLike,
     RichAudioContainer,
     RichAVContainer,
+    RichVideoContainer,
+    VideoContainer,
+    get_container,
 )
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
@@ -33,8 +37,11 @@ class MediaProcessor:
     def extension(self) -> str:
         return self.file_path.suffix[1:]
 
-    async def change_container(self, container: RichAVContainer | AVContainer) -> Self:
-        extension = AVContainer(container).extension
+    async def change_container(
+        self,
+        container: RichAVContainer | AVContainerLike,
+    ) -> Self:
+        extension = get_container(container).extension
         result = await run_sync(self._prc.video_remuxer, extension)
 
         self._update_file(result)
@@ -42,11 +49,11 @@ class MediaProcessor:
 
     async def convert_audio(
         self,
-        container: RichAudioContainer | AVContainer | None = None,
+        container: RichAudioContainer | AudioContainer | None = None,
         quality: StreamQuality | int | None = None,
     ) -> Self:
-        extension = AVContainer(container).extension
-        result = await run_sync(self._prc.extract_audio, extension, quality)
+        container = AudioContainer(container)
+        result = await run_sync(self._prc.extract_audio, container.extension, quality)
 
         self._update_file(result)
         return self
@@ -74,7 +81,7 @@ class MediaProcessor:
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
-        merge_container: RichAVContainer | AVContainer,
+        merge_container: RichVideoContainer | VideoContainer,
     ) -> Self:
         """
         Merge two streams in a single file (Remuxing).
@@ -85,10 +92,13 @@ class MediaProcessor:
             FileExistsError: The file path already exists.
         """
 
-        merge_container = AVContainer(merge_container)
-        if merge_container.is_audio_only:
-            raise ValueError(
-                f"'{merge_container}' is a audio-only container. Please select a container with video and audio support."
+        if self.file_path.exists():
+            raise FileExistsError(self.file_path)
+
+        container = get_container(merge_container)
+        if isinstance(container, AudioContainer):
+            raise TypeError(
+                f"'{container}' is a audio-only container. Please select a container with video and audio support."
             )
 
         real_streams: list[RequestedFormat] = []
@@ -97,7 +107,9 @@ class MediaProcessor:
             real_streams.append(fmt)  # type: ignore
 
         result = await run_sync(
-            self._prc.merge_formats, str(merge_container), real_streams
+            self._prc.merge_formats,
+            container.extension,
+            real_streams,
         )
         self._update_file(result)
         return self

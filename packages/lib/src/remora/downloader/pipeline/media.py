@@ -21,9 +21,11 @@ from remora.exceptions import (
     MetadataDownloaderError,
     ProcessorError,
 )
+from remora.models import VideoContainer
 from remora.models.container import (
-    AVContainer,
+    AudioContainer,
 )
+from remora.models.container.av import get_container
 from remora.models.media import Media
 from remora.models.options.download import DownloadOptions
 from remora.models.options.network import NetworkOptions
@@ -205,9 +207,13 @@ class MediaDownloader(Downloader[MediaState]):
                 await path.is_file()
                 and path.stem == output.name
                 # Normalize file extension
-                and (container := AVContainer.get(path.suffix.lstrip(".")))
+                and (container := get_container(path.suffix.lstrip(".")))
             ):
-                file_type = AudioStream if container.is_audio_only else VideoStream
+                file_type = (
+                    AudioStream
+                    if isinstance(container, AudioContainer)
+                    else VideoStream
+                )
 
                 if stream_type == file_type:
                     path = Path(path)
@@ -344,17 +350,15 @@ class MediaDownloader(Downloader[MediaState]):
         audio: StreamContext[AudioStream],
     ) -> Path:
         # Get container and extension
-        convert = AVContainer.get(self.download_options.convert_to)
+        convert = get_container(self.download_options.convert_to)
 
-        if convert and not convert.is_audio_only:
+        if convert and not isinstance(convert, AudioContainer):
             container = convert
         else:
-            container = AVContainer.MP4
-
-        extension = container.extension
+            container = VideoContainer.MP4
 
         # Setup events
-        file_path = Path(f"{create_temp_file()}.{extension}")
+        file_path = Path(f"{create_temp_file()}.{container.extension}")
         merging = MediaProcessing(
             id=self.id,
             media=self.media,
@@ -379,12 +383,12 @@ class MediaDownloader(Downloader[MediaState]):
                 "{} and {} don't supports merging as {}, fallback to mkv",
                 video.extension,
                 audio.extension,
-                extension,
+                container.extension,
             )
             prc = await prc.merge_streams(
                 video=video,
                 audio=audio,
-                merge_container=AVContainer.MKV,
+                merge_container=VideoContainer.MKV,
             )
 
         # Complete events
@@ -405,9 +409,13 @@ class MediaDownloader(Downloader[MediaState]):
             file_path=file_path,
             ffmpeg_dir=self.ffmpeg_dir,
         )
-        container = AVContainer(prc.file_path.suffix.lstrip("."))
+
+        container = get_container(prc.file_path.suffix.lstrip("."))
+        if not container:
+            raise ValueError()
+
         convert_container = (
-            AVContainer(self.download_options.convert_to)
+            get_container(self.download_options.convert_to)
             if self.download_options.convert_to
             else None
         )
@@ -454,8 +462,10 @@ class MediaDownloader(Downloader[MediaState]):
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
-        elif isinstance(stream, AudioStream):
-            if convert_container and convert_container != stream.container:
+        elif isinstance(stream, AudioStream) and isinstance(
+            convert_container, AudioContainer
+        ):
+            if convert_container != stream.container:
                 try:
                     async with track_prc("change_container", True):
                         await prc.change_container(convert_container)

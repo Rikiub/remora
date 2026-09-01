@@ -1,5 +1,7 @@
-DEFAULT_TEMPLATE = "{uploader.name} - {title}"
-DEFAULT_WORKERS = 5
-DEFAULT_SEGMENT_WORKERS = 8
-DEFAULT_RETRIES = 3
-DEFAULT_IMPERSONATE_TARGET = "chrome"
+from typing import Final
+
+DEFAULT_TEMPLATE: Final = "{uploader.name} - {title}"
+DEFAULT_WORKERS: Final = 5
+DEFAULT_SEGMENT_WORKERS: Final = 8
+DEFAULT_RETRIES: Final = 3
+DEFAULT_IMPERSONATE_TARGET: Final = "chrome"

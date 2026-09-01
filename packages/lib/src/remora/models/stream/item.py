@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 from urllib.parse import urljoin
 
 from pydantic import (
@@ -14,12 +14,15 @@ from pydantic import (
 )
 from typing_extensions import override
 
+from remora.models import VideoContainer
 from remora.models._base import Impersonate, RemoraModel, YDLSerializable, rgetattr
 from remora.models.container import (
     AudioCodecFamily,
+    AudioContainer,
     AVContainer,
     CodecInfo,
     VideoCodecFamily,
+    get_container,
 )
 from remora.models.cookies import CookieList
 from remora.models.metadata import Resolution
@@ -102,8 +105,12 @@ class _BaseStream(ABC, YDLSerializable):
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
 
-    container: Annotated[AVContainer, Field(init=False)] = None  # ty: ignore[invalid-assignment]
-    extension: Annotated[str, Field(alias="ext")]
+    container: Annotated[AVContainer, Field(alias="ext")]
+
+    @computed_field
+    @property
+    def extension(self) -> str:
+        return self.container.extension
 
     @computed_field
     @property
@@ -114,19 +121,7 @@ class _BaseStream(ABC, YDLSerializable):
     @abstractmethod
     def _quality(self) -> float:
         """Stream quality implementation."""
-        raise NotImplementedError()
-
-    # Container builder
-
-    @model_validator(mode="after")
-    def _build_container_and_extension(self) -> Self:
-        raw_ext = self.extension
-        container = AVContainer(raw_ext)
-
-        # Mutate the extension field to hold the normalized value
-        self.container = container
-        self.extension = container.extension
-        return self
+        raise NotImplementedError
 
     # YDL parser/normalizer
 
@@ -135,7 +130,7 @@ class _BaseStream(ABC, YDLSerializable):
         return {
             # Http Info
             "format_id": self.id,
-            "protocol": str(self.protocol),
+            "protocol": self.protocol._to_ydl(),
             "url": str(self.url),
             "fragments": [f.model_dump(by_alias=True) for f in self.fragments]
             if self.fragments
@@ -248,6 +243,7 @@ class _BaseStream(ABC, YDLSerializable):
 
 
 class AudioStream(_BaseStream):
+    container: Annotated[AudioContainer, Field(alias="ext")]
     type: Literal["audio"] = "audio"
     audio: AudioInfo = AudioInfo()
 
@@ -259,6 +255,7 @@ class AudioStream(_BaseStream):
 
 
 class VideoStream(_BaseStream):
+    container: Annotated[VideoContainer, Field(alias="ext")]
     type: Literal["video"] = "video"
     video: VideoInfo = VideoInfo()
 
@@ -303,8 +300,8 @@ def _infer_stream_type(data) -> str:
         return "audio"
 
     # Determine from extension as fallback
-    elif extension and (container := AVContainer.get(extension)):
-        if container.is_audio_only:
+    elif extension and (container := get_container(extension)):
+        if isinstance(container, AudioContainer):
             return "audio"
         else:
             return "video"

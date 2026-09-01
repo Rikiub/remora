@@ -86,8 +86,8 @@ class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
 
     @classmethod
     def _from_ydl_dict(cls, data: dict) -> Self:
-        subtitles: dict[str, list[dict[str, str]]] = data.pop("subtitles", {})
-        automatic_captions: dict[str, list[dict[str, str]]] = data.pop(
+        subtitles: dict[str, list[dict[str, str]]] = data.get("subtitles", {})
+        automatic_captions: dict[str, list[dict[str, str]]] = data.get(
             "automatic_captions", {}
         )
         flat_subtitles: list[dict] = []
