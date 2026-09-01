@@ -2,12 +2,15 @@ from typing import Literal
 
 from remora.models.container.av import (
     AudioContainer,
+    AudioContainerLike,
     AVContainer,
     AVContainerLike,
     RichAudioContainer,
     RichAVContainer,
     RichVideoContainer,
     VideoContainer,
+    VideoContainerLike,
+    get_container,
 )
 from remora.models.container.codec.audio import AudioCodec, AudioCodecFamily
 from remora.models.container.codec.info import CodecInfo
@@ -23,6 +26,7 @@ __all__ = [
     "AudioCodec",
     "AudioCodecFamily",
     "AudioContainer",
+    "AudioContainerLike",
     "Codec",
     "CodecFamily",
     "CodecInfo",
@@ -32,4 +36,6 @@ __all__ = [
     "VideoCodec",
     "VideoCodecFamily",
     "VideoContainer",
+    "VideoContainerLike",
+    "get_container",
 ]

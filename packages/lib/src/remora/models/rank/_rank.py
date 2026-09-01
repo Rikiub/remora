@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from functools import cache
 
 from remora.models.container import (
+    AudioContainer,
     AVContainer,
 )
 from remora.models.protocol import Protocol
@@ -102,7 +103,7 @@ def get_codec_rank(info: VideoInfo | AudioInfo) -> int:
 
 
 def get_container_rank(container: AVContainer) -> int:
-    if container.is_audio_only:
+    if isinstance(container, AudioContainer):
         rank = RANK["audio_container"]
     else:
         rank = RANK["video_container"]

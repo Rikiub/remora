@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Literal, Self
 
 from typing_extensions import override
@@ -7,13 +8,44 @@ from typing_extensions import override
 from remora.models.container._base import GetterEnum
 
 
-class AVContainer(GetterEnum):
-    """Video and audio containers.
+class _BaseContainer(GetterEnum):
+    @property
+    def extension(self) -> str:
+        return self.value.lower()
 
-    Allows pass a raw extension and determine the container from it.
-    """
+    @property
+    @abstractmethod
+    def supports_subtitles(self) -> bool:
+        raise NotImplementedError
 
-    # Video and Audio
+    @property
+    @abstractmethod
+    def supports_thumbnails(self) -> bool:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def _map_dict(cls) -> dict[str, Self]:
+        raise NotImplementedError
+
+    @override
+    @classmethod
+    def get(cls, value: str | None) -> Self | None:
+        if not value:
+            return None
+        value = value.lower().lstrip(".").strip()
+
+        if member := cls._map_dict().get(value):
+            return member
+
+        for member in cls:
+            if member.lower() == value.lower():
+                return member
+
+        return None
+
+
+class VideoContainer(_BaseContainer):
     AVI = "AVI"
     FLV = "FLV"
     MP4 = "MP4"
@@ -26,7 +58,33 @@ class AVContainer(GetterEnum):
     TS = "TS"
     WMV = "WMV"
 
-    # Audio-only
+    @override
+    @property
+    def supports_subtitles(self) -> bool:
+        """Checks if container reliably supports embedded subtitles."""
+        return self in {
+            VideoContainer.MKV,
+            VideoContainer.MP4,
+            VideoContainer.MOV,
+        }
+
+    @override
+    @property
+    def supports_thumbnails(self) -> bool:
+        """Checks if container reliably supports embedded cover art."""
+        return self in {
+            VideoContainer.MKV,
+            VideoContainer.MP4,
+            VideoContainer.MOV,
+        }
+
+    @override
+    @classmethod
+    def _map_dict(self):
+        return _VIDEO_MAP
+
+
+class AudioContainer(_BaseContainer):
     AIFF = "AIFF"
     FLAC = "FLAC"
     OGG = "OGG"
@@ -36,103 +94,88 @@ class AVContainer(GetterEnum):
     WAV = "WAV"
     AAC = "AAC"
     APE = "APE"
+    WEBA = "WEBA"
 
-    @property
-    def extension(self) -> str:
-        return self.value.lower()
-
-    @property
-    def is_audio_only(self) -> bool:
-        return self in {
-            AVContainer.AIFF,
-            AVContainer.FLAC,
-            AVContainer.MKA,
-            AVContainer.OGG,
-            AVContainer.M4A,
-            AVContainer.MP3,
-            AVContainer.WAV,
-            AVContainer.AAC,
-            AVContainer.APE,
-        }
-
-    @property
-    def supports_thumbnails(self) -> bool:
-        """Checks if container reliably supports embedded cover art."""
-        return self in {
-            AVContainer.MKV,
-            AVContainer.MKA,
-            AVContainer.MP4,
-            AVContainer.M4A,
-            AVContainer.MOV,
-        }
-
+    @override
     @property
     def supports_subtitles(self) -> bool:
         """Checks if container reliably supports embedded subtitles."""
         return self in {
-            AVContainer.MKV,
-            AVContainer.MKA,
-            AVContainer.MP4,
-            AVContainer.M4A,
-            AVContainer.MOV,
-            AVContainer.WEBM,
+            AudioContainer.MKA,
+            AudioContainer.M4A,
+        }
+
+    @override
+    @property
+    def supports_thumbnails(self) -> bool:
+        """Checks if container reliably supports embedded cover art."""
+        return self in {
+            AudioContainer.MKA,
+            AudioContainer.M4A,
+            AudioContainer.MP3,
+            AudioContainer.FLAC,
         }
 
     @override
     @classmethod
-    def get(cls, value: str | None) -> Self | None:
-        if not value:
-            return None
+    def _map_dict(self):
+        return _AUDIO_MAP
 
-        value = value.lower().lstrip(".").strip()
-        target = _ALIAS_MAP.get(value, value)
 
-        for member in cls:
-            if member.lower() == target.lower():
-                return member
-        return None
+AVContainer = VideoContainer | AudioContainer
+
+
+def get_container(value: str | None) -> AVContainer:
+    container = VideoContainer.get(value) or AudioContainer.get(value)
+    if not container:
+        raise ValueError(f"'{value}' is a invalid container")
+    return container
 
 
 # Mapping extensions/aliases to canonical Enum values
-_ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
-    AVContainer.MP4: (
-        # Apple extensions
-        "m4v",
-        "m4b",
-        "m4r",
-        "alac",
-        # Flash extensions
-        "f4v",
-        "f4a",
-        "f4b",
-        # Standard MPEG-4 aliases
-        "mpg4",
-        "mp4v",
-    ),
-    AVContainer.MOV: ("qt", "quicktime"),
-    AVContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
-    AVContainer.MKV: ("mk3d",),
-    AVContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
-    AVContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
-    AVContainer.TS: ("m2ts", "mts"),
-    AVContainer.WMV: ("wma", "asf"),
-    AVContainer.AIFF: ("aif", "aifc"),
-    AVContainer.WAV: ("wave",),
-    AVContainer.APE: ("mac",),
-    AVContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
-}
-# Flatten the groups dynamically into an exact-match lookup map
-_ALIAS_MAP: dict[str, str] = {
+_VIDEO_MAP: dict[str, VideoContainer] = {
     alias: canonical
-    for canonical, aliases in _ALIAS_GROUPS.items()
+    for canonical, aliases in {
+        VideoContainer.MP4: (
+            # Apple extensions
+            "m4v",
+            "m4b",
+            "m4r",
+            "alac",
+            # Flash extensions
+            "f4v",
+            "f4a",
+            "f4b",
+            # Standard MPEG-4 aliases
+            "mpg4",
+            "mp4v",
+        ),
+        VideoContainer.MOV: ("qt", "quicktime"),
+        VideoContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
+        VideoContainer.MKV: ("mk3d",),
+        VideoContainer.TS: ("m2ts", "mts"),
+        VideoContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
+        VideoContainer.WMV: ("wma", "asf"),
+    }.items()
+    for alias in aliases
+}
+_AUDIO_MAP: dict[str, AudioContainer] = {
+    alias: canonical
+    for canonical, aliases in {
+        AudioContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
+        AudioContainer.AIFF: ("aif", "aifc"),
+        AudioContainer.WAV: ("wave",),
+        AudioContainer.APE: ("mac",),
+        AudioContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
+    }.items()
     for alias in aliases
 }
 
 # Specializations
 # Mostly for autocompletion
 
-VideoContainer = (
-    AVContainer
+VideoContainerLike = (
+    VideoContainer
     | Literal[
         "avi",
         "flv",
@@ -149,8 +192,8 @@ VideoContainer = (
 )
 """Common video containers."""
 
-AudioContainer = (
-    AVContainer
+AudioContainerLike = (
+    AudioContainer
     | Literal[
         "aiff",
         "flac",
@@ -166,7 +209,7 @@ AudioContainer = (
 )
 """Common audio-only containers."""
 
-AVContainerLike = VideoContainer | AudioContainer
+AVContainerLike = AVContainer | VideoContainerLike | AudioContainerLike
 """Common video and audio-only containers."""
 
 # Rich specializations

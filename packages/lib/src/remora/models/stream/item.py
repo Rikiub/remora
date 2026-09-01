@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 from urllib.parse import urljoin
 
 from pydantic import (
@@ -14,12 +14,15 @@ from pydantic import (
 )
 from typing_extensions import override
 
+from remora.models import VideoContainer
 from remora.models._base import Impersonate, RemoraModel, YDLSerializable, rgetattr
 from remora.models.container import (
     AudioCodecFamily,
+    AudioContainer,
     AVContainer,
     CodecInfo,
     VideoCodecFamily,
+    get_container,
 )
 from remora.models.cookies import CookieList
 from remora.models.metadata import Resolution
@@ -102,8 +105,12 @@ class _BaseStream(ABC, YDLSerializable):
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
 
-    container: Annotated[AVContainer, Field(init=False)] = None  # ty: ignore[invalid-assignment]
-    extension: Annotated[str, Field(alias="ext")]
+    container: AVContainer
+
+    @computed_field
+    @property
+    def extension(self) -> str:
+        return self.container.extension
 
     @computed_field
     @property
@@ -115,22 +122,6 @@ class _BaseStream(ABC, YDLSerializable):
     def _quality(self) -> float:
         """Stream quality implementation."""
         raise NotImplementedError()
-
-    # Container builder
-
-    @property
-    @abstractmethod
-    def _has_video(self) -> bool: ...
-
-    @model_validator(mode="after")
-    def _build_container_and_extension(self) -> Self:
-        raw_ext = self.extension
-        container = AVContainer(raw_ext)
-
-        # Mutate the extension field to hold the normalized value
-        self.container = container
-        self.extension = container.extension
-        return self
 
     # YDL parser/normalizer
 
@@ -252,13 +243,9 @@ class _BaseStream(ABC, YDLSerializable):
 
 
 class AudioStream(_BaseStream):
+    container: AudioContainer
     type: Literal["audio"] = "audio"
     audio: AudioInfo = AudioInfo()
-
-    @property
-    @override
-    def _has_video(self) -> bool:
-        return False
 
     @override
     def _quality(self) -> float:
@@ -268,6 +255,7 @@ class AudioStream(_BaseStream):
 
 
 class VideoStream(_BaseStream):
+    container: VideoContainer
     type: Literal["video"] = "video"
     video: VideoInfo = VideoInfo()
 
@@ -276,11 +264,6 @@ class VideoStream(_BaseStream):
         if res := self.video.resolution:
             return res.height
         return 0
-
-    @property
-    @override
-    def _has_video(self) -> bool:
-        return True
 
 
 class MuxedStream(VideoStream, AudioStream):
@@ -317,8 +300,8 @@ def _infer_stream_type(data) -> str:
         return "audio"
 
     # Determine from extension as fallback
-    elif extension and (container := AVContainer.get(extension)):
-        if container.is_audio_only:
+    elif extension and (container := get_container(extension)):
+        if isinstance(container, AudioContainer):
             return "audio"
         else:
             return "video"
