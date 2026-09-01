@@ -59,7 +59,7 @@ async def download(
     type: Annotated[
         AVContainerFormat | None,
         Parameter(
-            help="Type of stream to download (downloads best by default).",
+            help="Type of stream to download (best by default).",
             short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
@@ -115,13 +115,6 @@ async def download(
             group=Panel.DOWNLOADER,
         ),
     ] = DEFAULT_WORKERS,
-    limit_rate: Annotated[
-        str | None,
-        Parameter(
-            help="Maximum download rate (e.g. [green]5M[/] or [green]500K[/]).",
-            group=Panel.DOWNLOADER,
-        ),
-    ] = None,
     # POST-PROCESS
     convert: Annotated[
         RichAVContainer | None,
@@ -144,18 +137,10 @@ async def download(
         bool,
         Parameter(
             negative="--no-metadata",
-            help="Embed title, chapters, and thumbnail into the file.",
+            help="Embed title, chapters, thumbnail and more into the file.",
             group=Panel.POST_PROCESS,
         ),
     ] = True,
-    sponsorblock: Annotated[
-        bool,
-        Parameter(
-            negative="--no-sponsorblock",
-            help="Automatically remove sponsor segments and intros (YouTube only).",
-            group=Panel.POST_PROCESS,
-        ),
-    ] = False,
     ffmpeg_location: Annotated[
         Path | None,
         Parameter(
