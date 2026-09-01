@@ -94,37 +94,35 @@ class AVContainer(GetterEnum):
 
 
 # Mapping extensions/aliases to canonical Enum values
-_ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
-    AVContainer.MP4: (
-        # Apple extensions
-        "m4v",
-        "m4b",
-        "m4r",
-        "alac",
-        # Flash extensions
-        "f4v",
-        "f4a",
-        "f4b",
-        # Standard MPEG-4 aliases
-        "mpg4",
-        "mp4v",
-    ),
-    AVContainer.MOV: ("qt", "quicktime"),
-    AVContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
-    AVContainer.MKV: ("mk3d",),
-    AVContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
-    AVContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
-    AVContainer.TS: ("m2ts", "mts"),
-    AVContainer.WMV: ("wma", "asf"),
-    AVContainer.AIFF: ("aif", "aifc"),
-    AVContainer.WAV: ("wave",),
-    AVContainer.APE: ("mac",),
-    AVContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
-}
-# Flatten the groups dynamically into an exact-match lookup map
 _ALIAS_MAP: dict[str, str] = {
     alias: canonical
-    for canonical, aliases in _ALIAS_GROUPS.items()
+    for canonical, aliases in {
+        AVContainer.MP4: (
+            # Apple extensions
+            "m4v",
+            "m4b",
+            "m4r",
+            "alac",
+            # Flash extensions
+            "f4v",
+            "f4a",
+            "f4b",
+            # Standard MPEG-4 aliases
+            "mpg4",
+            "mp4v",
+        ),
+        AVContainer.MOV: ("qt", "quicktime"),
+        AVContainer.V3GP: ("3gpp", "3g2", "3gpp2"),
+        AVContainer.MKV: ("mk3d",),
+        AVContainer.OGG: ("oga", "ogx", "opus", "vorbis", "spx"),
+        AVContainer.MPG: ("mpeg", "m2v", "m2p", "mpe", "vob"),
+        AVContainer.TS: ("m2ts", "mts"),
+        AVContainer.WMV: ("wma", "asf"),
+        AVContainer.AIFF: ("aif", "aifc"),
+        AVContainer.WAV: ("wave",),
+        AVContainer.APE: ("mac",),
+        AVContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
+    }.items()
     for alias in aliases
 }
 
