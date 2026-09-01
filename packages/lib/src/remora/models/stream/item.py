@@ -118,10 +118,6 @@ class _BaseStream(ABC, YDLSerializable):
 
     # Container builder
 
-    @property
-    @abstractmethod
-    def _has_video(self) -> bool: ...
-
     @model_validator(mode="after")
     def _build_container_and_extension(self) -> Self:
         raw_ext = self.extension
@@ -255,11 +251,6 @@ class AudioStream(_BaseStream):
     type: Literal["audio"] = "audio"
     audio: AudioInfo = AudioInfo()
 
-    @property
-    @override
-    def _has_video(self) -> bool:
-        return False
-
     @override
     def _quality(self) -> float:
         if b := self.audio.bitrate:
@@ -276,11 +267,6 @@ class VideoStream(_BaseStream):
         if res := self.video.resolution:
             return res.height
         return 0
-
-    @property
-    @override
-    def _has_video(self) -> bool:
-        return True
 
 
 class MuxedStream(VideoStream, AudioStream):
