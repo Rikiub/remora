@@ -30,7 +30,7 @@ RANK: RankDict = {
         Protocol.M3U8_NATIVE,
         Protocol.M3U8,
         Protocol.HTTP_DASH_SEGMENTS,
-        Protocol.WEBSOCKET_FRAG,
+        Protocol.WEBSOCKET_FRAGMENT,
         Protocol.MMS,
         Protocol.RTSP,
         Protocol.F4F,

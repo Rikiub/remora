@@ -7,34 +7,48 @@ __all__ = ["Protocol", "ProtocolLike"]
 
 
 class Protocol(StrEnum):
-    HTTP = "http"
-    HTTPS = "https"
-    HTTP_DASH_SEGMENTS = "http_dash_segments"
-    HTTP_DASH_SEGMENTS_GENERATOR = "http_dash_segments_generator"
+    HTTP = "HTTP"
+    HTTPS = "HTTPS"
+    HTTP_DASH_SEGMENTS = "HTTP_DASH_SEGMENTS"
+    HTTP_DASH_SEGMENTS_GENERATOR = "HTTP_DASH_SEGMENTS_GENERATOR"
 
-    FTPS = "ftps"
-    FTP = "ftp"
+    FTPS = "FTPS"
+    FTP = "FTP"
 
-    M3U8 = "m3u8"
-    M3U8_NATIVE = "m3u8_native"
+    M3U8 = "M3U8"
+    M3U8_NATIVE = "M3U8_NATIVE"
 
-    RTMP = "rtmp"
-    RTMPE = "rtmpe"
-    RTMP_FFMPEG = "rtmp_ffmpeg"
-    RTSP = "rtsp"
+    RTMP = "RTMP"
+    RTMPE = "RTMPE"
+    RTMP_FFMPEG = "RTMP_FFMPEG"
+    RTSP = "RTSP"
 
-    F4M = "f4m"
-    F4F = "f4f"
-    MMS = "mms"
-    ISM = "ism"
+    F4M = "F4M"
+    F4F = "F4F"
+    MMS = "MMS"
+    ISM = "ISM"
 
-    YOUTUBE_LIVE_CHAT = "youtube_live_chat"
-    YOUTUBE_LIVE_CHAT_REPLAY = "youtube_live_chat_replay"
-    NICONICO_LIVE = "niconico_live"
-    FC2_LIVE = "fc2_live"
-    BUNNYCDN = "bunnycdn"
-    WEBSOCKET_FRAG = "websocket_frag"
-    MHTML = "mhtml"
+    YOUTUBE_LIVE_CHAT = "YOUTUBE_LIVE_CHAT"
+    YOUTUBE_LIVE_CHAT_REPLAY = "YOUTUBE_LIVE_CHAT_REPLAY"
+    NICONICO_LIVE = "NICONICO_LIVE"
+    FC2_LIVE = "FC2_LIVE"
+    BUNNYCDN = "BUNNYCDN"
+    WEBSOCKET_FRAGMENT = "WEBSOCKET_FRAGMENT"
+    MHTML = "MHTML"
+
+    @classmethod
+    def _missing_(cls, value: object):
+        if isinstance(value, str):
+            if value == "websocket_frag":
+                value = cls.WEBSOCKET_FRAGMENT
+            return cls(value.upper())
+        return None
+
+    def _to_ydl(self) -> str:
+        value = self.lower()
+        if self == self.WEBSOCKET_FRAGMENT:
+            value = "websocket_frag"
+        return value
 
     @property
     def is_segmented(self) -> bool:
@@ -66,7 +80,7 @@ _ProtocolLiteral = Literal[
     "mhtml",
     "niconico_live",
     "fc2_live",
-    "websocket_frag",
+    "websocket_fragment",
     "youtube_live_chat",
     "youtube_live_chat_replay",
     "bunnycdn",

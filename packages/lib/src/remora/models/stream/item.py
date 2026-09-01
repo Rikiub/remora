@@ -130,7 +130,7 @@ class _BaseStream(ABC, YDLSerializable):
         return {
             # Http Info
             "format_id": self.id,
-            "protocol": str(self.protocol),
+            "protocol": self.protocol._to_ydl(),
             "url": str(self.url),
             "fragments": [f.model_dump(by_alias=True) for f in self.fragments]
             if self.fragments

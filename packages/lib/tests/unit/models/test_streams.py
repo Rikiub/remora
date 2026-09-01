@@ -136,7 +136,7 @@ def test_stream_strict_type_filters(streams: StreamList, case: Case):
     "attribute, filter_value",
     [
         ("quality", 720),
-        ("protocol", "https"),
+        ("protocol", "HTTPS"),
         ("container", "WEBM"),
     ],
 )
