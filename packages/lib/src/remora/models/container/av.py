@@ -80,7 +80,7 @@ class VideoContainer(_BaseContainer):
 
     @override
     @classmethod
-    def _map_dict(self):
+    def _map_dict(cls):
         return _VIDEO_MAP
 
 
@@ -118,7 +118,7 @@ class AudioContainer(_BaseContainer):
 
     @override
     @classmethod
-    def _map_dict(self):
+    def _map_dict(cls):
         return _AUDIO_MAP
 
 
