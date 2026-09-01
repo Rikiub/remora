@@ -155,6 +155,7 @@ AudioContainer = (
         "flac",
         "ogg",
         "opus",
+        "weba",
         "mka",
         "m4a",
         "mp3",
