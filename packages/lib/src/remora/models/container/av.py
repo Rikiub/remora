@@ -91,10 +91,10 @@ class AudioContainer(_BaseContainer):
     MKA = "MKA"
     M4A = "M4A"
     MP3 = "MP3"
+    WEBA = "WEBA"
     WAV = "WAV"
     AAC = "AAC"
     APE = "APE"
-    WEBA = "WEBA"
 
     @override
     @property
@@ -167,6 +167,7 @@ _AUDIO_MAP: dict[str, AudioContainer] = {
         AudioContainer.WAV: ("wave",),
         AudioContainer.APE: ("mac",),
         AudioContainer.MP3: ("mpeg3", "mpg3", "mp1", "mp2"),
+        AudioContainer.WEBA: ("webm",),
     }.items()
     for alias in aliases
 }

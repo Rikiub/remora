@@ -105,7 +105,7 @@ class _BaseStream(ABC, YDLSerializable):
     size_type: SizeType = "unknown"
     size_bytes: int | None = None
 
-    container: AVContainer
+    container: Annotated[AVContainer, Field(alias="ext")]
 
     @computed_field
     @property
@@ -121,7 +121,7 @@ class _BaseStream(ABC, YDLSerializable):
     @abstractmethod
     def _quality(self) -> float:
         """Stream quality implementation."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     # YDL parser/normalizer
 
@@ -243,7 +243,7 @@ class _BaseStream(ABC, YDLSerializable):
 
 
 class AudioStream(_BaseStream):
-    container: AudioContainer
+    container: Annotated[AudioContainer, Field(alias="ext")]
     type: Literal["audio"] = "audio"
     audio: AudioInfo = AudioInfo()
 
@@ -255,7 +255,7 @@ class AudioStream(_BaseStream):
 
 
 class VideoStream(_BaseStream):
-    container: VideoContainer
+    container: Annotated[VideoContainer, Field(alias="ext")]
     type: Literal["video"] = "video"
     video: VideoInfo = VideoInfo()
 
