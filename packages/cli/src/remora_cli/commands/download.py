@@ -1,3 +1,5 @@
+# ruff: noqa: B008
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -164,13 +166,10 @@ async def download(
         ),
     ] = None,
     # SHARED
-    network: NetworkOptions | None = None,
-    display: DisplayOptions | None = None,
+    network: NetworkOptions = NetworkOptions(),
+    display: DisplayOptions = DisplayOptions(),
 ):
     """Download video/audio from [green]URL[/] or search [green]service[/]."""
-
-    network = network or NetworkOptions()
-    display = display or DisplayOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):

@@ -1,3 +1,5 @@
+# ruff: noqa: B008
+
 from enum import StrEnum
 from typing import Annotated, Literal
 
@@ -76,13 +78,10 @@ async def extract(
         ),
     ] = None,
     # SHARED
-    network: NetworkOptions | None = None,
-    display: DisplayOptions | None = None,
+    network: NetworkOptions = NetworkOptions(),
+    display: DisplayOptions = DisplayOptions(),
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
-
-    display = display or DisplayOptions()
-    network = network or NetworkOptions()
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
