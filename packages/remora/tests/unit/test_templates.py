@@ -30,7 +30,7 @@ def dummy_video_stream() -> VideoStream:
 def dummy_media() -> Media:
     """Media rich of placeholder metadata."""
     return Media(
-        extractor=Extractor(id="extractor:media", name="Extractor Media"),
+        extractor=Extractor(id="ExtractorMedia", name="extractor:media"),
         id="1",
         title="Media Title",
         url="https://example.com/media",
@@ -61,7 +61,7 @@ def dummy_playlist() -> Playlist:
         id="1",
         url="https://example.com/playlist",
         title="Playlist Title",
-        extractor=Extractor(id="extractor:playlist", name="Extractor Playlist"),
+        extractor=Extractor(id="ExtractorPlaylist", name="extractor:playlist"),
         modified_date="2026-05-02T12:00:00",
         upload_date="2026-05-02T12:00:00",
         release_date="2026-05-02T12:00:00",
@@ -98,8 +98,8 @@ def format(
 
 
 def test_media(format):
-    assert format("{extractor.id}") == "extractor-media"
-    assert format("{extractor.name}") == "Extractor Media"
+    assert format("{extractor.id}") == "ExtractorMedia"
+    assert format("{extractor.name}") == "extractor-media"
     assert format("{title}") == "Media Title"
 
     assert format("{uploader.name}") == "Uploader Name"
@@ -112,8 +112,8 @@ def test_media(format):
 
 
 def test_playlist(format):
-    assert format("{playlist.extractor.id}") == "extractor-playlist"
-    assert format("{playlist.extractor.name}") == "Extractor Playlist"
+    assert format("{playlist.extractor.id}") == "ExtractorPlaylist"
+    assert format("{playlist.extractor.name}") == "extractor-playlist"
     assert format("{playlist.title}") == "Playlist Title"
 
     assert format("{playlist.uploader.name}") == "Uploader Name"
