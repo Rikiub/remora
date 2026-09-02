@@ -72,14 +72,7 @@ def extract_info(
             auto_init=True,
         )
         info = ydl.extract_info(query, download=False)
-
-        # Normalize extractor fields
-        info = _normalize_extractor_field(info)
-
-        entries = info.get("entries") or []
-        for index, entry in enumerate(entries):
-            entries[index] = _normalize_extractor_field(entry)
-        info["entries"] = entries
+        info = _normalize_info(info)
 
         # Infer protocol if missing
         if info.get("url"):
@@ -91,6 +84,20 @@ def extract_info(
         )
 
     return cast(YDLExtractInfo, info)
+
+
+def _normalize_info(info: dict) -> dict:
+    # Normalize the current level extractor fields
+    info = _normalize_extractor_field(info)
+
+    # Recursively normalize all children
+    if entries := info.get("entries"):
+        # Only recurse if `entry` is an actual dictionary.
+        info["entries"] = [
+            _normalize_info(entry) if entry else entry for entry in entries
+        ]
+
+    return info
 
 
 def _normalize_extractor_field(info: dict) -> dict:
