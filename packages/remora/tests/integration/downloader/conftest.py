@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from remora import DownloadOptions, Remora
+from remora.models.progress import MediaCompleted, MediaFailed, MediaState
 
 
 @pytest.fixture
@@ -18,10 +19,13 @@ def download(tmp_path: Path):
 
         async with remora.download_batch(result) as progress:
             async for state in progress:
-                if state.type == "media":
-                    if state.status == "completed" and not state.file_path.is_file():
+                if isinstance(state, MediaState):
+                    if (
+                        isinstance(state, MediaCompleted)
+                        and not state.file_path.is_file()
+                    ):
                         raise FileNotFoundError(state.file_path)
-                    elif state.status == "failed":
+                    elif isinstance(state, MediaFailed):
                         raise AssertionError(state.message)
 
     return wrap
