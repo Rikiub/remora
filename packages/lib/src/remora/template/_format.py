@@ -1,8 +1,12 @@
+import re
 import string
+from collections.abc import Sequence
 from pathlib import Path
 
+import rich
 from pathvalidate import sanitize_filepath
 from pydantic import BaseModel
+from typing_extensions import override
 
 from remora.constants import DEFAULT_TEMPLATE
 from remora.exceptions import OutputTemplateError
@@ -27,19 +31,44 @@ class _TemplateFormatter(string.Formatter):
     def __init__(self, replace: str | None = None):
         self.replace = replace
 
-    def get_field(self, field_name, args, kwargs):
-        value = kwargs.get(field_name)
+    @override
+    def get_field(self, field_name: str, args, kwargs):
+        try:
+            field_name = re.sub(r"\.(\d+)", r"[\1]", field_name)
 
-        if value is None:
-            # If replace is provided, use it
-            # Otherwise, return the original {key} string
+            # Python's built-in formatter natively resolve attributes/keys
+            obj, used_key = super().get_field(field_name, args, kwargs)
+
+            # Treat explicit None values as missing
+            if obj is None:
+                raise KeyError(field_name)
+
+            return obj, used_key
+        except (KeyError, AttributeError):
+            # Fallback for missing keys or attributes
             final_value = (
                 self.replace if self.replace is not None else f"{{{field_name}}}"
             )
-        else:
-            final_value = value
+            return final_value, field_name
 
-        return final_value, field_name
+    @override
+    def format_field(self, value, format_spec):
+        if value is None:
+            return ""
+
+        if format_spec == "upper":
+            return str(value).upper()  # {title:upper} -> MY SONG
+        elif format_spec == "lower":
+            return str(value).lower()  # {title:lower} -> my song
+
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+            if format_spec == "join" or format_spec == "":
+                return ", ".join(str(v) for v in value)  # {artists:join} -> A1, A2
+            elif format_spec == "first":
+                return str(value[0]) if value else ""  # {artists:first} -> A1
+
+        # Fallback to standard python behavior for everything else
+        return super().format_field(value, format_spec)
 
 
 def format_template(
@@ -59,15 +88,15 @@ def format_template(
 
     validate_template(output_template)
 
-    # Dump metadata
+    # Build metadata
     data = {}
-    if stream:
-        data |= _flatten_dict(stream.model_dump())
     if media:
-        data |= _flatten_dict(media.model_dump())
+        for key in Media.model_fields:
+            data[key] = getattr(media, key)
+    if stream:
+        data["stream"] = stream
     if playlist:
-        wrap_playlist = _Nested(playlist=playlist)
-        data |= _flatten_dict(wrap_playlist.model_dump())
+        data["playlist"] = playlist
 
     # Format with metadata
     formatter = _TemplateFormatter(replace=default_missing)
@@ -81,15 +110,19 @@ def format_template(
     return path
 
 
-def validate_template(output: StrPath):
-    import re
+def validate_template(output: StrPath) -> StrPath:
+    valid_keys = get_keys()
+    rich.print(valid_keys)
 
-    pattern = r"{(.*?)}"
-    keys: list[str] = re.findall(pattern, str(output))
+    for _, field_name, _, _ in string.Formatter().parse(str(output)):
+        if not field_name or field_name.isdigit():
+            continue
 
-    for key in keys:
-        if key not in get_keys():
-            raise OutputTemplateError(f"Key '{{{key}}}' is invalid")
+        # Strip brackets so "metadata[author]" becomes "metadata"
+        base_key = re.sub(r"\[.*?\]", "", field_name)
+
+        if base_key not in valid_keys:
+            raise OutputTemplateError(f"Key '{{{field_name}}}' is invalid")
 
     return output
 
@@ -102,17 +135,3 @@ def validate_key(key: str) -> str:
 
 def get_keys() -> set[str]:
     return _KEYS
-
-
-def _flatten_dict(d: dict, prefix: str = "") -> dict:
-    items = {}
-
-    for k, v in d.items():
-        new_key = f"{prefix}{k}"
-        if isinstance(v, dict):
-            # Recursively flatten, but also keep the parent if it has data
-            items.update(_flatten_dict(v, prefix=f"{new_key}."))
-        else:
-            items[new_key] = v
-
-    return items
