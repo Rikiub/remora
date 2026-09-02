@@ -57,8 +57,7 @@ class YDLProcessor:
             preferedformat=format,
         )
         _, data = pp.run(self._pp_params)
-        self._update_filepath(data)
-        return self
+        return self._sync(data)
 
     @catch
     def extract_audio(
@@ -73,8 +72,7 @@ class YDLProcessor:
             preferredquality=quality,
         )
         _, data = pp.run(self._pp_params)
-        self._update_filepath(data)
-        return self
+        return self._sync(data)
 
     @catch
     def embed_metadata(self, data: YDLExtractInfo) -> Self:
@@ -149,15 +147,14 @@ class YDLProcessor:
                 "__files_to_merge": [f["filepath"] for f in formats],
             },
         )
-        self._update_filepath(data)
-        return self
+        return self._sync(data)
 
     @catch
     def fix_m4a(self) -> Self:
         if self.file_extension == "m4a":
             pp_fix = FFmpegFixupM4aPP(self._ydl())
             _, data = pp_fix.run(self._pp_params | {"container": "m4a_dash"})
-            self._update_filepath(data)
+            self._sync(data)
         return self
 
     def _ydl(self, params: dict | None = None) -> YDL:
@@ -173,5 +170,6 @@ class YDLProcessor:
         }
         return info
 
-    def _update_filepath(self, data: YDLExtractInfo) -> None:
+    def _sync(self, data: YDLExtractInfo) -> Self:
         self.file_path = Path(data["filepath"])
+        return self

@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 
 from remora import ffmpeg as fpg
 from remora import processor as prc
+from remora.models.container import VideoContainer
 from remora.processor import MediaProcessor
 
 
@@ -34,5 +35,7 @@ def mock_processor(mocker: MockerFixture, tmp_path: Path) -> MediaProcessor:
 
     mock_instance = processor.return_value
     mock_instance.file_path = tmp_path / "processed.mp4"
+    mock_instance.file_container = VideoContainer.MP4
+    mock_instance.file_extension = "mp4"
 
     return mock_instance

@@ -10,7 +10,7 @@ from remora._ydl.types import YDLExtractInfo
 from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
     AudioContainer,
-    AVContainerLike,
+    AVContainer,
     RichAudioContainer,
     RichAVContainer,
     RichVideoContainer,
@@ -28,24 +28,23 @@ __all__ = ["MediaProcessor"]
 class MediaProcessor:
     def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None):
         self.file_path = Path(file_path)
+        self.file_container: AVContainer
+        self.file_extension: str
 
         # Validate FFmpeg
         self.ffmpeg_dir = get_ffmpeg_dir(ffmpeg_dir)
         self._prc = YDLProcessor(self.file_path, self.ffmpeg_dir)
 
-    @property
-    def extension(self) -> str:
-        return self.file_path.suffix[1:]
+        # Sync state
+        self._sync(self._prc)
 
     async def change_container(
         self,
-        container: RichAVContainer | AVContainerLike,
+        container: RichAVContainer | AVContainer,
     ) -> Self:
         extension = get_container(container).extension
         result = await run_sync(self._prc.video_remuxer, extension)
-
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
     async def convert_audio(
         self,
@@ -54,9 +53,7 @@ class MediaProcessor:
     ) -> Self:
         container = AudioContainer(container)
         result = await run_sync(self._prc.extract_audio, container.extension, quality)
-
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
     async def embed_metadata(self, media: Media) -> Self:
         info = media._to_ydl_dict()
@@ -64,18 +61,15 @@ class MediaProcessor:
             info |= _media_to_ydl_music(media, media.music)
 
         result = await run_sync(self._prc.embed_metadata, info)
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
     async def embed_thumbnail(self, thumbnail: StrPath, square: bool = False) -> Self:
         result = await run_sync(self._prc.embed_thumbnail, thumbnail, square)
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
     async def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
         result = await run_sync(self._prc.embed_subtitle, subtitles)
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
     async def merge_streams(
         self,
@@ -111,11 +105,20 @@ class MediaProcessor:
             container.extension,
             real_streams,
         )
-        self._update_file(result)
-        return self
+        return self._sync(result)
 
-    def _update_file(self, processor: YDLProcessor):
+    def _sync(self, processor: YDLProcessor) -> Self:
         self.file_path = Path(processor.file_path)
+        self.file_extension = self.file_path.suffix[1:]
+
+        try:
+            self.file_container = get_container(self.file_extension)
+        except ValueError:
+            raise ValueError(
+                f"Unable to determine file container from '{self.file_extension}'"
+            )
+
+        return self
 
 
 def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:

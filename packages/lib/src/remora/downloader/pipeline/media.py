@@ -10,6 +10,7 @@ from typing_extensions import override
 
 from remora import ffmpeg, processor
 from remora._types import StreamContext
+from remora.constants import DEFAULT_AUDIO_CONTAINER, DEFAULT_VIDEO_CONTAINER
 from remora.downloader.metadata import download_subtitles, download_thumbnail
 from remora.downloader.pipeline._logs import log_event_media
 from remora.downloader.pipeline.base import Downloader
@@ -132,7 +133,7 @@ class MediaDownloader(Downloader[MediaState]):
             raise DownloaderError("Streams not found")
 
         logger.debug(
-            "Primary selected stream: '{selected_stream}'",
+            "Primary selected stream: {selected_stream}",
             selected_stream=type(primary_stream).__name__,
         )
 
@@ -162,7 +163,7 @@ class MediaDownloader(Downloader[MediaState]):
 
         # Determine stable file
         if self.ffmpeg_dir and (results.video and results.audio):
-            file_path = await self._process_merge(
+            file_path = await self._merge_streams(
                 video=results.video,
                 audio=results.audio,
             )
@@ -344,18 +345,19 @@ class MediaDownloader(Downloader[MediaState]):
 
         return context
 
-    async def _process_merge(
+    async def _merge_streams(
         self,
         video: StreamContext[VideoStream],
         audio: StreamContext[AudioStream],
     ) -> Path:
         # Get container and extension
-        convert = get_container(self.download_options.convert_to)
-
-        if convert and not isinstance(convert, AudioContainer):
+        try:
+            convert = get_container(self.download_options.convert_to)
+            if not isinstance(convert, VideoContainer):
+                raise TypeError(convert)
             container = convert
-        else:
-            container = VideoContainer.MP4
+        except (ValueError, TypeError):
+            container = VideoContainer(DEFAULT_VIDEO_CONTAINER)
 
         # Setup events
         file_path = Path(f"{create_temp_file()}.{container.extension}")
@@ -380,10 +382,10 @@ class MediaDownloader(Downloader[MediaState]):
             )
         except ProcessorError:
             logger.debug(
-                "{} and {} don't supports merging as {}, fallback to mkv",
-                video.extension,
-                audio.extension,
-                container.extension,
+                "'{video_extension}' and '{audio_extension}' don't supports merging as '{container_extension}', fallback to 'mkv'",
+                video_extension=video.extension,
+                audio_extension=audio.extension,
+                container_extension=container.extension,
             )
             prc = await prc.merge_streams(
                 video=video,
@@ -409,11 +411,6 @@ class MediaDownloader(Downloader[MediaState]):
             file_path=file_path,
             ffmpeg_dir=self.ffmpeg_dir,
         )
-
-        container = get_container(prc.file_path.suffix.lstrip("."))
-        if not container:
-            raise ValueError()
-
         convert_container = (
             get_container(self.download_options.convert_to)
             if self.download_options.convert_to
@@ -454,24 +451,31 @@ class MediaDownloader(Downloader[MediaState]):
                 )
 
         if isinstance(stream, VideoStream):
+            # If user requested a container, then convert to it.
             if convert_container:
                 async with track_prc("change_container"):
                     await prc.change_container(convert_container)
 
-            if subtitles and container.supports_subtitles:
+            # If user requested audio and there is only a VideoStream, then extract audio from it.
+            elif self.download_options.format_type == "audio":
+                async with track_prc("convert_audio"):
+                    await prc.convert_audio(AudioContainer(DEFAULT_AUDIO_CONTAINER))
+
+            if subtitles and prc.file_container.supports_subtitles:
                 async with track_prc("embed_subtitles"):
                     await prc.embed_subtitles(subtitles)
 
-        elif isinstance(stream, AudioStream) and isinstance(
-            convert_container, AudioContainer
+        elif (
+            isinstance(stream, AudioStream)
+            and isinstance(convert_container, AudioContainer)
+            and convert_container != stream.container
         ):
-            if convert_container != stream.container:
-                try:
-                    async with track_prc("change_container", True):
-                        await prc.change_container(convert_container)
-                except ProcessorError:
-                    async with track_prc("convert_audio"):
-                        await prc.convert_audio(convert_container)
+            try:
+                async with track_prc("change_container", True):
+                    await prc.change_container(convert_container)
+            except ProcessorError:
+                async with track_prc("convert_audio"):
+                    await prc.convert_audio(convert_container)
 
         # Metadata
         # Must run before embed the thumbnail.
@@ -479,7 +483,7 @@ class MediaDownloader(Downloader[MediaState]):
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
-        if thumbnail and container.supports_thumbnails:
+        if thumbnail and prc.file_container.supports_thumbnails:
             async with track_prc("embed_thumbnail"):
                 await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
