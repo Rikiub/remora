@@ -7,6 +7,7 @@ from typing_extensions import override
 from remora.downloader.pipeline._logs import log_event_playlist
 from remora.downloader.pipeline.base import Downloader
 from remora.downloader.pipeline.media import MediaDownloader
+from remora.exceptions import ExtractorError
 from remora.extractor import MediaExtractor
 from remora.models.media import (
     AnyExtractResult,
@@ -125,7 +126,17 @@ class BatchDownloader(Downloader[BatchState]):
                         media=media,
                     )
                 )
-                resolved_media = await self.extractor.extract(media)
+
+                try:
+                    resolved_media = await self.extractor.extract(media)
+                except ExtractorError as error:
+                    await self._emit(
+                        MediaFailed(id=media.id, media=media, message=str(error))
+                    )
+                    await self._emit(MediaEnded(id=media.id, media=media))
+
+                    self.failed += 1
+                    return
             elif isinstance(media, Media):
                 resolved_media = media
 
