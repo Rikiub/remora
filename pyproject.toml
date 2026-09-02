@@ -1,9 +1,9 @@
 [dependency-groups]
+dev = [{ include-group = "lint" }, { include-group = "test" }]
 lint = [
     "ruff==0.16.2", # 0.16.3 PGO optimizations breaks in my ancient computer. Set fixed version for now.
     "ty>=0.0.72",
 ]
-dev = [{ include-group = "lint" }, { include-group = "test" }]
 test = ["anyio>=4.12.1", "pytest>=9.0.0", "pytest-mock>=3.15.1"]
 
 # pytest
