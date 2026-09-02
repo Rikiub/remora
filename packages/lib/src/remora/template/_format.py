@@ -1,9 +1,7 @@
 import re
 import string
-from collections.abc import Sequence
 from pathlib import Path
 
-import rich
 from pathvalidate import sanitize_filepath
 from pydantic import BaseModel
 from typing_extensions import override
@@ -34,6 +32,7 @@ class _TemplateFormatter(string.Formatter):
     @override
     def get_field(self, field_name: str, args, kwargs):
         try:
+            # Handle list.0 syntax as well
             field_name = re.sub(r"\.(\d+)", r"[\1]", field_name)
 
             # Python's built-in formatter natively resolve attributes/keys
@@ -60,12 +59,6 @@ class _TemplateFormatter(string.Formatter):
             return str(value).upper()  # {title:upper} -> MY SONG
         elif format_spec == "lower":
             return str(value).lower()  # {title:lower} -> my song
-
-        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-            if format_spec == "join" or format_spec == "":
-                return ", ".join(str(v) for v in value)  # {artists:join} -> A1, A2
-            elif format_spec == "first":
-                return str(value[0]) if value else ""  # {artists:first} -> A1
 
         # Fallback to standard python behavior for everything else
         return super().format_field(value, format_spec)
@@ -112,14 +105,13 @@ def format_template(
 
 def validate_template(output: StrPath) -> StrPath:
     valid_keys = get_keys()
-    rich.print(valid_keys)
 
     for _, field_name, _, _ in string.Formatter().parse(str(output)):
         if not field_name or field_name.isdigit():
             continue
 
-        # Strip brackets so "metadata[author]" becomes "metadata"
-        base_key = re.sub(r"\[.*?\]", "", field_name)
+        # Strip brackets so "metadata[0]" or "metadata.0" becomes "metadata"
+        base_key = re.sub(r"\[.*?\]|\.\d+", "", field_name)
 
         if base_key not in valid_keys:
             raise OutputTemplateError(f"Key '{{{field_name}}}' is invalid")

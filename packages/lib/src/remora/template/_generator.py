@@ -98,19 +98,6 @@ def _unwrap_type(t: Any) -> Any:
         return _unwrap_type(valid_args[0]) if valid_args else None
     if origin in (dict,):
         return _unwrap_type(args[-1]) if args else None
-
-    # Unwrap RootModels
-    target = origin if origin is not None else t
-    if isinstance(target, type) and issubclass(target, RootModel):
-        # Handle inline generic: RootModel[list[Stream]]
-        if origin is not None and args:
-            return _unwrap_type(args[0])
-        # Handle subclass: class StreamList(RootModel[list[Stream]])
-        if hasattr(target, "model_fields"):
-            root_info = target.model_fields.get("root")
-            if root_info:
-                return _unwrap_type(root_info.annotation)
-
     if _is_sequence_type(t):
         return _unwrap_type(args[0]) if args else None
 
