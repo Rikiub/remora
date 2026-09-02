@@ -46,6 +46,22 @@ upgrade:
     uv sync
 
 # ==============================
+# Docs
+# ==============================
+
+_zensical_config := 'packages/docs/zensical.toml'
+
+[doc('Serve documentation site')]
+[group('docs')]
+docs-serve:
+    uv run zensical serve --config-file {{ _zensical_config }}
+
+[doc('Build documentation site')]
+[group('docs')]
+docs-build:
+    uv run zensical build --config-file {{ _zensical_config }}
+
+# ==============================
 # Maintenance
 # ==============================
 

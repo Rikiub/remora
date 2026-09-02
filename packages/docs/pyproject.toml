@@ -3,10 +3,13 @@ name = "remora-docs"
 version = "3.0.0"
 dependencies = [
 	"remora",
-	"mkdocs>=1.6.1",
-	"mkdocs-material>=9.7.1",
-	"mkdocstrings[python]",
+	"mkdocstrings-python>=2.0.8",
 ]
 
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "zensical>=0.0.58",
+]
