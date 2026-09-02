@@ -4,7 +4,7 @@ version = "3.0.0"
 requires-python = ">=3.11"
 description = "Download any video/audio you want from a simple URL ✨"
 dependencies = [
-    "yt-dlp[default,curl_cffi]>=2026.8.19",
+    "yt-dlp[default, curl_cffi]>=2026.8.19",
     "pydantic>=2.9.2",
     "typing-extensions>=4.12.2",
     "pathvalidate>=3.2.1",
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-standard = ["yt-dlp[default,curl_cffi,deno]", "ffmpeg-binaries-compat>=1.1.0"]
+standard = ["yt-dlp[default, curl_cffi, deno]", "ffmpeg-binaries-compat>=1.1.0"]
 
 [build-system]
 requires = ["uv_build>=0.12.2,<0.13"]
