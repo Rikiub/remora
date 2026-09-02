@@ -1,7 +1,3 @@
----
-title: Welcome
----
-
 # ⏬ Remora
 
 > Download any **video/audio** you want from a simple **URL** ✨.

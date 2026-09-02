@@ -10,7 +10,17 @@ repo_url = "https://github.com/rikiub/remora"
 repo_name = "Rikiub/remora"
 # edit_uri = "edit/main/docs/"
 
-# nav = [{ "Get started" = "index.md" }]
+nav = [
+  { "Library" = [
+    "api/index.md",
+    { "Getting Started" = "lib/getting-started.md" },
+    { "Installation" = "lib/installation.md" },
+    { "Usage" = "lib/usage.md" },
+  ] },
+  { "CLI" = [
+    "cli/index.md",
+  ] },
+]
 
 # extra_css = ["stylesheets/extra.css"]
 # extra_javascript = ["javascripts/extra.js"]
