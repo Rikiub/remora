@@ -98,7 +98,7 @@ class LazyMedia(ExtractID):
 
             # Map storyboards
             data["storyboards"] = StoryboardList._from_ydl_formats(
-                data.get("formats", [])
+                data.get("formats") or []
             )
 
             # Return normalized data
