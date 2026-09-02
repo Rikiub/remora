@@ -1176,7 +1176,7 @@ wheels = [
 [[package]]
 name = "remora"
 version = "3.0.0"
-source = { editable = "packages/lib" }
+source = { editable = "packages/remora" }
 dependencies = [
     { name = "anyio" },
     { name = "httpx" },
@@ -1216,7 +1216,7 @@ provides-extras = ["standard"]
 [[package]]
 name = "remora-cli"
 version = "3.0.0"
-source = { editable = "packages/cli" }
+source = { editable = "packages/remora-cli" }
 dependencies = [
     { name = "anyio" },
     { name = "cyclopts" },
@@ -1233,8 +1233,8 @@ standard = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "cyclopts", specifier = ">=4.22.5" },
-    { name = "remora", editable = "packages/lib" },
-    { name = "remora", extras = ["standard"], marker = "extra == 'standard'", editable = "packages/lib" },
+    { name = "remora", editable = "packages/remora" },
+    { name = "remora", extras = ["standard"], marker = "extra == 'standard'", editable = "packages/remora" },
     { name = "rich", specifier = ">=14.0.0" },
 ]
 provides-extras = ["standard"]
@@ -1242,7 +1242,7 @@ provides-extras = ["standard"]
 [[package]]
 name = "remora-docs"
 version = "3.0.0"
-source = { virtual = "packages/docs" }
+source = { virtual = "packages/remora-docs" }
 dependencies = [
     { name = "mkdocstrings-python" },
     { name = "remora" },
@@ -1256,7 +1256,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "mkdocstrings-python", specifier = ">=2.0.8" },
-    { name = "remora", editable = "packages/lib" },
+    { name = "remora", editable = "packages/remora" },
 ]
 
 [package.metadata.requires-dev]
