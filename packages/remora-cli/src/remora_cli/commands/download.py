@@ -91,7 +91,7 @@ async def download(
     ] = None,
     # DOWNLOADER
     output: Annotated[
-        str | Path,
+        str,
         Parameter(
             help="Path or template for the saved file.",
             short_alias=True,
