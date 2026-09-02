@@ -36,8 +36,8 @@ run *args:
 
 [doc('Sync dependencies and set up the virtual environment')]
 [group("env")]
-setup:
-    uv sync
+sync:
+    uv sync --extra standard
 
 [doc('Upgrade all dependencies to their latest versions based on pyproject.toml')]
 [group('env')]
