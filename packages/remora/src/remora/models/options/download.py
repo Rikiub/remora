@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import Annotated
 
 from pydantic import AfterValidator
@@ -54,7 +53,7 @@ class DownloadOptions(RemoraModel):
 
     format_type: AVContainerFormat | None = None
     quality: StreamQuality | int | None = None
-    languages: Iterable[str] | None = None
+    languages: list[str] | None = None
 
     convert_to: RichAVContainer | AVContainer | None = None
     embed_metadata: bool = True

@@ -101,7 +101,7 @@ class BatchStreamDownloading(BaseState):
 class BatchStreamCompleted(BaseState):
     status: Literal["completed"] = "completed"
     video_path: Path
-    audio_path: Path
+    audio_paths: list[Path]
 
 
 BatchStreamState = BatchStreamDownloading | BatchStreamCompleted

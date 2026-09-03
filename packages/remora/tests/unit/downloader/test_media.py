@@ -49,7 +49,7 @@ class FakeBatchDownloader(MuxedStreamDownloader):
         await self._emit(
             BatchStreamCompleted(
                 video_path="/tmp/video.mp4",
-                audio_path="/tmp/audio.mp4",
+                audio_paths=["/tmp/audio.mp4"],
             )
         )
 

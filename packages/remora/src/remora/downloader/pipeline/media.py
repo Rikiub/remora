@@ -59,7 +59,7 @@ __all__ = ["MediaDownloader"]
 @dataclass(slots=True)
 class _DownloadContext:
     video: StreamContext[VideoStream] | None = None
-    audio: StreamContext[AudioStream] | None = None
+    audios: list[StreamContext[AudioStream]] | None = None
     thumbnail: Path | None = None
     subtitles: list[Path] | None = None
 
@@ -159,19 +159,19 @@ class MediaDownloader(Downloader[MediaState]):
             results = await self._download_resources(
                 self.media,
                 selected.muxed or selected.video,
-                selected.audio,
+                selected.prefered_audios or [selected.audio],  # ty: ignore[invalid-argument-type]
             )
 
         # Determine stable file
-        if self.ffmpeg_dir and (results.video and results.audio):
+        if self.ffmpeg_dir and (results.video and results.audios):
             file_path = await self._merge_streams(
                 video=results.video,
-                audio=results.audio,
+                audios=results.audios,
             )
         elif results.video:
             file_path = results.video.path
-        elif results.audio:
-            file_path = results.audio.path
+        elif results.audios:
+            file_path = results.audios[0].path
         else:
             raise ValueError("Neither video or audio was downloaded")
 
@@ -232,30 +232,33 @@ class MediaDownloader(Downloader[MediaState]):
         self,
         media: Media,
         video_stream: VideoStream | None,
-        audio_stream: AudioStream | None,
+        audio_streams: list[AudioStream] | None,
     ) -> _DownloadContext:
         context = _DownloadContext()
 
         async def streams():
-            if not (video_stream or audio_stream):
+            if not (video_stream or audio_streams):
                 raise ValueError("At least one stream type must be provided")
 
             # Get situable downloader
-            if video_stream and audio_stream:
+            if video_stream and audio_streams:
                 downloader = MuxedStreamDownloader(
                     video=StreamContext(
                         stream=video_stream,
                         path=create_temp_file(),
                     ),
-                    audio=StreamContext(
-                        stream=audio_stream,
-                        path=create_temp_file(),
-                    ),
+                    audios=[
+                        StreamContext(
+                            stream=a,
+                            path=create_temp_file(),
+                        )
+                        for a in audio_streams
+                    ],
                 )
             else:
                 downloader = StreamDownloader(
                     output_path=create_temp_file(),
-                    stream=video_stream or audio_stream,  # ty: ignore[invalid-argument-type]
+                    stream=video_stream or audio_streams[0],  # ty: ignore[not-subscriptable]
                 )
 
             async with downloader as progress:
@@ -280,30 +283,32 @@ class MediaDownloader(Downloader[MediaState]):
                                 if isinstance(state, BatchStreamCompleted)
                                 else state.file_path,
                             )
-                        elif audio_stream:
-                            context.audio = StreamContext(
-                                stream=audio_stream,
-                                path=state.audio_path
-                                if isinstance(state, BatchStreamCompleted)
-                                else state.file_path,
-                            )
+                        if audio_streams:
+                            context.audios = [
+                                StreamContext(stream=audio, path=path)
+                                for audio, path in zip(
+                                    audio_streams,
+                                    state.audio_paths
+                                    if isinstance(state, BatchStreamCompleted)
+                                    else [state.file_path],
+                                )
+                            ]
 
             if context.video:
                 logger.debug(
                     'Video stream downloaded: "{path}"',
-                    path=context.video.path,
+                    path=str(context.video.path),
                 )
-            elif context.audio:
+            if context.audios:
                 logger.debug(
-                    'Audio stream downloaded: "{path}"',
-                    path=context.audio.path,
+                    'Audio streams downloaded: "{paths}"',
+                    paths=[str(p.path) for p in context.audios],
                 )
 
         async def subtitles():
             if media.subtitles:
                 try:
                     logger.debug("Downloading subtitles")
-
                     context.subtitles = await download_subtitles(
                         subtitles=self._resolve_subtitles(media),
                         output_path=create_temp_file(),
@@ -341,7 +346,7 @@ class MediaDownloader(Downloader[MediaState]):
                 name = self.__class__.__name__
                 tg.start_soon(streams, name=f"{name}.streams({self.id})")
 
-                if self.download_options.embed_metadata:
+                if self.ffmpeg_dir and self.download_options.embed_metadata:
                     tg.start_soon(subtitles, name=f"{name}.subtitles({self.id})")
                     tg.start_soon(thumbnail, name=f"{name}.thumbnail({self.id})")
         except* DownloaderError as eg:
@@ -352,7 +357,7 @@ class MediaDownloader(Downloader[MediaState]):
     async def _merge_streams(
         self,
         video: StreamContext[VideoStream],
-        audio: StreamContext[AudioStream],
+        audios: list[StreamContext[AudioStream]],
     ) -> Path:
         # Get container and extension
         try:
@@ -381,19 +386,19 @@ class MediaDownloader(Downloader[MediaState]):
         try:
             prc = await prc.merge_streams(
                 video=video,
-                audio=audio,
+                audios=audios,
                 merge_container=container,
             )
         except ProcessorError:
             logger.debug(
-                "'{video_extension}' and '{audio_extension}' don't supports merging as '{container_extension}', fallback to 'mkv'",
+                "Video '{video_extension}' and audios '{audio_extension}' don't supports merging as '{container_extension}', fallback to 'mkv'",
                 video_extension=video.extension,
-                audio_extension=audio.extension,
+                audio_extension=(a.extension for a in audios),
                 container_extension=container.extension,
             )
             prc = await prc.merge_streams(
                 video=video,
-                audio=audio,
+                audios=audios,
                 merge_container=VideoContainer.MKV,
             )
 
@@ -496,9 +501,12 @@ class MediaDownloader(Downloader[MediaState]):
     def _resolve_subtitles(self, media: Media) -> SubtitleList:
         # Filter by language prefences
         subtitles = media.subtitles.filter(language=self.download_options.languages)
-        # Else fallback to all subtitles
+
         if not subtitles:
-            subtitles = media.subtitles
+            # Else fallback to all subtitles
+            # Without the autogenerated ones (to avoid 'HTTP Error 429: Too Many Requests' errors)
+            subtitles = media.subtitles.filter(autogenerated=False)
+
         return subtitles
 
     def _determine_ffmpeg_dir(self) -> Path | None:

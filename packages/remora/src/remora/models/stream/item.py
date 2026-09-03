@@ -271,43 +271,58 @@ class MuxedStream(VideoStream, AudioStream):
 
 
 def _infer_stream_type(data) -> str:
-    extension = None
+    container = None
     video = None
     audio = None
 
-    if isinstance(data, dict):
+    if _is_ydl_format(data):
+        vcodec = _normalize_value(data.get("vcodec"))
+        acodec = _normalize_value(data.get("acodec"))
+
+        if vcodec and acodec:
+            return "muxed"
+        if vcodec:
+            return "video"
+        if acodec:
+            return "audio"
+
+        if data.get("resolution") == "audio only":
+            return "audio"
+
+        # Determine from container as fallback
         extension = data.get("ext") or data.get("extension")
 
-        if _is_ydl_format(data):
-            video = _normalize_value(data.get("vcodec"))
-            audio = _normalize_value(data.get("acodec"))
-        else:
+        if extension and (container := get_container(container)):
+            return "audio" if isinstance(container, AudioContainer) else "video"
+
+        raise ValueError()
+    else:
+        if isinstance(data, dict):
+            container = data.get("ext") or data.get("extension")
             video = data.get("video")
             audio = data.get("audio")
-    if isinstance(data, VideoStream):
-        extension = data.container
-        video = data.video.codec
-    if isinstance(data, AudioStream):
-        extension = data.container
-        audio = data.audio.codec
 
-    # Determine from codec
-    if video and audio:
-        return "muxed"
-    elif video:
-        return "video"
-    elif audio:
-        return "audio"
+        if isinstance(data, VideoStream):
+            container = data.container
+            video = data.video.codec
+        if isinstance(data, AudioStream):
+            container = data.container
+            audio = data.audio.codec
 
-    # Determine from extension as fallback
-    elif extension and (container := get_container(extension)):
-        if isinstance(container, AudioContainer):
-            return "audio"
-        else:
+        # Determine from codec
+        if video and audio:
+            return "muxed"
+        if video:
             return "video"
+        if audio:
+            return "audio"
 
-    # Else raise error
-    raise ValueError("Cannot determine stream type")
+        # Determine from container as fallback
+        if container and (container := get_container(container)):
+            return "audio" if isinstance(container, AudioContainer) else "video"
+
+        # Else raise error
+        raise ValueError("Cannot determine stream type")
 
 
 StreamQuality = Literal[144, 240, 360, 480, 720, 1080]

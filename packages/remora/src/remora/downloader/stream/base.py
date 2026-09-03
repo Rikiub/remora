@@ -4,7 +4,7 @@ from loguru import logger
 from remora.constants import DEFAULT_RETRIES
 from remora.downloader._state_streamer import AsyncStateStreamer, T
 from remora.models.options.network import NetworkOptions
-from remora.models.stream import Stream, VideoStream
+from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.models.types import StrPath
 
 _DEFAULT_BUFFER_SIZE = 100
@@ -31,12 +31,17 @@ class BaseStreamDownloader(AsyncStateStreamer[T]):
         stream_type = "video" if isinstance(self.stream, VideoStream) else "audio"
 
         logger.bind(status="downloading").debug(
-            'Downloading {stream_type} stream "{stream_id}" (extension:{extension} '
-            "| quality:{quality}) "
+            'Downloading {stream_type} stream "{stream_id}" '
+            "(extension:{extension} "
+            "| quality:{quality} "
+            "| language:{language}) "
             'with "{downloader}"',
             stream_id=self.stream.id,
             stream_type=stream_type,
             quality=self.stream.quality,
             extension=self.stream.extension,
+            language=self.stream.audio.language
+            if isinstance(self.stream, AudioStream)
+            else "unavailable",
             downloader=self.__class__.__name__,
         )

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Self
 
@@ -74,7 +74,7 @@ class MediaProcessor:
     async def merge_streams(
         self,
         video: StreamContext[VideoStream],
-        audio: StreamContext[AudioStream],
+        audios: StreamContext[AudioStream] | Iterable[StreamContext[AudioStream]],
         merge_container: RichVideoContainer | VideoContainer,
     ) -> Self:
         """
@@ -89,17 +89,30 @@ class MediaProcessor:
         if self.file_path.exists():
             raise FileExistsError(self.file_path)
 
+        # Validate container
         container = get_container(merge_container)
         if isinstance(container, AudioContainer):
             raise TypeError(
                 f"'{container}' is a audio-only container. Please select a container with video and audio support."
             )
 
+        # Normalize video and audio
+        requested_streams: list[StreamContext] = []
+        requested_streams.append(video)
+
+        if isinstance(audios, StreamContext):
+            requested_streams.append(audios)
+        else:
+            for i in audios:
+                requested_streams.append(i)  # noqa: PERF402
+
+        # Convert streams to YDL format dict
         real_streams: list[RequestedFormat] = []
-        for ctx in (video, audio):
-            fmt = {"filepath": str(ctx.path)} | ctx.stream._to_ydl_dict()
+        for ctx in requested_streams:
+            fmt = ctx.stream._to_ydl_dict() | {"filepath": str(ctx.path)}
             real_streams.append(fmt)  # type: ignore
 
+        # Start post-processing
         result = await run_sync(
             self._prc.merge_formats,
             container.extension,

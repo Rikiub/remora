@@ -89,7 +89,7 @@ async def _processor_callback(state: Processing):
                         extension=state.file_extension,
                     )
                 case "merge_streams":
-                    logger.debug("Merged video and audio formats")
+                    logger.debug("Merged video and audio streams")
                 case "embed_subtitles":
                     logger.debug("Subtitles embedded")
                 case "embed_thumbnail":

@@ -24,6 +24,7 @@ class SelectorContext:
     muxed: MuxedStream | None = None
     video: VideoStream | None = None
     audio: AudioStream | None = None
+    prefered_audios: list[AudioStream] | None = None
 
     def __bool__(self) -> bool:
         return bool(self.muxed or self.video or self.audio)
@@ -46,14 +47,15 @@ class StreamSelector:
         streams = media.streams.sorted_by("best")
 
         muxed = self._extract_best(streams, MuxedStream)
+        video = self._extract_best(streams, VideoStream)
         audio = self._extract_best(streams, AudioStream)
 
-        if audio and (
-            media._is_audio_only or self.download_options.format_type == "audio"
+        if (
+            audio
+            and (media._is_audio_only or self.download_options.format_type == "audio")
+            or not (video or muxed)
         ):
             return SelectorContext(audio=audio)
-
-        video = self._extract_best(streams, VideoStream)
 
         if (
             self.merge_available
@@ -68,12 +70,33 @@ class StreamSelector:
                 )
             )
         ):
-            return SelectorContext(video=video, audio=audio)
-
+            prefered_audios = self._extract_prefered_audios(streams)
+            return SelectorContext(
+                video=video, audio=audio, prefered_audios=prefered_audios
+            )
         if muxed:
             return SelectorContext(muxed=muxed)
+        if video:
+            return SelectorContext(video=video)
 
-        return SelectorContext(video=video, audio=audio)
+        raise ValueError("Unable to determine best streams")
+
+    def _extract_prefered_audios(self, streams: StreamList) -> list[AudioStream]:
+        candidates = []
+
+        if langs := self.download_options.languages:
+            audio_streams = streams.audio_only()
+
+            for lang in langs:
+                if (audios := audio_streams.filter(language=lang)) and (
+                    result := self._extract_best(
+                        audios,  # ty: ignore[invalid-argument-type]
+                        AudioStream,
+                    )
+                ):
+                    candidates.append(result)
+
+        return list(candidates)
 
     def _extract_best(self, streams: StreamList, type: type[_T]) -> _T | None:
         # Filter candidates
