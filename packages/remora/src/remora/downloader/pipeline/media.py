@@ -338,8 +338,10 @@ class MediaDownloader(Downloader[MediaState]):
             async with anyio.create_task_group() as tg:
                 name = self.__class__.__name__
                 tg.start_soon(streams, name=f"{name}.streams({self.id})")
-                tg.start_soon(subtitles, name=f"{name}.subtitles({self.id})")
-                tg.start_soon(thumbnail, name=f"{name}.thumbnail({self.id})")
+
+                if self.download_options.embed_metadata:
+                    tg.start_soon(subtitles, name=f"{name}.subtitles({self.id})")
+                    tg.start_soon(thumbnail, name=f"{name}.thumbnail({self.id})")
         except* DownloaderError as eg:
             raise eg.exceptions[0] from eg
 
