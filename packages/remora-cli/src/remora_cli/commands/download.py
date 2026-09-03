@@ -59,7 +59,7 @@ async def download(
     type: Annotated[
         AVContainerFormat | None,
         Parameter(
-            help="Type of stream to prioritize (best by default).",
+            help="Stream type to prioritize. Defaults to best available.",
             short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
@@ -68,31 +68,34 @@ async def download(
     quality: Annotated[
         int | FormatQuality | None,
         Parameter(
-            help="Prefered target quality.",
+            help="Prefered target quality. Applies to video by default, but respects --type if provided.",
             short_alias=True,
             group=Panel.FILTERS,
         ),
     ] = None,
-    video_codec: Annotated[
-        VideoCodec | str | None,
+    video_codecs: Annotated[
+        list[VideoCodec] | str | None,
         Parameter(
             help="Prefered video codecs.",
-            alias="--vcodec",
+            alias="--vcodecs",
+            negative=False,
             group=Panel.FILTERS,
         ),
     ] = None,
-    audio_codec: Annotated[
-        AudioCodec | str | None,
+    audio_codecs: Annotated[
+        list[AudioCodec] | None,
         Parameter(
             help="Prefered audio codecs.",
-            alias="--acodec",
+            alias="--acodecs",
+            negative=False,
             group=Panel.FILTERS,
         ),
     ] = None,
     languages: Annotated[
-        str | None,
+        list[str] | None,
         Parameter(
-            help="Prefered audio stream and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
+            help="Preferred audio and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
+            negative=False,
             group=Panel.FILTERS,
         ),
     ] = None,
@@ -100,7 +103,7 @@ async def download(
     output: Annotated[
         str,
         Parameter(
-            help="Path or template for the saved file.",
+            help="Path template for the saved file.",
             short_alias=True,
             group=Panel.DOWNLOADER,
             validator=lambda type, v: validate_template(v),
