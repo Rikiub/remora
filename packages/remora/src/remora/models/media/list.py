@@ -9,7 +9,6 @@ from typing_extensions import TypeVar
 from remora.models._base import BaseList
 from remora.models.media._base import URL_CHOICES, BaseExtract, ExtractID
 from remora.models.media.item import LazyMedia
-from remora.models.metadata import ThumbnailList
 
 # Entries List
 _EntryType = Union[LazyMedia, "LazyPlaylist"]
@@ -45,7 +44,6 @@ class LazyPlaylist(_BaseList, ExtractID):
         Field(validation_alias=AliasChoices("playlist_url", *URL_CHOICES)),
     ]
     title: Annotated[str, Field(alias="playlist_title")] = ""
-    thumbnails: ThumbnailList = ThumbnailList()
 
 
 class Playlist(LazyPlaylist): ...

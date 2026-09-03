@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AliasChoices, AnyUrl, Field, model_validator
+from pydantic import AfterValidator, AliasChoices, AnyUrl, Field, model_validator
 from typing_extensions import TypeIs, override
 
 from remora.models._base import EnsureNone, RemoraModel, YDLSerializable
-from remora.models.metadata import Channel, Metrics, Uploader
+from remora.models.metadata import Channel, Metrics, ThumbnailList, Uploader
 
 # Types
 PLAYLIST_EXTRACTOR_IDS = ("YoutubeTab",)
@@ -64,6 +64,11 @@ class ExtractID(BaseExtract):
     metrics: Metrics = Metrics()
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
+
+    thumbnails: Annotated[
+        ThumbnailList,
+        AfterValidator(lambda list: list.sorted_by("best")),
+    ] = ThumbnailList()
 
     @property
     def _is_audio_only(self) -> bool:
