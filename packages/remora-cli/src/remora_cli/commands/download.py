@@ -13,13 +13,11 @@ from remora.constants import DEFAULT_TEMPLATE, DEFAULT_WORKERS
 from remora.exceptions import FFmpegNotFoundError
 from remora.ffmpeg import get_ffmpeg_dir, validate_ffmpeg_dir
 from remora.models import (
-    AudioCodec,
     AVContainerFormat,
     DownloadOptions,
     Playlist,
     RichAVContainer,
     SearchList,
-    VideoCodec,
 )
 from remora.template import validate_template
 from remora_cli.options import (
@@ -70,24 +68,6 @@ async def download(
         Parameter(
             help="Prefered target quality. Applies to video by default, but respects --type if provided.",
             short_alias=True,
-            group=Panel.FILTERS,
-        ),
-    ] = None,
-    video_codecs: Annotated[
-        list[VideoCodec] | str | None,
-        Parameter(
-            help="Prefered video codecs.",
-            alias="--vcodecs",
-            negative=False,
-            group=Panel.FILTERS,
-        ),
-    ] = None,
-    audio_codecs: Annotated[
-        list[AudioCodec] | None,
-        Parameter(
-            help="Prefered audio codecs.",
-            alias="--acodecs",
-            negative=False,
             group=Panel.FILTERS,
         ),
     ] = None,
