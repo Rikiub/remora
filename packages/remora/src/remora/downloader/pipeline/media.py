@@ -302,9 +302,17 @@ class MediaDownloader(Downloader[MediaState]):
             if media.subtitles:
                 try:
                     logger.debug("Downloading subtitles")
+
+                    # Filter by language prefences
+                    subtitles = media.subtitles.filter(
+                        language=self.download_options.languages
+                    )
+                    # Else fallback to all subtitles
+                    if not subtitles:
+                        subtitles = media.subtitles
+
                     context.subtitles = await download_subtitles(
-                        media.subtitles.externals(),
-                        create_temp_file(),
+                        subtitles, create_temp_file()
                     )
                     logger.debug("Subtitles downloaded")
                 except MetadataDownloaderError as error:

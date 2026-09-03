@@ -74,7 +74,7 @@ async def download(
     languages: Annotated[
         list[str] | None,
         Parameter(
-            help="Preferred audio and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
+            help="Prefered audio and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
             negative=False,
             group=Panel.FILTERS,
         ),
@@ -156,6 +156,7 @@ async def download(
                 output_template=output,
                 skip_existing=skip_existing,
                 format_type=type,
+                languages=languages,
                 convert_to=convert,
                 quality=quality,
                 ffmpeg_location=ffmpeg_location,

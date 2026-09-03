@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Annotated
 
 from pydantic import AfterValidator
@@ -36,6 +37,7 @@ class DownloadOptions(RemoraModel):
         format_type: Target stream type to filter.
         quality: Target quality to filter.
             If `format_type` is not defined, then will filter only on videos by default.
+        languages: Prefered audio and subtitle languages.
 
         convert_to: Convert or remux the file by the given extension. *[FFmpeg]*
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. *[FFmpeg]*
@@ -52,6 +54,7 @@ class DownloadOptions(RemoraModel):
 
     format_type: AVContainerFormat | None = None
     quality: StreamQuality | int | None = None
+    languages: Iterable[str] | None = None
 
     convert_to: RichAVContainer | AVContainer | None = None
     embed_metadata: bool = True
