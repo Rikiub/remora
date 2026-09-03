@@ -39,11 +39,17 @@ run *args:
 sync:
     uv sync --extra standard
 
-[doc('Upgrade all dependencies to their latest versions based on pyproject.toml')]
+[doc('Upgrade all dependencies to their latest versions')]
 [group('env')]
 upgrade:
     uv lock --upgrade
     uv sync
+
+[doc('Build main packages')]
+[group('env')]
+build:
+    uv build --package remora
+    uv build --package remora-cli
 
 # ==============================
 # Docs
