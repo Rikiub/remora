@@ -121,9 +121,9 @@ def test_extract_best_does_not_mix_stream_types():
         audio_stream(bitrate=128),
     )
 
-    muxed = selector.extract_best(media.streams, MuxedStream)
-    video = selector.extract_best(media.streams, VideoStream)
-    audio = selector.extract_best(media.streams, AudioStream)
+    muxed = selector._extract_best(media.streams, MuxedStream)
+    video = selector._extract_best(media.streams, VideoStream)
+    audio = selector._extract_best(media.streams, AudioStream)
 
     assert muxed
     assert video

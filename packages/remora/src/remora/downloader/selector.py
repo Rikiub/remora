@@ -43,15 +43,17 @@ class StreamSelector:
         are preferred only if both are strictly better than the best muxed
         stream. Otherwise, the complete muxed stream is preferred.
         """
-        muxed = self.extract_best(media.streams, MuxedStream)
-        audio = self.extract_best(media.streams, AudioStream)
+        streams = media.streams.sorted_by("best")
+
+        muxed = self._extract_best(streams, MuxedStream)
+        audio = self._extract_best(streams, AudioStream)
 
         if audio and (
             media._is_audio_only or self.download_options.format_type == "audio"
         ):
             return SelectorContext(audio=audio)
 
-        video = self.extract_best(media.streams, VideoStream)
+        video = self._extract_best(streams, VideoStream)
 
         if (
             self.merge_available
@@ -59,7 +61,7 @@ class StreamSelector:
             and audio
             and (
                 not muxed
-                or not self.is_muxed_better(
+                or not self._is_muxed_better(
                     muxed=muxed,
                     video=video,
                     audio=audio,
@@ -73,8 +75,8 @@ class StreamSelector:
 
         return SelectorContext(video=video, audio=audio)
 
-    def extract_best(self, streams: StreamList, type: type[_T]) -> _T | None:
-        # Get type
+    def _extract_best(self, streams: StreamList, type: type[_T]) -> _T | None:
+        # Filter candidates
         if type is MuxedStream:
             candidates = streams.muxed()
         elif type is VideoStream:
@@ -84,11 +86,11 @@ class StreamSelector:
         else:
             raise TypeError(f"Unsupported stream type: {type}")
 
+        if values := candidates.filter(language=self.download_options.languages):
+            candidates = values
+
         if not candidates:
             return None
-
-        # Default candidate
-        result = candidates[0]
 
         # Map to FormatType
         literal_type = {
@@ -97,18 +99,22 @@ class StreamSelector:
             AudioStream: "audio",
         }[type]
 
-        # Resolve quality
+        # Get final result
         if self.download_options.quality and (
             # If format type is declared, then filter only that type
             self.download_options.format_type == literal_type
             # If format type isn't declared, then default to filter only videos
             or issubclass(type, VideoStream)
         ):
+            # Resolved quality
             result = candidates.get_closest_quality(self.download_options.quality)
+        else:
+            # Default result
+            result = candidates[0]
 
         return cast(_T, result)
 
-    def is_muxed_better(
+    def _is_muxed_better(
         self,
         muxed: MuxedStream,
         video: VideoStream,
