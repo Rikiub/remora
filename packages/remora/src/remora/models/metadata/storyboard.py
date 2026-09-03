@@ -2,7 +2,13 @@ from typing import Generic, Literal, Self, TypeVar
 
 from pydantic import AnyUrl
 
-from remora.models._base import BaseList, RemoraModel, YDLSerializable
+from remora.models._base import (
+    BaseList,
+    FilterValue,
+    RemoraModel,
+    YDLSerializable,
+    to_tuple,
+)
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
@@ -37,18 +43,24 @@ _T = TypeVar("_T", bound=Storyboard)
 
 
 class StoryboardList(YDLSerializable, BaseList[_T], Generic[_T]):
-    def filter(self, width: int, height: int) -> Self:
+    def filter(
+        self,
+        width: FilterValue[int] = None,
+        height: FilterValue[int] = None,
+    ) -> Self:
         """Filter storyboards by options."""
 
         items = self.root
 
         if width:
+            values = to_tuple(width)
             items = (
-                s for s in self.root if s.resolution and s.resolution.width == width
+                s for s in self.root if s.resolution and s.resolution.width in values
             )
         if height:
+            values = to_tuple(height)
             items = (
-                s for s in self.root if s.resolution and s.resolution.height == height
+                s for s in self.root if s.resolution and s.resolution.height in values
             )
 
         return self.__class__(list(items))

@@ -8,7 +8,7 @@ from pydantic import ValidatorFunctionWrapHandler, WrapValidator
 from pydantic_core import PydanticOmit
 from typing_extensions import TypeVar
 
-from remora.models._base import BaseList
+from remora.models._base import BaseList, FilterValue, to_tuple
 from remora.models.container import (
     AudioCodec,
     AVContainerLike,
@@ -51,62 +51,66 @@ def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
 
 
 _LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
-_T = TypeVar("_T", default=_DiscriminatedStream, bound=_DiscriminatedStream)
+_Stream = TypeVar("_Stream", default=_DiscriminatedStream, bound=_DiscriminatedStream)
 
 
-class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
+class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]):
     """List of streams which can be filtered."""
 
     def filter(
         self,
-        quality: StreamQuality | int | None = None,
-        container: AVContainerLike | None = None,
-        protocol: ProtocolLike | None = None,
-        video_codec: VideoCodec | None = None,
-        audio_codec: AudioCodec | None = None,
-        language: str | None = None,
+        quality: FilterValue[StreamQuality | int] = None,
+        container: FilterValue[AVContainerLike] = None,
+        protocol: FilterValue[ProtocolLike] = None,
+        video_codec: FilterValue[VideoCodec] = None,
+        audio_codec: FilterValue[AudioCodec] = None,
+        language: FilterValue[str] = None,
     ) -> Self:
         """Get filtered streams by options."""
 
         items = (s for s in self.root)
 
         if container:
-            container = get_container(container)
-            items = (s for s in items if s.container == container)
+            values = {get_container(i) for i in to_tuple(container)}
+            items = (s for s in items if s.container in values)
         if quality:
-            items = (s for s in items if s.quality == quality)
+            values = to_tuple(quality)
+            items = (s for s in items if s.quality in values)
         if protocol:
-            protocol = Protocol(protocol)
-            items = (s for s in items if s.protocol == protocol)
+            values = {Protocol(i) for i in to_tuple(protocol)}
+            items = (s for s in items if s.protocol in values)
         if video_codec:
+            values = to_tuple(video_codec)
             items = (
                 s
                 for s in items
                 if isinstance(s, VideoStream)
                 and (codec := s.video.codec)
                 and (
-                    codec.normalized.startswith(video_codec)
-                    or codec.original.startswith(video_codec)
+                    codec.normalized.startswith(values)
+                    or codec.original.startswith(values)
                 )
             )
         if audio_codec:
+            values = to_tuple(audio_codec)
             items = (
                 s
                 for s in items
                 if isinstance(s, AudioStream)
                 and (codec := s.audio.codec)
                 and (
-                    codec.normalized.startswith(audio_codec)
-                    or codec.original.startswith(audio_codec)
+                    codec.normalized.startswith(values)
+                    or codec.original.startswith(values)
                 )
             )
         if language:
+            values: tuple[str, ...] = to_tuple(language)  # ty: ignore[invalid-assignment]
             items = (
                 s
                 for s in items
                 if isinstance(s, AudioStream)
                 and s.audio.language
-                and s.audio.language.startswith(language)
+                and s.audio.language.startswith(values)
             )
 
         return self.__class__(list(items))
@@ -168,7 +172,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
             )
         )
 
-    def get_by_id(self, id: str) -> _T:
+    def get_by_id(self, id: str) -> _Stream:
         """Get `Stream` by `id`.
 
         Raises:
@@ -181,7 +185,7 @@ class StreamList(BaseList[Annotated[_T, _LogOnErrorOmit]], Generic[_T]):
         except StopIteration:
             raise KeyError(f"Stream with id '{id}' has not been found")
 
-    def get_closest_quality(self, quality: int) -> _T:
+    def get_closest_quality(self, quality: int) -> _Stream:
         if not self.root:
             raise ValueError("Cannot find closest quality in an empty list")
 

@@ -3,7 +3,13 @@ from typing import Annotated, Generic, Literal, Self
 from pydantic import Field, model_validator
 from typing_extensions import TypeVar, override
 
-from remora.models._base import BaseList, RemoraModel, YDLSerializable
+from remora.models._base import (
+    BaseList,
+    FilterValue,
+    RemoraModel,
+    YDLSerializable,
+    to_tuple,
+)
 from remora.models.metadata._base import Metadata
 from remora.models.metadata.size import Resolution
 
@@ -46,18 +52,24 @@ _T = TypeVar("_T", default=Thumbnail, bound=Thumbnail)
 
 
 class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
-    def filter(self, width: int, height: int) -> Self:
+    def filter(
+        self,
+        width: FilterValue[int] = None,
+        height: FilterValue[int] = None,
+    ) -> Self:
         """Filter thumbnails by options."""
 
         items = self.root
 
         if width:
+            values = to_tuple(width)
             items = (
-                s for s in self.root if s.resolution and s.resolution.width == width
+                s for s in self.root if s.resolution and s.resolution.width in values
             )
         if height:
+            values = to_tuple(height)
             items = (
-                s for s in self.root if s.resolution and s.resolution.height == height
+                s for s in self.root if s.resolution and s.resolution.height in values
             )
 
         return self.__class__(list(items))

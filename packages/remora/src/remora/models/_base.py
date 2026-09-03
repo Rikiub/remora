@@ -1,5 +1,5 @@
 import functools
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from typing import Generic, Self, TypeVar, overload
 
 from pydantic import (
@@ -94,3 +94,16 @@ EnsureList = BeforeValidator(lambda v: v if v else [])
 
 EnsureBool = BeforeValidator(lambda v: bool(v))
 """Ensure data will be False if field not exists."""
+
+# Filter Types
+_F = TypeVar("_F")
+FilterValue = Iterable[_F] | _F | None
+
+
+def to_tuple(value: _F | Iterable[_F]) -> tuple[_F, ...]:
+    """Normalize a string or iterable of strings into a tuple."""
+    if isinstance(value, (str, int, bytes)):
+        return (value,)  # ty: ignore[invalid-return-type]
+    if isinstance(value, Iterable):
+        return tuple(value)
+    return tuple(value)  # ty: ignore[invalid-argument-type]
