@@ -28,6 +28,7 @@ from remora.models.container import (
 )
 from remora.models.container.av import get_container
 from remora.models.media import Media
+from remora.models.metadata import SubtitleList
 from remora.models.options.download import DownloadOptions
 from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
@@ -303,16 +304,9 @@ class MediaDownloader(Downloader[MediaState]):
                 try:
                     logger.debug("Downloading subtitles")
 
-                    # Filter by language prefences
-                    subtitles = media.subtitles.filter(
-                        language=self.download_options.languages
-                    )
-                    # Else fallback to all subtitles
-                    if not subtitles:
-                        subtitles = media.subtitles
-
                     context.subtitles = await download_subtitles(
-                        subtitles, create_temp_file()
+                        subtitles=self._resolve_subtitles(media),
+                        output_path=create_temp_file(),
                     )
                     logger.debug("Subtitles downloaded")
                 except MetadataDownloaderError as error:
@@ -498,6 +492,14 @@ class MediaDownloader(Downloader[MediaState]):
                 await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
 
         return Path(prc.file_path)
+
+    def _resolve_subtitles(self, media: Media) -> SubtitleList:
+        # Filter by language prefences
+        subtitles = media.subtitles.filter(language=self.download_options.languages)
+        # Else fallback to all subtitles
+        if not subtitles:
+            subtitles = media.subtitles
+        return subtitles
 
     def _determine_ffmpeg_dir(self) -> Path | None:
         if ffmpeg_dir := self.download_options.ffmpeg_location:
