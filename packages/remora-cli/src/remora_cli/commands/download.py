@@ -59,7 +59,7 @@ async def download(
     type: Annotated[
         AVContainerFormat | None,
         Parameter(
-            help="Type of stream to download (best by default).",
+            help="Type of stream to prioritize (best by default).",
             short_alias=True,
             show_default=False,
             group=Panel.FILTERS,
@@ -76,7 +76,7 @@ async def download(
     video_codec: Annotated[
         VideoCodec | str | None,
         Parameter(
-            help="Prefered video codec.",
+            help="Prefered video codecs.",
             alias="--vcodec",
             group=Panel.FILTERS,
         ),
@@ -84,8 +84,15 @@ async def download(
     audio_codec: Annotated[
         AudioCodec | str | None,
         Parameter(
-            help="Prefered audio codec.",
+            help="Prefered audio codecs.",
             alias="--acodec",
+            group=Panel.FILTERS,
+        ),
+    ] = None,
+    languages: Annotated[
+        str | None,
+        Parameter(
+            help="Prefered audio stream and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
             group=Panel.FILTERS,
         ),
     ] = None,
@@ -125,14 +132,6 @@ async def download(
             group=Panel.POST_PROCESS,
         ),
     ] = None,
-    subtitles: Annotated[
-        str | None,
-        Parameter(
-            help="Languages of subtitles to embed (e.g. [green]en[/] and [green]es[/]).",
-            short_alias=True,
-            group=Panel.POST_PROCESS,
-        ),
-    ] = None,
     embed_metadata: Annotated[
         bool,
         Parameter(
@@ -144,7 +143,7 @@ async def download(
     ffmpeg_location: Annotated[
         Path | None,
         Parameter(
-            help="FFmpeg executable to use.",
+            help="FFmpeg and FFprobe executable directory to use.",
             show_default=False,
             group=Panel.POST_PROCESS,
             validator=_validate_ffmpeg,
