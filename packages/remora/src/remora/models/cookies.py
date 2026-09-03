@@ -2,17 +2,15 @@ import re
 from pathlib import Path
 from typing import Annotated, Any, Self
 
-from pydantic import BaseModel
-
 import remora
-from remora.models._base import BaseList, EnsureBool, EnsureNone
+from remora.models._base import BaseList, EnsureBool, EnsureNone, RemoraModel
 from remora.models.types import StrPath
 
 __all__ = ["Cookie", "CookieList"]
 _NETSCAPE_HEADER = re.compile("#( Netscape)? HTTP Cookie File")
 
 
-class Cookie(BaseModel):
+class Cookie(RemoraModel):
     name: str
     value: str
     domain: str

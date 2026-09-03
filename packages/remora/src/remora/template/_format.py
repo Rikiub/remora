@@ -3,11 +3,11 @@ import string
 from pathlib import Path
 
 from pathvalidate import sanitize_filepath
-from pydantic import BaseModel
 from typing_extensions import override
 
 from remora.constants import DEFAULT_TEMPLATE
 from remora.exceptions import OutputTemplateError
+from remora.models._base import RemoraModel
 from remora.models.media import Media, Playlist
 from remora.models.stream import Stream
 from remora.models.types import StrPath
@@ -16,7 +16,7 @@ from remora.template._generator import generate_keys
 __all__ = ["format_template", "get_keys", "validate_key", "validate_template"]
 
 
-class _Nested(BaseModel):
+class _Nested(RemoraModel):
     playlist: Playlist | None = None
     stream: Stream | None = None
 
