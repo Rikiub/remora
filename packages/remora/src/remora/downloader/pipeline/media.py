@@ -11,7 +11,7 @@ from typing_extensions import override
 from remora import ffmpeg, processor
 from remora._types import StreamContext
 from remora.constants import DEFAULT_AUDIO_CONTAINER, DEFAULT_VIDEO_CONTAINER
-from remora.downloader.metadata import download_subtitles, download_thumbnail
+from remora.downloader.metadata import download_subtitle, download_thumbnail
 from remora.downloader.pipeline._logs import log_event_media
 from remora.downloader.pipeline.base import Downloader
 from remora.downloader.selector import StreamSelector
@@ -301,27 +301,35 @@ class MediaDownloader(Downloader[MediaState]):
                 )
             if context.audios:
                 logger.debug(
-                    'Audio streams downloaded: "{paths}"',
+                    "Audio streams downloaded: {paths}",
                     paths=[str(p.path) for p in context.audios],
                 )
 
         async def subtitles():
             if media.subtitles:
-                try:
-                    logger.debug("Downloading subtitles")
-                    context.subtitles = await download_subtitles(
-                        subtitles=self._resolve_subtitles(media),
-                        output_path=create_temp_file(),
-                    )
-                    logger.debug("Subtitles downloaded")
-                except MetadataDownloaderError as error:
-                    await self._emit(
-                        MediaWarning(
-                            id=self.id,
-                            media=self.media,
-                            message=str(error),
+                logger.debug("Downloading subtitles")
+
+                subtitles = self._resolve_subtitles(media)
+                paths = []
+
+                for sub in subtitles:
+                    try:
+                        path = await download_subtitle(
+                            subtitle=sub,
+                            output_path=create_temp_file(),
                         )
-                    )
+                        paths.append(path)
+                    except MetadataDownloaderError as error:
+                        await self._emit(
+                            MediaWarning(
+                                id=self.id,
+                                media=self.media,
+                                message=str(error),
+                            )
+                        )
+
+                context.subtitles = paths
+                logger.debug("Subtitles downloaded")
 
         async def thumbnail():
             if media.thumbnails:

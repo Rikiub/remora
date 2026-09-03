@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from pathlib import Path
 from typing import overload
 
@@ -81,21 +80,11 @@ class Remora:
             max_workers=max_workers or DEFAULT_SEGMENT_WORKERS,
         )
 
-    @overload
-    async def download_resource(
-        self, item: Thumbnail | Subtitle, output_path
-    ) -> Path: ...
-
-    @overload
-    async def download_resource(
-        self, item: Sequence[Subtitle], output_path
-    ) -> list[Path]: ...
-
     async def download_resource(
         self,
-        item: Thumbnail | Subtitle | Sequence[Subtitle],
+        item: Thumbnail | Subtitle,
         output_path: StrPath,
-    ) -> Path | list[Path]:
+    ) -> Path:
         from remora.downloader.metadata import download_resource
 
         return await download_resource(item, output_path)

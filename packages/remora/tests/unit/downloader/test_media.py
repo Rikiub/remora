@@ -179,7 +179,7 @@ def mock_pipeline(
         )
         mocker.patch.object(
             downloader,
-            downloader.download_subtitles.__name__,
+            downloader.download_subtitle.__name__,
             new_callable=AsyncMock,
             return_value=[tmp_path / "subtitle.srt"],
         )
