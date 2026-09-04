@@ -26,14 +26,14 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
 
     def __init__(
         self,
-        output_path: StrPath,
         stream: Stream,
+        output_path: StrPath,
         retries: int = DEFAULT_RETRIES,
         network_options: NetworkOptions | None = None,
     ):
         super().__init__(
-            output_path,
-            stream,
+            stream=stream,
+            output_path=output_path,
             retries=retries,
             network_options=network_options,
         )

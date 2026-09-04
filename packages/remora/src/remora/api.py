@@ -74,8 +74,8 @@ class Remora:
         max_workers: int | None = None,
     ) -> StreamDownloader:
         return StreamDownloader(
-            output_path,
             stream=item,
+            output_path=output_path,
             retries=retries or self.download_options.retries,
             max_workers=max_workers or DEFAULT_SEGMENT_WORKERS,
         )

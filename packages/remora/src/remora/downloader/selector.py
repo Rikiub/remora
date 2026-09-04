@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TypeVar, cast
 
 from remora.models.media import Media
@@ -12,32 +11,22 @@ from remora.models.stream import (
     VideoStream,
 )
 
-__all__ = [
-    "SelectorContext",
-    "StreamSelector",
-]
+__all__ = ["StreamSelector"]
 _T = TypeVar("_T", bound=Stream)
-
-
-@dataclass(slots=True)
-class SelectorContext:
-    muxed: MuxedStream | None = None
-    video: VideoStream | None = None
-    audio: AudioStream | None = None
-    prefered_audios: list[AudioStream] | None = None
-
-    def __bool__(self) -> bool:
-        return bool(self.muxed or self.video or self.audio)
 
 
 class StreamSelector:
     """Responsible for selecting the best video/audio streams based on options."""
 
-    def __init__(self, download_options: DownloadOptions, merge_available: bool = True):
-        self.download_options = download_options
+    def __init__(
+        self,
+        download_options: DownloadOptions | None = None,
+        merge_available: bool = True,
+    ):
+        self.download_options = download_options or DownloadOptions()
         self.merge_available = merge_available
 
-    def resolve(self, media: Media) -> SelectorContext:
+    def resolve(self, media: Media) -> list[Stream]:
         """Resolves the final pair of streams to be downloaded.
 
         When merging is available, the best separate video and audio streams
@@ -50,12 +39,11 @@ class StreamSelector:
         video = self._extract_best(streams, VideoStream)
         audio = self._extract_best(streams, AudioStream)
 
-        if (
-            audio
-            and (media._is_audio_only or self.download_options.format_type == "audio")
+        if audio and (
+            (media._is_audio_only or self.download_options.format_type == "audio")
             or not (video or muxed)
         ):
-            return SelectorContext(audio=audio)
+            return [audio]
 
         if (
             self.merge_available
@@ -70,14 +58,19 @@ class StreamSelector:
                 )
             )
         ):
-            prefered_audios = self._extract_prefered_audios(streams)
-            return SelectorContext(
-                video=video, audio=audio, prefered_audios=prefered_audios
-            )
+            results = [video]
+
+            if prefered_audios := self._extract_prefered_audios(streams):
+                results.extend(prefered_audios)
+            else:
+                results.append(audio)
+
+            return results
+
         if muxed:
-            return SelectorContext(muxed=muxed)
+            return [muxed]
         if video:
-            return SelectorContext(video=video)
+            return [video]
 
         raise ValueError("Unable to determine best streams")
 

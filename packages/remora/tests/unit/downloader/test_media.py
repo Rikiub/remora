@@ -8,9 +8,8 @@ from typing_extensions import override
 
 import remora.downloader.pipeline.media as downloader
 from remora.downloader.pipeline.media import MediaDownloader
-from remora.downloader.selector import SelectorContext
+from remora.downloader.stream.batch import BatchStreamDownloader
 from remora.downloader.stream.main import StreamDownloader
-from remora.downloader.stream.muxed import MuxedStreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.media import Extractor
 from remora.models.media.item import Media
@@ -37,7 +36,7 @@ MODULE_PATH = downloader.__name__
 
 
 # Fake dependencies
-class FakeBatchDownloader(MuxedStreamDownloader):
+class FakeBatchDownloader(BatchStreamDownloader):
     """Mocks the async generator for stream downloads."""
 
     def __init__(self, *args, **kwargs):
@@ -47,10 +46,7 @@ class FakeBatchDownloader(MuxedStreamDownloader):
     async def _run_pipeline(self):
         await self._emit(BatchStreamDownloading(streams=[]))
         await self._emit(
-            BatchStreamCompleted(
-                video_path="/tmp/video.mp4",
-                audio_paths=["/tmp/audio.mp4"],
-            )
+            BatchStreamCompleted(paths=["/tmp/video.mp4", "/tmp/audio.mp4"])
         )
 
 
@@ -154,19 +150,17 @@ def mock_pipeline(
             downloader,
             downloader.StreamSelector.__name__,
         )
-        mock_selector.return_value.resolve.return_value = SelectorContext(
-            video=video, audio=audio
-        )
+        mock_selector.return_value.resolve.return_value = [video, audio]
 
         # Mock stream downloaders
         mocker.patch.object(
             downloader,
-            downloader.StreamDownloader.__name__,
+            downloader.BatchStreamDownloader.__name__,
             FakeStreamDownloader,
         )
         mocker.patch.object(
             downloader,
-            downloader.MuxedStreamDownloader.__name__,
+            downloader.BatchStreamDownloader.__name__,
             FakeBatchDownloader,
         )
 

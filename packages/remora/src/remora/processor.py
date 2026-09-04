@@ -19,7 +19,7 @@ from remora.models.container import (
 )
 from remora.models.media import Media
 from remora.models.metadata import MusicMetadata
-from remora.models.stream import AudioStream, StreamQuality, VideoStream
+from remora.models.stream import StreamQuality
 from remora.models.types import StrPath
 
 __all__ = ["MediaProcessor"]
@@ -73,8 +73,7 @@ class MediaProcessor:
 
     async def merge_streams(
         self,
-        video: StreamContext[VideoStream],
-        audios: StreamContext[AudioStream] | Iterable[StreamContext[AudioStream]],
+        streams: Iterable[StreamContext],
         merge_container: RichVideoContainer | VideoContainer,
     ) -> Self:
         """
@@ -96,19 +95,9 @@ class MediaProcessor:
                 f"'{container}' is a audio-only container. Please select a container with video and audio support."
             )
 
-        # Normalize video and audio
-        requested_streams: list[StreamContext] = []
-        requested_streams.append(video)
-
-        if isinstance(audios, StreamContext):
-            requested_streams.append(audios)
-        else:
-            for i in audios:
-                requested_streams.append(i)  # noqa: PERF402
-
         # Convert streams to YDL format dict
         real_streams: list[RequestedFormat] = []
-        for ctx in requested_streams:
+        for ctx in streams:
             fmt = ctx.stream._to_ydl_dict() | {"filepath": str(ctx.path)}
             real_streams.append(fmt)  # type: ignore
 

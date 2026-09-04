@@ -1,9 +1,10 @@
-from remora.downloader.selector import SelectorContext, StreamSelector
+from remora.downloader.selector import StreamSelector
 from remora.models.container import CodecInfo
 from remora.models.media import Extractor
 from remora.models.media.item import Media
 from remora.models.metadata.size import Resolution
 from remora.models.options.download import DownloadOptions
+from remora.models.stream import Stream
 from remora.models.stream.item import (
     AudioInfo,
     AudioStream,
@@ -21,12 +22,11 @@ def test_prefers_pair_when_both_better_than_muxed():
         video_stream(height=1080),
         audio_stream(bitrate=128, codec="opus"),
     )
+    results = resolve(media)
 
-    result = resolve(media)
-
-    assert not result.muxed
-    assert result.video
-    assert result.audio
+    assert not check_type(results, MuxedStream)
+    assert check_type(results, VideoStream)
+    assert check_type(results, AudioStream)
 
 
 def test_prefers_muxed_when_better_than_pair():
@@ -36,12 +36,11 @@ def test_prefers_muxed_when_better_than_pair():
         video_stream(height=720),
         audio_stream(bitrate=48),
     )
+    results = resolve(media)
 
-    result = resolve(media)
-
-    assert result.muxed
-    assert not result.video
-    assert not result.audio
+    assert check_type(results, MuxedStream)
+    assert not check_type(results, VideoStream)
+    assert not check_type(results, AudioStream)
 
 
 def test_prefers_pair_when_muxed_not_strictly_better():
@@ -51,11 +50,11 @@ def test_prefers_pair_when_muxed_not_strictly_better():
         video_stream(height=1080),
         audio_stream(bitrate=128),
     )
+    results = resolve(media)
 
-    result = resolve(media)
-    assert not result.muxed
-    assert result.video
-    assert result.audio
+    assert not check_type(results, MuxedStream)
+    assert check_type(results, VideoStream)
+    assert check_type(results, AudioStream)
 
 
 def test_prefers_muxed_when_merge_not_available():
@@ -65,15 +64,14 @@ def test_prefers_muxed_when_merge_not_available():
         video_stream(height=1080),
         audio_stream(bitrate=128, codec="opus"),
     )
-
-    result = StreamSelector(
+    results = StreamSelector(
         download_options=DownloadOptions(),
         merge_available=False,
     ).resolve(media)
 
-    assert result.muxed
-    assert not result.video
-    assert not result.audio
+    assert check_type(results, MuxedStream)
+    assert not check_type(results, VideoStream)
+    assert not check_type(results, AudioStream)
 
 
 def test_audio_only_format():
@@ -83,11 +81,11 @@ def test_audio_only_format():
         audio_stream(bitrate=128),
     )
     selector = StreamSelector(DownloadOptions(format_type="audio"))
-    result = selector.resolve(media)
+    results = selector.resolve(media)
 
-    assert not result.muxed
-    assert not result.video
-    assert result.audio
+    assert not check_type(results, MuxedStream)
+    assert not check_type(results, VideoStream)
+    assert check_type(results, AudioStream)
 
 
 def test_falls_back_to_pair_without_muxed():
@@ -96,20 +94,18 @@ def test_falls_back_to_pair_without_muxed():
         video_stream(height=1080),
         audio_stream(bitrate=128),
     )
+    results = resolve(media)
 
-    result = resolve(media)
-
-    assert not result.muxed
-    assert result.video
-    assert result.audio
+    assert not check_type(results, MuxedStream)
+    assert check_type(results, VideoStream)
+    assert check_type(results, AudioStream)
 
 
 def test_falls_back_to_muxed_without_separates():
     """A muxed stream is used when no separate video and audio exist."""
     media = make_media(muxed_stream(height=1080))
-
-    result = resolve(media)
-    assert result.muxed
+    results = resolve(media)
+    assert check_type(results, MuxedStream)
 
 
 def test_extract_best_does_not_mix_stream_types():
@@ -134,8 +130,12 @@ def test_extract_best_does_not_mix_stream_types():
 URL = "https://example.com/video"
 
 
-def resolve(media: Media, **kwargs) -> SelectorContext:
-    return StreamSelector(DownloadOptions()).resolve(media, **kwargs)
+def check_type(lst: list[Stream], type_: type[Stream]) -> bool:
+    return all(type(s) is type_ for s in lst)
+
+
+def resolve(media: Media, **kwargs) -> list[Stream]:
+    return StreamSelector().resolve(media, **kwargs)
 
 
 def make_media(*streams) -> Media:

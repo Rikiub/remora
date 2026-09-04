@@ -39,15 +39,15 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
 
     def __init__(
         self,
-        output_path: StrPath,
         stream: Stream,
+        output_path: StrPath,
         retries: int = DEFAULT_RETRIES,
         max_workers: int = DEFAULT_SEGMENT_WORKERS,
         network_options: NetworkOptions | None = None,
     ):
         super().__init__(
-            output_path,
-            stream,
+            stream=stream,
+            output_path=output_path,
             retries=retries,
             network_options=network_options,
         )

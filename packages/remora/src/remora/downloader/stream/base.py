@@ -15,8 +15,8 @@ class BaseStreamDownloader(AsyncStateStreamer[T]):
 
     def __init__(
         self,
-        output_path: StrPath,
         stream: Stream,
+        output_path: StrPath,
         retries: int = DEFAULT_RETRIES,
         network_options: NetworkOptions | None = None,
     ) -> None:
