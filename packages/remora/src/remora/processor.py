@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Self
 
@@ -67,7 +67,7 @@ class MediaProcessor:
         result = await run_sync(self._prc.embed_thumbnail, thumbnail, square)
         return self._sync(result)
 
-    async def embed_subtitles(self, subtitles: Sequence[StrPath]) -> Self:
+    async def embed_subtitles(self, subtitles: Iterable[StrPath]) -> Self:
         result = await run_sync(self._prc.embed_subtitle, subtitles)
         return self._sync(result)
 

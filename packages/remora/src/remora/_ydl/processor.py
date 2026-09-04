@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Self, TypedDict
 
@@ -108,7 +108,7 @@ class YDLProcessor:
         return self
 
     @catch
-    def embed_subtitle(self, subtitles: Sequence[StrPath]) -> Self:
+    def embed_subtitle(self, subtitles: Iterable[StrPath]) -> Self:
         pp = FFmpegEmbedSubtitlePP(self._ydl())
 
         dict_subs: dict[str, dict] = {}
