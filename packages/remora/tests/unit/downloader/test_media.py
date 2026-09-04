@@ -9,7 +9,6 @@ from typing_extensions import override
 import remora.downloader.pipeline.media as downloader
 from remora.downloader.pipeline.media import MediaDownloader
 from remora.downloader.stream.batch import BatchStreamDownloader
-from remora.downloader.stream.main import StreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.media import Extractor
 from remora.models.media.item import Media
@@ -26,8 +25,6 @@ from remora.models.progress.media import (
 from remora.models.progress.stream import (
     BatchStreamCompleted,
     BatchStreamDownloading,
-    StreamCompleted,
-    StreamContinuous,
 )
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 from remora.processor import MediaProcessor
@@ -48,18 +45,6 @@ class FakeBatchDownloader(BatchStreamDownloader):
         await self._emit(
             BatchStreamCompleted(paths=["/tmp/video.mp4", "/tmp/audio.mp4"])
         )
-
-
-class FakeStreamDownloader(StreamDownloader):
-    """Mocks the async generator for stream downloads."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @override
-    async def _run_pipeline(self):
-        await self._emit(StreamContinuous(total_bytes=50000))
-        await self._emit(StreamCompleted(file_path=Path()))
 
 
 MockPipeline = Callable[[Media], MediaDownloader]
@@ -152,12 +137,7 @@ def mock_pipeline(
         )
         mock_selector.return_value.resolve.return_value = [video, audio]
 
-        # Mock stream downloaders
-        mocker.patch.object(
-            downloader,
-            downloader.BatchStreamDownloader.__name__,
-            FakeStreamDownloader,
-        )
+        # Mock stream downloader
         mocker.patch.object(
             downloader,
             downloader.BatchStreamDownloader.__name__,
