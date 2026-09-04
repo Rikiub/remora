@@ -23,7 +23,7 @@ __all__ = ["BatchStreamDownloader"]
 
 
 @dataclass(slots=True)
-class StreamManager(StreamContext[_T]):
+class _StreamManager(StreamContext[_T]):
     state: StreamProgressState | None = None
 
 
@@ -38,7 +38,7 @@ class BatchStreamDownloader(AsyncStateStreamer[BatchStreamState]):
     ):
         super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
 
-        self.streams = [StreamManager(stream=s.stream, path=s.path) for s in stream]
+        self.streams = [_StreamManager(stream=s.stream, path=s.path) for s in stream]
         self.network_options = network_options
         self.retries = retries
 
@@ -62,7 +62,7 @@ class BatchStreamDownloader(AsyncStateStreamer[BatchStreamState]):
             )
         )
 
-    async def _download(self, ctx: StreamManager) -> None:
+    async def _download(self, ctx: _StreamManager) -> None:
         async with StreamDownloader(
             output_path=ctx.path,
             stream=ctx.stream,

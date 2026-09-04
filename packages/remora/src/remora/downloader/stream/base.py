@@ -1,3 +1,5 @@
+from abc import ABC
+
 from anyio import Path
 from loguru import logger
 
@@ -10,7 +12,7 @@ from remora.models.types import StrPath
 _DEFAULT_BUFFER_SIZE = 100
 
 
-class BaseStreamDownloader(AsyncStateStreamer[T]):
+class BaseStreamDownloader(AsyncStateStreamer[T], ABC):
     SUPPORTED_PROTOCOLS: set[str] | frozenset[str]
 
     def __init__(

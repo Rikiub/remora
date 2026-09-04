@@ -14,7 +14,7 @@ from remora._types import StreamContext
 from remora.constants import DEFAULT_AUDIO_CONTAINER, DEFAULT_VIDEO_CONTAINER
 from remora.downloader.metadata import download_subtitle, download_thumbnail
 from remora.downloader.pipeline._logs import log_event_media
-from remora.downloader.pipeline.base import Downloader
+from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.selector import StreamSelector
 from remora.downloader.stream import BatchStreamDownloader
 from remora.exceptions import (
@@ -63,7 +63,7 @@ class _DownloadContext:
     subtitles: list[Path] | None = None
 
 
-class MediaDownloader(Downloader[MediaState]):
+class MediaDownloader(BaseDownloader[MediaState]):
     """Handles the lifecycle of a single media download."""
 
     def __init__(

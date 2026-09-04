@@ -5,7 +5,7 @@ from loguru import logger
 from typing_extensions import override
 
 from remora.downloader.pipeline._logs import log_event_playlist
-from remora.downloader.pipeline.base import Downloader
+from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.pipeline.media import MediaDownloader
 from remora.exceptions import ExtractorError
 from remora.extractor import MediaExtractor
@@ -36,7 +36,7 @@ from remora.template import format_template
 __all__ = ["BatchDownloader"]
 
 
-class BatchDownloader(Downloader[BatchState]):
+class BatchDownloader(BaseDownloader[BatchState]):
     def __init__(
         self,
         item: StrUrl | AnyExtractResult,

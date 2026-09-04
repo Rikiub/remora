@@ -3,7 +3,6 @@ from typing_extensions import override
 
 from remora.constants import DEFAULT_RETRIES, DEFAULT_SEGMENT_WORKERS
 from remora.downloader.stream.base import BaseStreamDownloader
-from remora.downloader.stream.httpx import HttpxStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.options.network import NetworkOptions
 from remora.models.progress import StreamState
@@ -41,6 +40,8 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
         ):
             # Main Downloader
             try:
+                from remora.downloader.stream.core.httpx import HttpxStreamDownloader
+
                 async with HttpxStreamDownloader(
                     stream=self.stream,
                     output_path=self.file_path,
@@ -66,7 +67,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                     raise
 
             # Fallback downloader
-            from remora.downloader.stream.ydl import YDLStreamDownloader
+            from remora.downloader.stream.core.ydl import YDLStreamDownloader
 
             logger.debug("Retrying with YDL downloader")
 

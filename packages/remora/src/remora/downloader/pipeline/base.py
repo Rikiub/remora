@@ -1,10 +1,12 @@
+from abc import ABC
+
 from remora.downloader._state_streamer import AsyncStateStreamer, T
 from remora.models.options.download import DownloadOptions
 
-__all__ = ["Downloader"]
+__all__ = ["BaseDownloader"]
 
 
-class Downloader(AsyncStateStreamer[T]):
+class BaseDownloader(AsyncStateStreamer[T], ABC):
     def __init__(
         self,
         download_options: DownloadOptions | None = None,
