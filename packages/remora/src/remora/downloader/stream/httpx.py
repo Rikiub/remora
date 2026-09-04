@@ -115,7 +115,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                     path = await self._download_segments()
 
                 elif protocol in (Protocol.HTTP, Protocol.HTTPS):
-                    logger.debug("Downloading stream as http")
+                    logger.debug('Downloading stream as "HTTP"')
 
                     self.is_continuous = True
                     path = await self._download_multi_part()
