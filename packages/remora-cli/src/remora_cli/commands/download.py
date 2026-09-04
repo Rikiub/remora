@@ -166,7 +166,7 @@ async def download(
             network_options=network.build_options(),
         )
 
-    async for target, result in extract_queries(query, remora.extractor):
+    async for target, result in extract_queries(query, remora.network_options):
         if isinstance(result, (Playlist, SearchList)) and not result.entries.medias():
             logger.error("'{}' don't have streams to download", target)
 

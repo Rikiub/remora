@@ -9,6 +9,7 @@ from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.pipeline.media import MediaDownloader
 from remora.exceptions import ExtractorError
 from remora.extractor import MediaExtractor
+from remora.models import NetworkOptions
 from remora.models.media import (
     AnyExtractResult,
     EntriesList,
@@ -41,11 +42,11 @@ class BatchDownloader(BaseDownloader[BatchState]):
         self,
         item: StrUrl | AnyExtractResult,
         download_options: DownloadOptions | None = None,
-        extractor: MediaExtractor | None = None,
+        network_options: NetworkOptions | None = None,
     ):
         # Internals
         super().__init__(download_options=download_options)
-        self.extractor = extractor or MediaExtractor()
+        self.extractor = MediaExtractor(network_options)
         self._buffer_size = 100 * self.download_options.max_workers
 
         self.limiter = anyio.CapacityLimiter(self.download_options.max_workers)

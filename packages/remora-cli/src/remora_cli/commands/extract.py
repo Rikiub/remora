@@ -109,7 +109,7 @@ async def extract(
         sel_exclude.discard(key)
 
     # Extract queries
-    async for _, result in extract_queries(query, extractor):
+    async for _, result in extract_queries(query, extractor.network_options):
         logger.success("Successful extraction")
 
         # Show

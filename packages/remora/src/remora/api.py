@@ -30,7 +30,8 @@ class Remora:
         network_options: NetworkOptions | None = None,
     ):
         self.download_options = download_options or DownloadOptions()
-        self.extractor = MediaExtractor(network_options)
+        self.network_options = network_options or NetworkOptions()
+        self._extractor = MediaExtractor(self.network_options)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -45,7 +46,7 @@ class Remora:
         self, item: StrUrl | LazyMedia | LazyPlaylist
     ) -> Media | Playlist:
         """Extract media from URL or update item."""
-        return await self.extractor.extract(item)
+        return await self._extractor.extract(item)
 
     async def extract_search(
         self,
@@ -54,16 +55,20 @@ class Remora:
         limit: int = 20,
     ) -> SearchList:
         """Extract media from search service."""
-        return await self.extractor.extract_search(query, service, limit)
+        return await self._extractor.extract_search(query, service, limit)
 
     def download_media(self, item: Media) -> MediaDownloader:
-        return MediaDownloader(item, download_options=self.download_options)
+        return MediaDownloader(
+            item,
+            download_options=self.download_options,
+            network_options=self.network_options,
+        )
 
     def download_batch(self, item: StrUrl | AnyExtractResult) -> BatchDownloader:
         return BatchDownloader(
             item,
             download_options=self.download_options,
-            extractor=self.extractor,
+            network_options=self.network_options,
         )
 
     def download_stream(
@@ -78,6 +83,7 @@ class Remora:
             output_path=output_path,
             retries=retries or self.download_options.retries,
             max_workers=max_workers or DEFAULT_SEGMENT_WORKERS,
+            network_options=self.network_options,
         )
 
     async def download_resource(

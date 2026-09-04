@@ -5,8 +5,9 @@ from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
 
-from remora import MediaExtractor
 from remora.exceptions import RemoraError
+from remora.extractor import MediaExtractor
+from remora.models import NetworkOptions
 from remora.models.media import ExtractResult, SearchList
 from remora_cli.parsers import SearchTarget, parse_queries
 from remora_cli.ui.rich import CONSOLE
@@ -14,10 +15,11 @@ from remora_cli.ui.rich import CONSOLE
 
 async def extract_queries(
     queries: list[str],
-    extractor: MediaExtractor,
+    network_options: NetworkOptions,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | SearchList]]:
     for index, value in enumerate(parse_queries(queries), start=1):
         target, entry = value
+        extractor = MediaExtractor(network_options)
 
         try:
             with CONSOLE.status("Searching[blink]...[/]"):
