@@ -131,7 +131,7 @@ URL = "https://example.com/video"
 
 
 def check_type(lst: list[Stream], type_: type[Stream]) -> bool:
-    return all(type(s) is type_ for s in lst)
+    return any(type(s) is type_ for s in lst)
 
 
 def resolve(media: Media, **kwargs) -> list[Stream]:
