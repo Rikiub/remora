@@ -57,9 +57,9 @@ class Remora:
         """Extract media from search service."""
         return await self._extractor.extract_search(query, service, limit)
 
-    def download_media(self, item: Media) -> MediaDownloader:
+    def download_media(self, media: Media) -> MediaDownloader:
         return MediaDownloader(
-            item,
+            media,
             download_options=self.download_options,
             network_options=self.network_options,
         )
@@ -73,13 +73,13 @@ class Remora:
 
     def download_stream(
         self,
-        item: Stream,
+        stream: Stream,
         output_path: StrPath,
         retries: int | None = None,
         max_workers: int | None = None,
     ) -> StreamDownloader:
         return StreamDownloader(
-            stream=item,
+            stream=stream,
             output_path=output_path,
             retries=retries or self.download_options.retries,
             max_workers=max_workers or DEFAULT_SEGMENT_WORKERS,
