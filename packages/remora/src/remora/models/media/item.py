@@ -63,7 +63,7 @@ class LazyMedia(ExtractID):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_ydl_media(cls, data) -> dict:
+    def _validate_ydl_lazy_media(cls, data) -> dict:
         if is_ydl_media(data):
             # Map live status
             live_status: LiveStatus = "not_live"
@@ -87,14 +87,6 @@ class LazyMedia(ExtractID):
             # Map metadata
             data["music"] = data
 
-            # Map subtitles
-            data["subtitles"] = SubtitleList._from_ydl_dict(data)
-
-            # Map storyboards
-            data["storyboards"] = StoryboardList._from_ydl_formats(
-                data.get("formats") or []
-            )
-
             # Return normalized data
             return data
         return data
@@ -117,3 +109,19 @@ class Media(LazyMedia):
         AfterValidator(lambda list: list.sorted_by("best")),
         Field(alias="formats"),
     ] = StreamList()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_ydl_full_media(cls, data) -> dict:
+        if is_ydl_media(data):
+            # Map subtitles
+            data["subtitles"] = SubtitleList._from_ydl_dict(data)
+
+            # Map storyboards
+            data["storyboards"] = StoryboardList._from_ydl_formats(
+                data.get("formats") or []
+            )
+
+            # Return normalized data
+            return data
+        return data

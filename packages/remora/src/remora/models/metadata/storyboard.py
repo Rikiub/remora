@@ -1,6 +1,7 @@
-from typing import Generic, Literal, Self, TypeVar
+from typing import Generic, Literal, Self
 
 from pydantic import AnyUrl
+from typing_extensions import TypeVar, override
 
 from remora.models._base import (
     BaseList,
@@ -18,7 +19,7 @@ class StoryboardFragment(RemoraModel):
     duration: float
 
 
-class Storyboard(RemoraModel):
+class Storyboard(YDLSerializable, RemoraModel):
     id: str
     extension: str
     protocol: Protocol = Protocol.MHTML
@@ -27,6 +28,21 @@ class Storyboard(RemoraModel):
     rows: int | None = None
     columns: int | None = None
     fragments: list[StoryboardFragment]
+
+    @override
+    def _to_ydl_dict(self):
+        info = super()._to_ydl_dict()
+
+        info["format_id"] = self.id
+        info["ext"] = self.extension
+        info["protocol"] = self.protocol.lower()
+        info["url"] = str(self.fragments[0].url)  # First fragment URL
+
+        if res := self.resolution:
+            info["width"] = res.width
+            info["height"] = res.height
+
+        return info
 
     @classmethod
     def _from_ydl_format_dict(cls, info: dict) -> Self:
@@ -39,7 +55,7 @@ class Storyboard(RemoraModel):
         return cls(**info)
 
 
-_T = TypeVar("_T", bound=Storyboard)
+_T = TypeVar("_T", bound=Storyboard, default=Storyboard)
 
 
 class StoryboardList(YDLSerializable, BaseList[_T], Generic[_T]):

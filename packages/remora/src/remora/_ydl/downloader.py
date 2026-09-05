@@ -3,6 +3,8 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
+from yt_dlp.downloader import get_suitable_downloader
+from yt_dlp.downloader.mhtml import MhtmlFD
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
@@ -142,3 +144,14 @@ def download_subtitles(
         return result
     else:
         raise MetadataDownloaderError("Unable to download subtitles")
+
+
+def download_storyboard(filepath: StrPath, storyboard: YDLExtractInfo) -> Path:
+    extension = storyboard["ext"]
+    filepath = f"{filepath}.{extension}"
+
+    fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
+    fd: MhtmlFD = fd_class(YDL(), {})
+    fd.download(filepath, storyboard)
+
+    return Path(filepath)

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from anyio.to_thread import run_sync
 
-from remora.models.metadata import Subtitle, Thumbnail
+from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
 
 __all__ = [
@@ -15,23 +15,43 @@ __all__ = [
 async def download_thumbnail(thumbnail: Thumbnail, output_path: StrPath) -> Path:
     from remora._ydl.downloader import download_thumbnail as ydl
 
-    path = await run_sync(ydl, output_path, thumbnail._to_ydl_dict())
+    path = await run_sync(
+        ydl,
+        output_path,
+        thumbnail._to_ydl_dict(),
+    )
     return path
 
 
 async def download_subtitle(subtitle: Subtitle, output_path: StrPath) -> Path:
     from remora._ydl.downloader import download_subtitles as ydl
 
-    info = subtitle._to_ydl_dict()
-    paths = await run_sync(ydl, output_path, info)
-
+    paths = await run_sync(
+        ydl,
+        output_path,
+        subtitle._to_ydl_dict(),
+    )
     return paths[0]
 
 
-async def download_resource(item: Thumbnail | Subtitle, output_path: StrPath) -> Path:
+async def download_storyboard(storyboard: Storyboard, output_path: StrPath) -> Path:
+    from remora._ydl.downloader import download_storyboard as ydl
+
+    path = await run_sync(
+        ydl,
+        output_path,
+        storyboard._to_ydl_dict(),
+    )
+    return path
+
+
+async def download_resource(
+    item: Thumbnail | Subtitle | Storyboard,
+    output_path: StrPath,
+) -> Path:
     if isinstance(item, Subtitle):
-        paths = await download_subtitle(item, output_path)
-        return paths
+        return await download_subtitle(item, output_path)
     elif isinstance(item, Thumbnail):
-        output_path = await download_thumbnail(item, output_path)
-        return output_path
+        return await download_thumbnail(item, output_path)
+    elif isinstance(item, Storyboard):
+        return await download_storyboard(item, output_path)
