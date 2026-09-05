@@ -12,7 +12,7 @@ from remora.models._base import EnsureList, EnsureNone
 from remora.models.media._base import (
     PLAYLIST_EXTRACTOR_IDS,
     ExtractID,
-    Extractor,
+    ExtractorInfo,
     TypeField,
     is_ydl_media,
 )
@@ -62,7 +62,7 @@ class LazyMedia(ExtractID):
 
     @field_validator("extractor")
     @classmethod
-    def _validate_extractor(cls, extractor: Extractor) -> Extractor:
+    def _validate_extractor(cls, extractor: ExtractorInfo) -> ExtractorInfo:
         if extractor.id in PLAYLIST_EXTRACTOR_IDS:
             raise ValueError(f"'{extractor.id}' extractor is for playlists only.")
         return extractor

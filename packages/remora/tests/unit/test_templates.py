@@ -1,7 +1,7 @@
 import pytest
 
 from remora.models.container import CodecInfo
-from remora.models.media import Extractor
+from remora.models.media import ExtractorInfo
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
 from remora.models.metadata.social import Channel, Metrics, Uploader
@@ -30,7 +30,7 @@ def dummy_video_stream() -> VideoStream:
 def dummy_media() -> Media:
     """Media rich of placeholder metadata."""
     return Media(
-        extractor=Extractor(id="ExtractorMedia", name="extractor:media"),
+        extractor=ExtractorInfo(id="ExtractorMedia", name="extractor:media"),
         id="1",
         title="Media Title",
         url="https://example.com/media",
@@ -61,7 +61,7 @@ def dummy_playlist() -> Playlist:
         id="1",
         url="https://example.com/playlist",
         title="Playlist Title",
-        extractor=Extractor(id="ExtractorPlaylist", name="extractor:playlist"),
+        extractor=ExtractorInfo(id="ExtractorPlaylist", name="extractor:playlist"),
         modified_date="2026-05-02T12:00:00",
         upload_date="2026-05-02T12:00:00",
         release_date="2026-05-02T12:00:00",

@@ -22,13 +22,13 @@ def is_ydl_media(data) -> TypeIs[dict]:
 
 
 # Base
-class Extractor(RemoraModel):
+class ExtractorInfo(RemoraModel):
     id: str
     name: str
 
 
 class BaseExtract(YDLSerializable):
-    extractor: Extractor
+    extractor: ExtractorInfo
 
     @override
     def _to_ydl_dict(self) -> dict:
