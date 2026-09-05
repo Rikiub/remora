@@ -13,7 +13,7 @@ from remora.models.media import (
     Playlist,
     SearchList,
 )
-from remora.models.metadata import Subtitle, Thumbnail
+from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.options.download import DownloadOptions
 from remora.models.options.network import NetworkOptions
 from remora.models.search import SearchService
@@ -88,7 +88,7 @@ class Remora:
 
     async def download_resource(
         self,
-        item: Thumbnail | Subtitle,
+        item: Thumbnail | Subtitle | Storyboard,
         output_path: StrPath,
     ) -> Path:
         from remora.downloader.metadata import download_resource
