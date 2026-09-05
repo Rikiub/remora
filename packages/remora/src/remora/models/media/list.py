@@ -10,6 +10,13 @@ from remora.models._base import BaseList
 from remora.models.media._base import URL_CHOICES, BaseExtract, ExtractID
 from remora.models.media.item import LazyMedia
 
+__all__ = [
+    "EntriesList",
+    "LazyPlaylist",
+    "Playlist",
+    "SearchList",
+]
+
 # Entries List
 _EntryType = Union[LazyMedia, "LazyPlaylist"]
 _Entry = TypeVar("_Entry", bound=_EntryType, default=_EntryType)

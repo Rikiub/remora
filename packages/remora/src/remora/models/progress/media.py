@@ -5,6 +5,20 @@ from remora.models.progress._base import BaseStateID, FileState
 from remora.models.progress.process import Processing
 from remora.models.progress.stream import BatchStreamDownloading
 
+__all__ = [
+    "MediaCancelled",
+    "MediaCompleted",
+    "MediaDownloading",
+    "MediaEnded",
+    "MediaExtracting",
+    "MediaFailed",
+    "MediaProcessing",
+    "MediaSkipped",
+    "MediaStarted",
+    "MediaState",
+    "MediaWarning",
+]
+
 
 class _BaseMedia(BaseStateID):
     type: Literal["media"] = "media"

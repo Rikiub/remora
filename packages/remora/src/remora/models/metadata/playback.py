@@ -4,6 +4,8 @@ from pydantic import Field
 
 from remora.models.metadata._base import Metadata
 
+__all__ = ["Chapter", "Heatmap", "Segment"]
+
 
 class Segment(Metadata):
     start: Annotated[float, Field(alias="start_time")]

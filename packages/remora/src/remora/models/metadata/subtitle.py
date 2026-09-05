@@ -15,6 +15,14 @@ from remora.models._base import (
 )
 from remora.models.metadata._base import Metadata
 
+__all__ = [
+    "ExternalSubtitle",
+    "InlineSubtitle",
+    "Subtitle",
+    "SubtitleList",
+    "SubtitleRequestContext",
+]
+
 
 class SubtitleRequestContext(RemoraModel):
     headers: Annotated[dict | None, Field(alias="http_headers")] = None

@@ -2,6 +2,8 @@ from typing import Self
 
 from remora.models._base import RemoraModel
 
+__all__ = ["Resolution"]
+
 
 class Resolution(RemoraModel):
     width: int

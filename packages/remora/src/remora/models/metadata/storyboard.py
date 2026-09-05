@@ -13,6 +13,12 @@ from remora.models._base import (
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
+__all__ = [
+    "Storyboard",
+    "StoryboardFragment",
+    "StoryboardList",
+]
+
 
 class StoryboardFragment(RemoraModel):
     url: AnyUrl

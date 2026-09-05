@@ -4,6 +4,8 @@ from pydantic import AfterValidator, AnyUrl, Field
 
 from remora.models.metadata._base import Metadata, RemoraModel
 
+__all__ = ["Channel", "Metrics", "Uploader"]
+
 
 def _clean_uploader_name(v: str) -> str:
     if not v:

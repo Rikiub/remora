@@ -2,6 +2,11 @@ from typing import Literal
 
 from remora.models.progress._base import FileState
 
+__all__ = [
+    "Processing",
+    "ProcessorTask",
+]
+
 ProcessorTask = Literal[
     "change_container",
     "convert_audio",

@@ -5,6 +5,8 @@ from pydantic import BeforeValidator, Field
 from remora.models._base import EnsureList, YDLSerializable
 from remora.models.metadata._base import Metadata
 
+__all__ = ["MusicMetadata"]
+
 
 def _normalize_artists(value: str | list[str]) -> list[str]:
     artists = []

@@ -6,12 +6,12 @@ from anyio.to_thread import run_sync
 from loguru import logger
 
 from remora.models.media import (
+    ExtractAdapter,
     LazyMedia,
     LazyPlaylist,
     Media,
     Playlist,
     SearchList,
-    _ExtractAdapter,
 )
 from remora.models.options.network import NetworkOptions
 from remora.models.search import SearchService
@@ -60,7 +60,7 @@ class MediaExtractor:
             from remora._ydl.extractor import extract_info
 
             info = await run_sync(extract_info, url, self.network_options)
-            result = _ExtractAdapter.validate_python(info, by_alias=True)
+            result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
             return result

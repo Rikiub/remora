@@ -27,6 +27,8 @@ from remora.models.stream.item import (
     _DiscriminatedStream,
 )
 
+__all__ = ["StreamList"]
+
 
 def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
     try:

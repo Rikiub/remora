@@ -5,6 +5,17 @@ from pydantic import computed_field
 
 from remora.models.progress._base import BaseState, FileState
 
+__all__ = [
+    "BatchStreamCompleted",
+    "BatchStreamDownloading",
+    "BatchStreamState",
+    "StreamCompleted",
+    "StreamContinuous",
+    "StreamProgressState",
+    "StreamSegmented",
+    "StreamState",
+]
+
 
 # Progress Types
 class _BaseStream(BaseState):

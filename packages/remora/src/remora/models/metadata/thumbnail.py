@@ -13,6 +13,12 @@ from remora.models._base import (
 from remora.models.metadata._base import Metadata
 from remora.models.metadata.size import Resolution
 
+__all__ = [
+    "Thumbnail",
+    "ThumbnailList",
+    "ThumbnailRequestContext",
+]
+
 
 class ThumbnailRequestContext(RemoraModel):
     headers: Annotated[dict | None, Field(alias="http_headers")] = None
