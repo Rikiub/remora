@@ -63,7 +63,7 @@ class ExtractID(BaseExtract):
     id: str
     url: Annotated[AnyUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
-    # People
+    # Author
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
 
