@@ -54,18 +54,25 @@ class BaseExtract(YDLSerializable):
 class ExtractID(BaseExtract):
     """Base identifier for media objects."""
 
+    # Identifier
     id: str
     url: Annotated[AnyUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
+    # Dates
     modified_date: Annotated[datetime | None, EnsureNone] = None
     upload_date: Annotated[datetime | None, EnsureNone] = None
     release_date: Annotated[datetime | None, EnsureNone] = None
 
-    metrics: Metrics = Metrics()
+    # People
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
+
+    # Contributors
+    creators: Annotated[list[str], EnsureList] = []  # noqa: RUF012
     cast: Annotated[list[str], EnsureList] = []  # noqa: RUF012
 
+    # Metadata
+    metrics: Metrics = Metrics()
     thumbnails: Annotated[
         ThumbnailList,
         AfterValidator(lambda list: list.sorted_by("best")),

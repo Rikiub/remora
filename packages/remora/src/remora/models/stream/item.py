@@ -220,6 +220,9 @@ class _BaseStream(ABC, YDLSerializable):
                     **data,
                     "codec": {"original": audio_codec},
                     "audio_ext": audio_ext or ext,
+                    "bitrate": data.get("abr") or data.get("tbr")
+                    if not is_muxed
+                    else None,
                 }
             if is_muxed or video_codec:
                 data["video"] = {
@@ -227,6 +230,9 @@ class _BaseStream(ABC, YDLSerializable):
                     "codec": {"original": video_codec},
                     "video_ext": video_ext or ext,
                     "resolution": resolution,
+                    "bitrate": data.get("vbr") or data.get("tbr")
+                    if not is_muxed
+                    else None,
                 }
 
             # Map fragments
