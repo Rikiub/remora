@@ -192,7 +192,7 @@ class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]
             raise ValueError("Cannot find closest quality in an empty list")
 
         items = self.sorted_by("quality", reverse=False)
-        qualities = [i.quality for i in items]
+        qualities = [i.quality for i in items if i.quality]
         pos = bisect.bisect_left(qualities, quality)
 
         if pos == 0:
@@ -202,7 +202,7 @@ class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]
 
         before, after = items[pos - 1], items[pos]
 
-        if (after.quality - quality) <= (quality - before.quality):
+        if ((after.quality or 0) - quality) <= (quality - (before.quality or 0)):
             return after
         else:
             return before

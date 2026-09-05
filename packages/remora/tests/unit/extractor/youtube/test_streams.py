@@ -40,7 +40,7 @@ async def test_audio_streams_validation(streams: StreamList):
         assert audio.audio.codec
 
         if audio.audio.bitrate:
-            assert audio.quality == audio.audio.bitrate
+            assert audio.quality == int(audio.audio.bitrate)
         else:
             assert audio.quality == 0
 

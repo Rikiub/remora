@@ -128,12 +128,12 @@ class _BaseStream(ABC, YDLSerializable):
 
     @computed_field
     @property
-    def quality(self) -> int:
+    def quality(self) -> int | None:
         """Stream quality."""
         return self._quality()
 
     @abstractmethod
-    def _quality(self) -> int:
+    def _quality(self) -> int | None:
         """Stream quality implementation."""
         raise NotImplementedError
 
@@ -262,10 +262,10 @@ class AudioStream(_BaseStream):
     audio: AudioInfo = AudioInfo()
 
     @override
-    def _quality(self) -> int:
+    def _quality(self) -> int | None:
         if b := self.audio.bitrate:
             return int(b)
-        return 0
+        return None
 
 
 class VideoStream(_BaseStream):
@@ -274,10 +274,10 @@ class VideoStream(_BaseStream):
     video: VideoInfo = VideoInfo()
 
     @override
-    def _quality(self) -> int:
+    def _quality(self) -> int | None:
         if res := self.video.resolution:
             return int(res.height)
-        return 0
+        return None
 
 
 class MuxedStream(VideoStream, AudioStream):
