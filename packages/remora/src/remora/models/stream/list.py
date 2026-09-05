@@ -107,13 +107,7 @@ class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]
             )
         if language:
             values: tuple[str, ...] = to_tuple(language)  # ty: ignore[invalid-assignment]
-            items = (
-                s
-                for s in items
-                if isinstance(s, AudioStream)
-                and s.audio.language
-                and s.audio.language.startswith(values)
-            )
+            items = (s for s in items if s.language and s.language.startswith(values))
 
         return self.__class__(list(items))
 

@@ -79,7 +79,6 @@ class AudioInfo(RemoraModel):
     bitrate: Annotated[float | None, Field(alias="abr")] = None
     channels: Annotated[int | None, Field(alias="audio_channels")] = None
     sample_rate: Annotated[float | None, Field(alias="asr")] = None
-    language: str | None = None
 
 
 class VideoInfo(RemoraModel):
@@ -120,11 +119,7 @@ class _BaseStream(ABC, YDLSerializable):
     size_bytes: int | None = None
 
     container: Annotated[AVContainer, Field(alias="ext")]
-
-    @computed_field
-    @property
-    def extension(self) -> str:
-        return self.container.extension
+    language: str | None = None
 
     @computed_field
     @property
@@ -154,7 +149,8 @@ class _BaseStream(ABC, YDLSerializable):
             "filesize_approx": self.size_bytes
             if self.size_type == "estimated"
             else None,
-            "ext": self.extension,
+            "ext": self.container.extension if self.container else "none",
+            "language": self.language,
             # Detailed Info
             "vcodec": rgetattr(self, "video.codec.original", "none"),
             "acodec": rgetattr(self, "audio.codec.original", "none"),
@@ -285,11 +281,10 @@ class MuxedStream(VideoStream, AudioStream):
 
 
 def _infer_stream_type(data) -> str:
-    container = None
-    video = None
-    audio = None
-
     if _is_ydl_format(data):
+        if data.get("resolution") == "audio only":
+            return "audio"
+
         vcodec = _normalize_value(data.get("vcodec"))
         acodec = _normalize_value(data.get("acodec"))
 
@@ -300,22 +295,22 @@ def _infer_stream_type(data) -> str:
         if acodec:
             return "audio"
 
-        if data.get("resolution") == "audio only":
-            return "audio"
-
         # Determine from container as fallback
-        extension = data.get("ext") or data.get("extension")
+        extension = _normalize_value(
+            data.get("ext") or data.get("video_ext") or data.get("audio_ext")
+        )
 
-        if extension and (container := get_container(container)):
-            return "audio" if isinstance(container, AudioContainer) else "video"
-
-        raise ValueError()
+        if extension and (extension := get_container(extension)):
+            return "audio" if isinstance(extension, AudioContainer) else "video"
     else:
+        container = None
+        video = None
+        audio = None
+
         if isinstance(data, dict):
-            container = data.get("ext") or data.get("extension")
+            container = data.get("container")
             video = data.get("video")
             audio = data.get("audio")
-
         if isinstance(data, VideoStream):
             container = data.container
             video = data.video.codec
@@ -335,8 +330,8 @@ def _infer_stream_type(data) -> str:
         if container and (container := get_container(container)):
             return "audio" if isinstance(container, AudioContainer) else "video"
 
-        # Else raise error
-        raise ValueError("Cannot determine stream type")
+    # Else raise error
+    raise ValueError("Cannot determine stream type")
 
 
 StreamQuality = Literal[144, 240, 360, 480, 720, 1080]

@@ -41,9 +41,9 @@ class BaseStreamDownloader(AsyncStateStreamer[T], ABC):
             stream_id=self.stream.id,
             stream_type=stream_type,
             quality=self.stream.quality,
-            extension=self.stream.extension,
-            language=self.stream.audio.language
+            extension=self.stream.container.extension,
+            language=self.stream.language
             if isinstance(self.stream, AudioStream)
-            else "unavailable",
+            else "None",
             downloader=self.__class__.__name__,
         )

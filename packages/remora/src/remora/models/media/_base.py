@@ -4,7 +4,7 @@ from typing import Annotated
 from pydantic import AfterValidator, AliasChoices, AnyUrl, Field, model_validator
 from typing_extensions import TypeIs, override
 
-from remora.models._base import EnsureNone, RemoraModel, YDLSerializable
+from remora.models._base import EnsureList, EnsureNone, RemoraModel, YDLSerializable
 from remora.models.metadata import Channel, Metrics, ThumbnailList, Uploader
 
 # Types
@@ -64,6 +64,7 @@ class ExtractID(BaseExtract):
     metrics: Metrics = Metrics()
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
+    cast: Annotated[list[str], EnsureList] = []  # noqa: RUF012
 
     thumbnails: Annotated[
         ThumbnailList,

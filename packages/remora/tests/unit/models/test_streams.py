@@ -31,6 +31,7 @@ def streams() -> StreamList:
                 id="2",
                 url=URL,
                 protocol="https",
+                language="en",
                 container="mp4",
                 size_type="estimated",
                 size_bytes=11832459,
@@ -45,7 +46,6 @@ def streams() -> StreamList:
                     bitrate=128.0,
                     channels=2,
                     sample_rate=44100,
-                    language="en",
                 ),
             ),
             # Covers: videos, video_only, vp9 codec filter
@@ -65,10 +65,10 @@ def streams() -> StreamList:
                 url=URL,
                 protocol="https",
                 container="webm",
+                language="es-419",
                 audio=AudioInfo(
                     codec=CodecInfo(original="opus"),
                     bitrate=160.0,
-                    language="es-419",
                 ),
             ),
             # Covers: Extra audio stream for robustness
@@ -77,10 +77,10 @@ def streams() -> StreamList:
                 url=URL,
                 protocol="m3u8",
                 container="m4a",
+                language=None,
                 audio=AudioInfo(
                     codec=CodecInfo(original="mp4a.40.5"),
                     bitrate=64.0,
-                    language=None,
                 ),
             ),
         ]
@@ -159,9 +159,7 @@ def test_filter_language(streams: StreamList):
 
     assert len(filtered) > 0
     assert all(
-        isinstance(s, AudioStream)
-        and s.audio.language
-        and s.audio.language.startswith(language)
+        isinstance(s, AudioStream) and s.language and s.language.startswith(language)
         for s in filtered
     )
 

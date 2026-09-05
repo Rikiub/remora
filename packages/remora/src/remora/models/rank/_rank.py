@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+import re
 from functools import cache
 
 from remora.models.container import (
@@ -43,6 +43,7 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
                 stream.size_bytes or 0,
                 protocol,
                 video_ext,
+                *_extract_int(stream.id),
             )
         case VideoStream():
             return (
@@ -51,6 +52,7 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
                 stream.size_bytes or 0,
                 protocol,
                 video_ext,
+                *_extract_int(stream.id),
             )
         case AudioStream():
             return (
@@ -59,6 +61,7 @@ def get_stream_rank(stream: Stream) -> tuple[float, ...]:
                 *get_audio_rank(stream.audio),
                 protocol,
                 audio_ext,
+                *_extract_int(stream.id),
             )
 
 
@@ -129,5 +132,11 @@ def _rank(value: str | None, ranks: tuple) -> int:
 
 
 @cache
-def _reversed_rank_list(ranks: tuple) -> Iterator[str]:
-    return reversed(ranks)
+def _reversed_rank_list(ranks: tuple) -> tuple[str, ...]:
+    return tuple(reversed(ranks))
+
+
+def _extract_int(text) -> tuple[int, ...]:
+    # Finds ALL blocks of digits and returns them as a tuple of ints
+    matches = re.findall(r"\d+", text)
+    return tuple(int(m) for m in matches) if matches else (0,)

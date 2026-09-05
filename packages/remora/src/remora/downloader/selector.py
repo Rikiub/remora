@@ -103,9 +103,8 @@ class StreamSelector:
         else:
             raise TypeError(f"Unsupported stream type: {type}")
 
-        if type is AudioStream and (
-            (values := candidates.filter(language=self.download_options.languages))
-            or (values := candidates.filter(language=DEFAULT_STREAM_LANGUAGE))
+        if (values := candidates.filter(language=self.download_options.languages)) or (
+            values := candidates.filter(language=DEFAULT_STREAM_LANGUAGE)
         ):
             candidates = values
 

@@ -361,7 +361,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         return self.file_path
 
     async def _fix_extension(self, path: Path) -> Path:
-        new_file = path.with_suffix(f".{self.stream.extension}")
+        new_file = path.with_suffix(f".{self.stream.container.extension}")
         return await path.rename(new_file)
 
     async def _update_progress(self):

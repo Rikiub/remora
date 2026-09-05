@@ -26,6 +26,7 @@ from remora.models.metadata import (
 from remora.models.stream.list import StreamList
 
 __all__ = [
+    "Availability",
     "LazyMedia",
     "LiveStatus",
     "Media",
@@ -38,7 +39,20 @@ def _normalize_type(value: str):
     return value
 
 
-LiveStatus = Literal["live", "upcoming", "was_live", "not_live"]
+LiveStatus = Literal[
+    "live",
+    "upcoming",
+    "was_live",
+    "not_live",
+]
+Availability = Literal[
+    "public",
+    "private",
+    "unlisted",
+    "needs_auth",
+    "premium_only",
+    "subscriber_only",
+]
 
 
 class LazyMedia(ExtractID):
@@ -50,10 +64,15 @@ class LazyMedia(ExtractID):
     ] = "media"
     title: Annotated[str | None, EnsureNone] = None
     description: Annotated[str | None, EnsureNone] = None
+
+    # Status
     live_status: LiveStatus = "not_live"
+    availability: Availability = "public"
 
     # Metadata
     license: str | None = None
+    location: str | None = None
+    age_limit: int | None = None
     duration: float | None = None
     heatmap: Annotated[list[Heatmap], EnsureList] = []  # noqa: RUF012
     music: Annotated[MusicMetadata | None, EnsureNone] = None
@@ -92,7 +111,10 @@ class LazyMedia(ExtractID):
             data["live_status"] = live_status
 
             # Map metadata
-            data["music"] = data
+            data["music"] = {
+                **data,
+                "title": data.get("track"),
+            }
 
             # Return normalized data
             return data
