@@ -1,4 +1,5 @@
 import re
+import time
 from pathlib import Path
 from typing import Annotated, Any, Self
 
@@ -20,6 +21,29 @@ class Cookie(RemoraModel):
 
 
 class CookieList(BaseList[Cookie]):
+    # METHODS
+
+    def get_expired_cookies(self, domain: str) -> list[Cookie]:
+        """Returns a list of all expired cookies for the given domain."""
+        now = int(time.time())
+        target_domain = domain.lstrip(".")
+        expired = []
+
+        for cookie in self:
+            c_domain = cookie.domain.lstrip(".")
+            is_domain_match = (c_domain == target_domain) or target_domain.endswith(
+                "." + c_domain
+            )
+
+            if is_domain_match and (
+                cookie.expires is not None and cookie.expires < now
+            ):
+                expired.append(cookie)
+
+        return expired
+
+    # FACTORIES
+
     @classmethod
     def from_file(cls, file_path: StrPath) -> Self:
         file_path = Path(file_path)

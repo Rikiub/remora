@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterable
 
 from loguru import logger
+from pydantic import AnyUrl
 from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
@@ -22,6 +23,18 @@ async def extract_queries(
         extractor = MediaExtractor(network_options)
 
         try:
+            if (
+                target == "url"
+                and (cookies := network_options.cookies)
+                and (url_host := AnyUrl(entry).host)
+                and cookies.get_expired_cookies(url_host)
+            ):
+                logger.warning(
+                    f"The given cookies for the domain '{url_host}' are expired. "
+                    "It could do unexpected behaviour. "
+                    "Please update your cookies file the next time."
+                )
+
             with CONSOLE.status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
