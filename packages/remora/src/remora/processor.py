@@ -124,29 +124,28 @@ class MediaProcessor:
 
 
 def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
-    meta = {}
+    info = {}
 
-    # Track
-    title = music.title or media.title
-    if title:
-        meta |= {"meta_track": title}
+    # Track Title
+    if title := music.title or media.title:
+        info |= {"meta_track": title}
 
-    # Artist
-    if music.artists:
-        meta |= {"meta_artist": ", ".join(music.artists)}
-    elif media.uploader:
-        meta |= {"meta_artist": media.uploader.name}
+    # Artists
+    if artists := music.artists:
+        info |= {"meta_artist": ", ".join(artists)}
+    elif uploader := media.uploader:
+        info |= {"meta_artist": uploader.name}
 
-    # Album Artist
-    if music.album_artists:
-        meta |= {"meta_album_artist": ", ".join(music.album_artists)}
-    elif media.uploader:
-        meta |= {"meta_album_artist": media.uploader.name}
+    # Album Artists
+    if artists := music.album_artists:
+        info |= {"meta_album_artist": ", ".join(artists)}
+    elif uploader := media.uploader:
+        info |= {"meta_album_artist": uploader.name}
 
-    # Year
-    if music.year:
-        meta |= {"meta_year": str(music.year)}
-    elif media.date.uploaded:
-        meta |= {"meta_date": str(media.date.uploaded.year)}
+    # Release Year
+    if year := music.year:
+        info |= {"meta_year": str(year)}
+    elif date := media.date.uploaded:
+        info |= {"meta_year": str(date.year)}
 
-    return meta
+    return info
