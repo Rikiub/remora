@@ -147,13 +147,13 @@ def mock_pipeline(
         # Mock metadata downloaders
         mocker.patch.object(
             downloader,
-            downloader.download_thumbnail.__name__,
+            downloader._download_thumbnail.__name__,
             new_callable=AsyncMock,
             return_value=tmp_path / "thumbnail.jpg",
         )
         mocker.patch.object(
             downloader,
-            downloader.download_subtitle.__name__,
+            downloader._download_subtitle.__name__,
             new_callable=AsyncMock,
             return_value=[tmp_path / "subtitle.srt"],
         )

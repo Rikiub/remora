@@ -88,7 +88,7 @@ class Remora:
 
     async def download_resource(
         self,
-        item: Thumbnail | Subtitle | Storyboard,
+        item: Subtitle | Thumbnail | Storyboard,
         output_path: StrPath,
     ) -> Path:
         from remora.downloader.metadata import download_resource
