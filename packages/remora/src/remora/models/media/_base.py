@@ -9,7 +9,7 @@ from remora.models.metadata import Channel, Metrics, ThumbnailList, Uploader
 
 # Types
 PLAYLIST_EXTRACTOR_IDS = ("YoutubeTab",)
-URL_CHOICES = ("original_url", "url", "webpage_url")
+URL_CHOICES = ("webpage_url", "original_url", "url")
 
 # Fields
 TypeField = Field(alias="_type")

@@ -53,6 +53,7 @@ class LazyMedia(ExtractID):
     live_status: LiveStatus = "not_live"
 
     # Metadata
+    license: str | None = None
     duration: float | None = None
     heatmap: Annotated[list[Heatmap], EnsureList] = []  # noqa: RUF012
     music: Annotated[MusicMetadata | None, EnsureNone] = None

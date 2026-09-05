@@ -43,4 +43,5 @@ class MusicMetadata(Metadata, YDLSerializable):
         ValidateArtists,
         Field(alias="album_artist"),
     ] = []  # noqa: RUF012
+    year: Annotated[int | None, Field(alias="release_year")] = None
     genres: list[str] = []  # noqa: RUF012
