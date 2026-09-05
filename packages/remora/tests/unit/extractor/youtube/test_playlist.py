@@ -16,7 +16,7 @@ async def test_playlist(playlist: Playlist):
     assert playlist.title == "Album - HIVE"
     assert (
         str(playlist.url)
-        == "https://music.youtube.com/playlist?list=OLAK5uy_lRrAuEy29zo5mtAH465aEtvmRfakErDoI"
+        == "https://www.youtube.com/playlist?list=OLAK5uy_lRrAuEy29zo5mtAH465aEtvmRfakErDoI"
     )
 
 
