@@ -128,12 +128,12 @@ class _BaseStream(ABC, YDLSerializable):
 
     @computed_field
     @property
-    def quality(self) -> float:
+    def quality(self) -> int:
         """Stream quality."""
         return self._quality()
 
     @abstractmethod
-    def _quality(self) -> float:
+    def _quality(self) -> int:
         """Stream quality implementation."""
         raise NotImplementedError
 
@@ -262,9 +262,9 @@ class AudioStream(_BaseStream):
     audio: AudioInfo = AudioInfo()
 
     @override
-    def _quality(self) -> float:
+    def _quality(self) -> int:
         if b := self.audio.bitrate:
-            return b
+            return int(b)
         return 0
 
 
@@ -274,9 +274,9 @@ class VideoStream(_BaseStream):
     video: VideoInfo = VideoInfo()
 
     @override
-    def _quality(self) -> float:
+    def _quality(self) -> int:
         if res := self.video.resolution:
-            return res.height
+            return int(res.height)
         return 0
 
 

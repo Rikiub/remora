@@ -77,7 +77,7 @@ class MediaProcessor:
         merge_container: RichVideoContainer | VideoContainer,
     ) -> Self:
         """
-        Merge two streams in a single file (Remuxing).
+        Merge multiple streams in a single file.
 
         Ensure that `file_path` not exists before run this method.
 
@@ -99,7 +99,7 @@ class MediaProcessor:
         real_streams: list[RequestedFormat] = []
         for ctx in streams:
             fmt = ctx.stream._to_ydl_dict() | {"filepath": str(ctx.path)}
-            real_streams.append(fmt)  # type: ignore
+            real_streams.append(fmt)
 
         # Start post-processing
         result = await run_sync(
@@ -127,7 +127,7 @@ def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
     meta = {}
 
     # Track
-    title = music.track or media.title
+    title = music.title or media.title
     if title:
         meta |= {"meta_track": title}
 

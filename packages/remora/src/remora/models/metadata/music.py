@@ -29,7 +29,7 @@ ValidateArtists = BeforeValidator(_normalize_artists)
 
 
 class MusicMetadata(Metadata, YDLSerializable):
-    track: str | None = None
+    title: Annotated[str | None, Field(alias="track")] = None
     artists: Annotated[
         list[str],
         EnsureList,

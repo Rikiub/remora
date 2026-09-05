@@ -126,8 +126,8 @@ class ProgressCallback:
 
         music = media.music
 
-        if music and (music.track and music.artists):
-            return f"{music.track} - {music.artists[0]}"
+        if music and (music.title and music.artists):
+            return f"{music.title} - {music.artists[0]}"
         elif media.title:
             return media.title
         else:
