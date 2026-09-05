@@ -4,7 +4,7 @@ from remora.models.container import CodecInfo
 from remora.models.media import ExtractorInfo
 from remora.models.media.item import Media
 from remora.models.media.list import Playlist
-from remora.models.metadata.social import Channel, Metrics, Uploader
+from remora.models.metadata import Channel, DateMetadata, Metrics, Uploader
 from remora.models.stream.item import VideoInfo, VideoStream
 from remora.template import format_template
 
@@ -62,9 +62,11 @@ def dummy_playlist() -> Playlist:
         url="https://example.com/playlist",
         title="Playlist Title",
         extractor=ExtractorInfo(id="ExtractorPlaylist", name="extractor:playlist"),
-        modified_date="2026-05-02T12:00:00",
-        upload_date="2026-05-02T12:00:00",
-        release_date="2026-05-02T12:00:00",
+        date=DateMetadata(
+            modified="2026-05-02T12:00:00",
+            uploaded="2026-05-02T12:00:00",
+            released="2026-05-02T12:00:00",
+        ),
         uploader=Uploader(
             name="Uploader Name",
             id="Uploader Id",

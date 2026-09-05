@@ -25,7 +25,7 @@ def _normalize_artists(value: str | list[str]) -> list[str]:
     return artists
 
 
-ValidateArtists = BeforeValidator(_normalize_artists)
+_ValidateArtists = BeforeValidator(_normalize_artists)
 
 
 class MusicMetadata(Metadata, YDLSerializable):
@@ -33,14 +33,14 @@ class MusicMetadata(Metadata, YDLSerializable):
     artists: Annotated[
         list[str],
         EnsureList,
-        ValidateArtists,
+        _ValidateArtists,
         Field(alias="artist"),
     ] = []  # noqa: RUF012
     album: str | None = None
     album_artists: Annotated[
         list[str],
         EnsureList,
-        ValidateArtists,
+        _ValidateArtists,
         Field(alias="album_artist"),
     ] = []  # noqa: RUF012
     year: Annotated[int | None, Field(alias="release_year")] = None

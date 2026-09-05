@@ -146,7 +146,7 @@ def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
     # Year
     if music.year:
         meta |= {"meta_year": str(music.year)}
-    elif media.upload_date:
-        meta |= {"meta_date": str(media.upload_date.year)}
+    elif media.date.uploaded:
+        meta |= {"meta_date": str(media.date.uploaded.year)}
 
     return meta

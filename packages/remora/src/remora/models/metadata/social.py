@@ -1,10 +1,17 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, AnyUrl, Field
 
+from remora.models._base import EnsureNone
 from remora.models.metadata._base import Metadata, RemoraModel
 
-__all__ = ["Channel", "Metrics", "Uploader"]
+__all__ = [
+    "Channel",
+    "DateMetadata",
+    "Metrics",
+    "Uploader",
+]
 
 
 def _clean_uploader_name(v: str) -> str:
@@ -41,3 +48,17 @@ class Metrics(RemoraModel):
 
     reposts: Annotated[int | None, Field(alias="repost_count")] = None
     saves: Annotated[int | None, Field(alias="save_count")] = None
+
+
+class DateMetadata(RemoraModel):
+    modified: Annotated[
+        datetime | None,
+        EnsureNone,
+        Field(alias="modified_date"),
+    ] = None
+    uploaded: Annotated[
+        datetime | None,
+        EnsureNone,
+        Field(alias="upload_date"),
+    ] = None
+    released: Annotated[datetime | None, EnsureNone, Field(alias="release_date")] = None

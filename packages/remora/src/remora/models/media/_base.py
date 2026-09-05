@@ -1,11 +1,16 @@
-from datetime import datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, AliasChoices, AnyUrl, Field, model_validator
 from typing_extensions import TypeIs, override
 
 from remora.models._base import EnsureList, EnsureNone, RemoraModel, YDLSerializable
-from remora.models.metadata import Channel, Metrics, ThumbnailList, Uploader
+from remora.models.metadata import (
+    Channel,
+    DateMetadata,
+    Metrics,
+    ThumbnailList,
+    Uploader,
+)
 
 # Types
 PLAYLIST_EXTRACTOR_IDS = ("YoutubeTab",)
@@ -58,11 +63,6 @@ class ExtractID(BaseExtract):
     id: str
     url: Annotated[AnyUrl, Field(validation_alias=AliasChoices(*URL_CHOICES))]
 
-    # Dates
-    modified_date: Annotated[datetime | None, EnsureNone] = None
-    upload_date: Annotated[datetime | None, EnsureNone] = None
-    release_date: Annotated[datetime | None, EnsureNone] = None
-
     # People
     uploader: Annotated[Uploader | None, EnsureNone] = None
     channel: Annotated[Channel | None, EnsureNone] = None
@@ -72,6 +72,7 @@ class ExtractID(BaseExtract):
     cast: Annotated[list[str], EnsureList] = []  # noqa: RUF012
 
     # Metadata
+    date: DateMetadata = DateMetadata()
     metrics: Metrics = Metrics()
     thumbnails: Annotated[
         ThumbnailList,
@@ -91,6 +92,7 @@ class ExtractID(BaseExtract):
         data = super()._to_ydl_dict()
 
         fields = [
+            "date",
             "music",
             "metrics",
             "uploader",
@@ -106,6 +108,7 @@ class ExtractID(BaseExtract):
     def _validate_ydl_base(cls, data) -> dict:
         if is_ydl_media(data):
             data["metrics"] = data
+            data["date"] = data
 
             if (uploader := data.get("uploader", None)) and isinstance(uploader, str):
                 data["uploader"] = {**data, "uploader": uploader}
