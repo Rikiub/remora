@@ -8,150 +8,153 @@ from yt_dlp.downloader.mhtml import MhtmlFD
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
+from remora._ydl.base import YDL, YDLBase
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
-from remora._ydl.wrapper import YDL
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
 from remora.models.options import NetworkOptions
 from remora.models.types import StrPath
 
 
-def download_format(
-    filepath: StrPath,
-    format_info: YDLFormatInfo,
-    callback: Callable[[dict[str, Any]], None] | None = None,
-    retries: int = DEFAULT_RETRIES,
-    network_options: NetworkOptions | None = None,
-) -> Path:
-    filepath = Path(filepath)
-    params = {}
+class YDLDownloader(YDLBase):
+    def __init__(
+        self,
+        session: YDL | None = None,
+        network_options: NetworkOptions | None = None,
+    ):
+        super().__init__(session)
+        self.network_options = network_options or NetworkOptions()
 
-    if callback:
-        params |= {"progress_hooks": [callback]}
+    def download_format(
+        self,
+        filepath: StrPath,
+        format_info: YDLFormatInfo,
+        callback: Callable[[dict[str, Any]], None] | None = None,
+        retries: int = DEFAULT_RETRIES,
+    ) -> Path:
+        filepath = Path(filepath)
+        params = {}
 
-    params |= {"outtmpl": f"{filepath}.%(ext)s"}
-    info = {
-        "extractor": "generic",
-        "extractor_key": "Generic",
-        "title": filepath.stem,
-        "id": filepath.stem,
-        "format_id": format_info["format_id"],
-        "formats": [format_info],
-    }
+        if callback:
+            params |= {"progress_hooks": [callback]}
 
-    return download_from_info(
-        info,
-        params,
-        retries=retries,
-        network_options=network_options,
-    )
-
-
-def download_from_info(
-    info: YDLExtractInfo,
-    params: YDLParams,
-    retries: int = DEFAULT_RETRIES,
-    network_options: NetworkOptions | None = None,
-) -> Path:
-    network_options = network_options or NetworkOptions()
-
-    config: YDLParams = {
-        "retries": retries,
-        "fragment_retries": retries,
-        "cookiefile": StringIO(cookies.to_netscape_cookies())
-        if (cookies := network_options.cookies)
-        else None,
-        "proxy": str(proxy) if (proxy := network_options.proxy) else None,
-        "impersonate": ImpersonateTarget.from_str(impersonate)
-        if (impersonate := network_options.impersonate)
-        else None,
-    }
-
-    try:
-        ydl = YDL(
-            params=config | params,
-            auto_init=True,
-        )
-        result = ydl.process_ie_result(
-            info,  # type: ignore
-            download=True,
-        )
-        filepath = result["requested_downloads"][0]["filepath"]  # type: ignore
-        return Path(filepath)
-    except YDLDownloadError as error:
-        raise DownloaderError(
-            message=sanitize_ydl_error(error),
-            status_code=extract_status_code(error),
-        )
-
-
-def download_thumbnail(filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
-    ydl = YDL(
-        {
-            "writethumbnail": True,
-            "outtmpl": {
-                "thumbnail": "",
-                "pl_thumbnail": "",
-            },
+        params |= {"outtmpl": f"{filepath}.%(ext)s"}
+        info = {
+            "extractor": "generic",
+            "extractor_key": "Generic",
+            "title": filepath.stem,
+            "id": filepath.stem,
+            "format_id": format_info["format_id"],
+            "formats": [format_info],
         }
-    )
 
-    info = {"thumbnails": [thumbnail]}
+        return self.download_from_info(info, params, retries=retries)
 
-    try:
-        final = ydl._write_thumbnails(  # type: ignore
-            label=filepath,
-            info_dict=info,
-            filename=str(filepath),
+    def download_from_info(
+        self,
+        info: YDLExtractInfo,
+        params: YDLParams,
+        retries: int = DEFAULT_RETRIES,
+    ) -> Path:
+        config: YDLParams = {
+            "retries": retries,
+            "fragment_retries": retries,
+            "cookiefile": StringIO(cookies.to_netscape_cookies())
+            if (cookies := self.network_options.cookies)
+            else None,
+            "proxy": str(proxy) if (proxy := self.network_options.proxy) else None,
+            "impersonate": ImpersonateTarget.from_str(impersonate)
+            if (impersonate := self.network_options.impersonate)
+            else None,
+        }
+
+        try:
+            ydl = YDL(
+                params=config | params,
+                auto_init=True,
+            )
+            result = ydl.process_ie_result(
+                info,  # type: ignore
+                download=True,
+            )
+            filepath = result["requested_downloads"][0]["filepath"]  # type: ignore
+            return Path(filepath)
+        except YDLDownloadError as error:
+            raise DownloaderError(
+                message=sanitize_ydl_error(error),
+                status_code=extract_status_code(error),
+            )
+
+    def download_thumbnail(self, filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
+        ydl = YDL(
+            {
+                "writethumbnail": True,
+                "outtmpl": {
+                    "thumbnail": "",
+                    "pl_thumbnail": "",
+                },
+            }
         )
-    except YDLDownloadError as e:
-        msg = sanitize_ydl_error(e)
-        raise MetadataDownloaderError(msg)
 
-    if final:
-        return Path(final[0][0])
-    else:
-        raise MetadataDownloaderError("Unable to download thumbnail")
+        info = {"thumbnails": [thumbnail]}
 
+        try:
+            final = ydl._write_thumbnails(  # type: ignore
+                label=filepath,
+                info_dict=info,
+                filename=str(filepath),
+            )
+        except YDLDownloadError as e:
+            msg = sanitize_ydl_error(e)
+            raise MetadataDownloaderError(msg)
 
-def download_subtitles(
-    filepath: StrPath,
-    subtitles: YDLExtractInfo,
-    automatic_captions: YDLExtractInfo | None = None,
-) -> list[Path]:
-    automatic_captions = automatic_captions or {}
+        if final:
+            return Path(final[0][0])
+        else:
+            raise MetadataDownloaderError("Unable to download thumbnail")
 
-    ydl = YDL({"writesubtitles": True, "allsubtitles": True})
-    subs = ydl.process_subtitles(
-        str(filepath),
-        subtitles,
-        automatic_captions,
-    )
-    info = {"requested_subtitles": subs}
+    def download_subtitles(
+        self,
+        filepath: StrPath,
+        subtitles: YDLExtractInfo,
+        automatic_captions: YDLExtractInfo | None = None,
+    ) -> list[Path]:
+        automatic_captions = automatic_captions or {}
 
-    try:
-        final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
-            info_dict=info,
-            filename=str(filepath),
+        ydl = YDL({"writesubtitles": True, "allsubtitles": True})
+        subs = ydl.process_subtitles(
+            str(filepath),
+            subtitles,
+            automatic_captions,
         )
-    except YDLDownloadError as e:
-        msg = sanitize_ydl_error(e)
-        raise MetadataDownloaderError(msg)
+        info = {"requested_subtitles": subs}
 
-    if final:
-        result = [Path(entry[0]) for entry in final]
-        return result
-    else:
-        raise MetadataDownloaderError("Unable to download subtitles")
+        try:
+            final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
+                info_dict=info,
+                filename=str(filepath),
+            )
+        except YDLDownloadError as e:
+            msg = sanitize_ydl_error(e)
+            raise MetadataDownloaderError(msg)
 
+        if final:
+            result = [Path(entry[0]) for entry in final]
+            return result
+        else:
+            raise MetadataDownloaderError("Unable to download subtitles")
 
-def download_storyboard(filepath: StrPath, storyboard: YDLExtractInfo) -> Path:
-    extension = storyboard["ext"]
-    filepath = f"{filepath}.{extension}"
+    def download_storyboard(
+        self,
+        filepath: StrPath,
+        storyboard: YDLExtractInfo,
+    ) -> Path:
+        extension = storyboard["ext"]
+        filepath = f"{filepath}.{extension}"
 
-    fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
-    fd: MhtmlFD = fd_class(YDL(), {})
-    fd.download(filepath, storyboard)
+        fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
+        fd: MhtmlFD = fd_class(YDL(), {})
+        fd.download(filepath, storyboard)
 
-    return Path(filepath)
+        return Path(filepath)
