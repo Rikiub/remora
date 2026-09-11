@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import cast
 
-import rich
 from typing_extensions import override
 from yt_dlp.extractor import get_info_extractor
 from yt_dlp.networking.impersonate import ImpersonateTarget
@@ -73,8 +72,6 @@ class YDLExtractor(YDLContext):
         raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
     def extract_info(self, query: str) -> YDLExtractInfo:
-        rich.print(hash(self.ydl._request_director))
-
         try:
             info = self.ydl.extract_info(query, download=False)
             info = self._normalize_info(info)
