@@ -6,11 +6,12 @@ from typing import Self, overload
 from anyio import AsyncContextManagerMixin
 
 from remora._http import get_httpx_client
+from remora._ydl.contextvar import get_ydl_session
 from remora.downloader import (
     MediaDownloader,
+    MetadataDownloader,
     PlaylistDownloader,
     StreamDownloader,
-    download_resource,
 )
 from remora.extractor import MediaExtractor
 from remora.models.media import (
@@ -38,14 +39,20 @@ class Remora(AsyncContextManagerMixin):
     ):
         self.download_options = download_options or DownloadOptions()
         self.network_options = network_options or NetworkOptions()
-        self._extractor = MediaExtractor(self.network_options)
 
     @asynccontextmanager
     async def __asynccontextmanager__(
         self,
     ) -> AsyncGenerator[Self, None]:
-        async with get_httpx_client(self.network_options):
-            yield self
+        with get_ydl_session():
+            async with (
+                MediaExtractor(self.network_options) as extractor,
+                MetadataDownloader() as metadata,
+                get_httpx_client(self.network_options),
+            ):
+                self._metadata = metadata
+                self._extractor = extractor
+                yield self
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -105,5 +112,4 @@ class Remora(AsyncContextManagerMixin):
         item: Subtitle | Thumbnail | Storyboard,
         output_path: StrPath,
     ) -> Path:
-
-        return await download_resource(item, output_path)
+        return await self._metadata.download_resource(item, output_path)

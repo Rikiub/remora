@@ -6,9 +6,8 @@ from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
 
+from remora import Remora
 from remora.exceptions import RemoraError
-from remora.extractor import MediaExtractor
-from remora.models import NetworkOptions
 from remora.models.media import ExtractResult, Search
 from remora_cli.parsers import SearchTarget, parse_queries
 from remora_cli.ui.rich import CONSOLE
@@ -16,16 +15,15 @@ from remora_cli.ui.rich import CONSOLE
 
 async def extract_queries(
     queries: Sequence[str],
-    network_options: NetworkOptions,
+    session: Remora,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | Search]]:
     for index, value in enumerate(parse_queries(queries), start=1):
         target, entry = value
-        extractor = MediaExtractor(network_options)
 
         try:
             if (
                 target == "url"
-                and (cookies := network_options.cookies)
+                and (cookies := session.network_options.cookies)
                 and (url_host := AnyUrl(entry).host)
                 and cookies.get_expired_cookies(url_host)
             ):
@@ -38,7 +36,7 @@ async def extract_queries(
             with CONSOLE.status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
-                    result = await extractor.extract(entry)
+                    result = await session.extract(entry)
 
                     if result.type == "playlist":
                         logger.info(
@@ -55,7 +53,7 @@ async def extract_queries(
                         icon="🔎",
                     )
 
-                    result = await extractor.extract_search(entry, target)
+                    result = await session.extract_search(entry, target)
 
                     if not result.entries.medias():
                         logger.warning("No results found")

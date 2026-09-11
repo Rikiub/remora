@@ -2,17 +2,21 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import cast
 
+import rich
+from typing_extensions import override
 from yt_dlp.extractor import get_info_extractor
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
-from remora._ydl.base import YDL, YDLBase
+from remora._ydl.contextvar import YDL, YDLContext
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo
 from remora.exceptions import ExtractorError
 from remora.models.options import NetworkOptions
 from remora.models.search import SearchService
+
+__all__ = ["YDLExtractor"]
 
 
 @dataclass(slots=True, frozen=True)
@@ -31,14 +35,12 @@ SEARCH_QUERIES = {
 }
 
 
-class YDLExtractor(YDLBase):
-    def __init__(
-        self,
-        session: YDL | None = None,
-        network_options: NetworkOptions | None = None,
-    ):
-        super().__init__(session)
-        self.network_options = network_options or NetworkOptions()
+class YDLExtractor(YDLContext):
+    def __init__(self, network_options: NetworkOptions | None = None):
+        super().__init__(network_options)
+
+    @override
+    def _setup(self):
         self.ydl = YDL(
             params={
                 "extract_flat": "in_playlist",
@@ -51,7 +53,7 @@ class YDLExtractor(YDLBase):
                 if (impersonate := self.network_options.impersonate)
                 else None,
             },
-            session=self.session,
+            session=self._ydl_session,
             auto_init=True,
         )
 
@@ -71,6 +73,8 @@ class YDLExtractor(YDLBase):
         raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
     def extract_info(self, query: str) -> YDLExtractInfo:
+        rich.print(hash(self.ydl._request_director))
+
         try:
             info = self.ydl.extract_info(query, download=False)
             info = self._normalize_info(info)

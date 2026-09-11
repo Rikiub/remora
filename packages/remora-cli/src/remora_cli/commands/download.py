@@ -167,7 +167,7 @@ async def download(
         )
 
     async with remora:
-        async for target, result in extract_queries(query, remora.network_options):
+        async for target, result in extract_queries(query, remora):
             if isinstance(result, (Playlist, Search)) and not result.entries.medias():
                 url = (
                     result.url

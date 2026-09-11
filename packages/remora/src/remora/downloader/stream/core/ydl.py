@@ -5,6 +5,8 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
+from remora._ydl.contextvar import get_ydl_session
+from remora._ydl.downloader import YDLDownloader
 from remora.constants import DEFAULT_IMPERSONATE_TARGET, DEFAULT_RETRIES
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
@@ -47,36 +49,38 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
 
     @override
     async def _run_pipeline(self) -> None:
-        try:
-            path = await self._downloader()
-        except DownloaderError as error:
-            if error.status_code == 403:
-                impersonate = DEFAULT_IMPERSONATE_TARGET
-                logger.debug(
-                    'HTTP 403 Forbidden: Retrying with "{impersonate}" impersonate target',
-                    impersonate=impersonate,
-                )
-                path = await self._downloader(impersonate=impersonate)
-            else:
-                raise
+        with get_ydl_session():
+            try:
+                path = await self._downloader()
+            except DownloaderError as error:
+                if error.status_code == 403:
+                    impersonate = DEFAULT_IMPERSONATE_TARGET
+                    logger.debug(
+                        'HTTP 403 Forbidden: Retrying with "{impersonate}" impersonate target',
+                        impersonate=impersonate,
+                    )
+                    path = await self._downloader(impersonate=impersonate)
+                else:
+                    raise
 
-        await self._emit(StreamCompleted(file_path=path))
+            await self._emit(StreamCompleted(file_path=path))
 
     async def _downloader(self, impersonate: str | None = None) -> Path:
-        from remora._ydl.downloader import download_format
+        downloader = YDLDownloader(
+            network_options=self.network_options.model_copy(
+                update={"impersonate": impersonate}
+            )
+            if impersonate
+            else self.network_options,
+        )
 
         return await run_sync(
             partial(
-                download_format,
+                downloader.download_format,
                 filepath=self.file_path,
                 format_info=self.stream._to_ydl_dict(),
                 callback=self._ydl_progress,
                 retries=self.retries,
-                network_options=self.network_options.model_copy(
-                    update={"impersonate": impersonate}
-                )
-                if impersonate
-                else self.network_options,
             )
         )
 

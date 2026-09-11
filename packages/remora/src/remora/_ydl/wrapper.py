@@ -1,7 +1,7 @@
 import tempfile
 
 from loguru import logger
-from yt_dlp.networking._requests import RequestsRH
+from yt_dlp.networking.common import RequestDirector
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.YoutubeDL import YoutubeDL
 
@@ -45,7 +45,7 @@ class YDL(YoutubeDL):
     def __init__(
         self,
         params: YDLParams | None = None,
-        session: YoutubeDL | RequestsRH | None = None,
+        session: YoutubeDL | RequestDirector | None = None,
         auto_init: bool = False,
     ):
         # Default parameters
@@ -80,19 +80,14 @@ class YDL(YoutubeDL):
         # Set shared session
         self.__dict__["_request_director"] = (
             session
-            if isinstance(session, RequestsRH)
+            if isinstance(session, RequestDirector)
             else _get_request_director(session)
         )
 
 
-class YDLBase:
-    def __init__(self, session: YDL | None = None):
-        self.session = session
-
-
-def _get_request_director(ydl: YoutubeDL | None = None) -> RequestsRH:
+def _get_request_director(ydl: YoutubeDL | None = None) -> RequestDirector:
     ydl = ydl or YoutubeDL()
-    return ydl._request_director.handlers["Requests"]
+    return ydl._request_director
 
 
 def parse_impersonate_target(target: str) -> ImpersonateTarget:

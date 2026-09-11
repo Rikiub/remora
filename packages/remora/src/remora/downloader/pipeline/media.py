@@ -16,7 +16,7 @@ from remora.constants import (
     DEFAULT_TEMPLATE_MISSING,
     DEFAULT_VIDEO_CONTAINER,
 )
-from remora.downloader.metadata import _download_subtitle, _download_thumbnail
+from remora.downloader.metadata import MetadataDownloader
 from remora.downloader.pipeline._logs import log_event_media
 from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.selector import StreamSelector
@@ -97,25 +97,28 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
     @override
     async def _run_pipeline(self):
-        with logger.contextualize(media_id=self.id, media_title=self.media.title):
-            try:
-                await self._emit(MediaStarted(id=self.id, media=self.media))
-                await self._pipeline()
-            except (DownloaderError, ExtractorError, ProcessorError) as error:
-                await self._emit(
-                    MediaFailed(
-                        id=self.id,
-                        media=self.media,
-                        message=str(error),
+        async with MetadataDownloader() as metadata:
+            self.metatada_downloader = metadata
+
+            with logger.contextualize(media_id=self.id, media_title=self.media.title):
+                try:
+                    await self._emit(MediaStarted(id=self.id, media=self.media))
+                    await self._pipeline()
+                except (DownloaderError, ExtractorError, ProcessorError) as error:
+                    await self._emit(
+                        MediaFailed(
+                            id=self.id,
+                            media=self.media,
+                            message=str(error),
+                        )
                     )
-                )
-            finally:
-                await self._emit(
-                    MediaEnded(
-                        id=self.id,
-                        media=self.media,
+                finally:
+                    await self._emit(
+                        MediaEnded(
+                            id=self.id,
+                            media=self.media,
+                        )
                     )
-                )
 
     @override
     async def _emit(self, state) -> None:
@@ -268,7 +271,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
                             paths=[str(p.path) for p in context.streams],
                         )
 
-        async def download_subtitles():
+        async def download_subtitle_files():
             if media.subtitles:
                 subtitles = self._resolve_subtitles(media)
                 paths = []
@@ -281,7 +284,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
                 for sub in subtitles:
                     try:
-                        path = await _download_subtitle(
+                        path = await self.metatada_downloader.download_subtitle(
                             subtitle=sub,
                             output_path=create_temp_file(),
                         )
@@ -302,9 +305,11 @@ class MediaDownloader(BaseDownloader[MediaState]):
             if media.thumbnails:
                 try:
                     logger.debug("Downloading thumbnail")
-                    context.thumbnail = await _download_thumbnail(
-                        media.thumbnails[0],
-                        create_temp_file(),
+                    context.thumbnail = (
+                        await self.metatada_downloader.download_thumbnail(
+                            media.thumbnails[0],
+                            create_temp_file(),
+                        )
                     )
                     logger.debug("Thumbnail downloaded")
                 except MetadataDownloaderError as error:
@@ -321,7 +326,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
                 tg.start_soon(download_streams)
 
                 if self.ffmpeg_dir and self.download_options.embed_metadata:
-                    tg.start_soon(download_subtitles)
+                    tg.start_soon(download_subtitle_files)
                     tg.start_soon(download_thumbnail_file)
         except* DownloaderError as eg:
             raise eg.exceptions[0] from eg

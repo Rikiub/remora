@@ -1,12 +1,16 @@
 """Raw info extractor."""
 
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from functools import partial
-from typing import overload
+from typing import Self, overload
 
+from anyio import AsyncContextManagerMixin
 from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import AnyUrl
 
+from remora._ydl.extractor import YDLExtractor
 from remora.models.media import (
     ExtractAdapter,
     LazyMedia,
@@ -22,9 +26,15 @@ from remora.models.types import StrUrl
 __all__ = ["MediaExtractor"]
 
 
-class MediaExtractor:
+class MediaExtractor(AsyncContextManagerMixin):
     def __init__(self, network_options: NetworkOptions | None = None):
         self.network_options = network_options or NetworkOptions()
+
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
+        with YDLExtractor(self.network_options) as extractor:
+            self._ydl_extractor = extractor
+            yield self
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -68,15 +78,7 @@ class MediaExtractor:
                 )
 
             # Extract info
-            from remora._ydl.extractor import extract_info
-
-            info = await run_sync(
-                partial(
-                    extract_info,
-                    query=url,
-                    network_options=self.network_options,
-                )
-            )
+            info = await run_sync(partial(self._ydl_extractor.extract_info, query=url))
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
@@ -102,15 +104,12 @@ class MediaExtractor:
             )
 
             # Extract info
-            from remora._ydl.extractor import extract_query
-
             info = await run_sync(
                 partial(
-                    extract_query,
+                    self._ydl_extractor.extract_query,
                     query=query,
                     service=service,
                     limit=limit,
-                    network_options=self.network_options,
                 )
             )
             result = Search.model_validate(
