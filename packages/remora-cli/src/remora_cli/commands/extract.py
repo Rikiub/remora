@@ -10,7 +10,7 @@ from remora_cli.parameters import DisplayParameters, NetworkParameters, QueryPar
 from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
-DEFAULT_EXCLUDE = {
+TABLE_FIELDS_EXCLUDE = {
     "live_status",
     "heatmap",
     "subtitles",
@@ -18,18 +18,21 @@ DEFAULT_EXCLUDE = {
     "thumbnails",
     "storyboards",
     "streams",
+    "fragments",
     "entries",
 }
-FIELDS_ORDER = [
+TABLE_FIELDS_ORDER = [
+    "excluded_fields",
+    "extractor",
     "type",
     "url",
     "id",
-    "extractor",
     "title",
     "description",
-    "live_status",
     "duration",
+    "live_status",
     "date",
+    "creators",
     "uploader",
     "channel",
     "metrics",
@@ -100,7 +103,7 @@ async def extract(
     sel_exclude = parse_keys(exclude or {})
 
     if sel_format == "table" and not sel_include:
-        sel_exclude |= DEFAULT_EXCLUDE
+        sel_exclude |= TABLE_FIELDS_EXCLUDE
 
     for key in sel_include:
         sel_exclude.discard(key)
@@ -128,9 +131,9 @@ async def extract(
                 exclude_none=True,
                 mode="json",
             )
-            data = remove_missing(data)
+            data = remove_missing({"excluded_fields": sel_exclude} | data)
 
-            sorted_data = {k: data[k] for k in FIELDS_ORDER if k in data}
+            sorted_data = {k: data[k] for k in TABLE_FIELDS_ORDER if k in data}
             sorted_data |= data
             table = dict_to_table(sorted_data)
 

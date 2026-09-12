@@ -43,16 +43,33 @@ def parse_keys(keys: Iterable[str]) -> set[str]:
     return results
 
 
-def remove_missing(data: Any) -> Any:
-    """Recursively removes None, [], and {} from a dictionary."""
+# Remove missing helper
+_EMPTY = (list, tuple, dict, set, frozenset)
 
+
+def _is_empty_container(x):
+    return isinstance(x, _EMPTY) and len(x) == 0
+
+
+def remove_missing(data: Any, *, drop_empty: bool = True) -> Any:
     if isinstance(data, dict):
-        return {
-            k: v_clean
-            for k, v in data.items()
-            if (v_clean := remove_missing(v)) is not None
-            and not (isinstance(v_clean, (list, dict, str)) and len(v_clean) == 0)
-        }
-    elif isinstance(data, list):
-        return [v_clean for v in data if (v_clean := remove_missing(v)) is not None]
+        out = {}
+        for k, v in data.items():
+            c = remove_missing(v, drop_empty=drop_empty)
+            if c is None:
+                continue
+            if drop_empty and _is_empty_container(c):
+                continue
+            out[k] = c
+        return out
+
+    if isinstance(data, (list, tuple)):
+        c = [remove_missing(v, drop_empty=drop_empty) for v in data]
+        c = [v for v in c if v is not None]  # only None here
+        return type(data)(c) if not isinstance(data, tuple) else tuple(c)
+
+    if isinstance(data, (set, frozenset)):
+        c = {remove_missing(v, drop_empty=drop_empty) for v in data}
+        return type(data)(v for v in c if v is not None)
+
     return data
