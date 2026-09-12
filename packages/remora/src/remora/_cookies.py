@@ -4,7 +4,7 @@ from typing import Literal
 
 from anyio.to_thread import run_sync
 
-from remora.models import Cookie, CookieList
+from remora.models import Cookie, Cookies
 
 BrowserName = Literal[
     "brave",
@@ -20,11 +20,11 @@ BrowserName = Literal[
 async def extract_cookies_from_browser(
     browser: BrowserName,
     profile: str = "default",
-) -> CookieList:
+) -> Cookies:
     from remora._ydl.cookies import extract_cookies_from_browser as from_browser
 
     cookies = await run_sync(from_browser, browser, profile)
-    return CookieList(
+    return Cookies(
         [
             Cookie(
                 name=c.name,

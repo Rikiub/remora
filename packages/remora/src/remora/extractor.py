@@ -13,7 +13,7 @@ from remora.models.media import (
     LazyPlaylist,
     Media,
     Playlist,
-    SearchList,
+    Search,
 )
 from remora.models.options.network import NetworkOptions
 from remora.models.search import SearchService
@@ -87,7 +87,7 @@ class MediaExtractor:
         query: str,
         service: SearchService,
         limit: int = 20,
-    ) -> SearchList:
+    ) -> Search:
         """Extract media from search service."""
 
         with logger.contextualize(
@@ -113,7 +113,7 @@ class MediaExtractor:
                     network_options=self.network_options,
                 )
             )
-            result = SearchList.model_validate(
+            result = Search.model_validate(
                 {"query": query, "service": service, **info},
                 by_alias=True,
             )

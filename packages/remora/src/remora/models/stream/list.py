@@ -8,7 +8,7 @@ from pydantic import ValidatorFunctionWrapHandler, WrapValidator
 from pydantic_core import PydanticOmit
 from typing_extensions import TypeVar
 
-from remora.models._base import BaseList, FilterValue, rgetattr, to_tuple
+from remora.models._base import BaseTuple, FilterValue, rgetattr, to_tuple
 from remora.models.container import (
     AudioCodec,
     AVContainerLike,
@@ -28,7 +28,7 @@ from remora.models.stream.item import (
     _DiscriminatedStream,
 )
 
-__all__ = ["StreamList"]
+__all__ = ["Streams"]
 
 
 def _log_and_omit_validator(v, handler: ValidatorFunctionWrapHandler):
@@ -57,7 +57,7 @@ _LogOnErrorOmit = WrapValidator(_log_and_omit_validator)
 _Stream = TypeVar("_Stream", default=_DiscriminatedStream, bound=_DiscriminatedStream)
 
 
-class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]):
+class Streams(BaseTuple[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]):
     """List of streams which can be filtered."""
 
     def filter(
@@ -110,33 +110,27 @@ class StreamList(BaseList[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]
             values: tuple[str, ...] = to_tuple(language)  # ty: ignore[invalid-assignment]
             items = (s for s in items if s.language and s.language.startswith(values))
 
-        return self.__class__(list(items))
+        return self.__class__(items)
 
-    def muxed(self) -> StreamList[MuxedStream]:
+    def muxed(self) -> Streams[MuxedStream]:
         """Get strictly muxed streams."""
-        return StreamList[MuxedStream](
-            s for s in self.root if isinstance(s, MuxedStream)
-        )
+        return Streams[MuxedStream](s for s in self.root if isinstance(s, MuxedStream))
 
-    def videos(self) -> StreamList[VideoStream]:
+    def videos(self) -> Streams[VideoStream]:
         """Get all streams that contain video (including muxed streams)."""
-        return StreamList[VideoStream](
-            s for s in self.root if isinstance(s, VideoStream)
-        )
+        return Streams[VideoStream](s for s in self.root if isinstance(s, VideoStream))
 
-    def audios(self) -> StreamList[AudioStream]:
+    def audios(self) -> Streams[AudioStream]:
         """Get all streams that contain audio (including muxed streams)."""
-        return StreamList[AudioStream](
-            s for s in self.root if isinstance(s, AudioStream)
-        )
+        return Streams[AudioStream](s for s in self.root if isinstance(s, AudioStream))
 
-    def video_only(self) -> StreamList[VideoStream]:
+    def video_only(self) -> Streams[VideoStream]:
         """Get strictly video-only streams (excluding muxed streams)."""
-        return StreamList[VideoStream](s for s in self.root if type(s) is VideoStream)
+        return Streams[VideoStream](s for s in self.root if type(s) is VideoStream)
 
-    def audio_only(self) -> StreamList[AudioStream]:
+    def audio_only(self) -> Streams[AudioStream]:
         """Get strictly audio-only streams (excluding muxed streams)."""
-        return StreamList[AudioStream](s for s in self.root if type(s) is AudioStream)
+        return Streams[AudioStream](s for s in self.root if type(s) is AudioStream)
 
     def sorted_by(
         self,

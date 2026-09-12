@@ -19,7 +19,7 @@ from remora.models.media import (
     LazyPlaylist,
     Media,
     Playlist,
-    SearchList,
+    Search,
 )
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.options import DownloadOptions, NetworkOptions
@@ -67,7 +67,7 @@ class Remora(AsyncContextManagerMixin):
         query: str,
         service: SearchService,
         limit: int = 20,
-    ) -> SearchList:
+    ) -> Search:
         """Extract media from search service."""
         return await self._extractor.extract_search(query, service, limit)
 

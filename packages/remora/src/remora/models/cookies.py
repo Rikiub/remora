@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Annotated, Any, Self
 
 import remora
-from remora.models._base import BaseList, EnsureBool, EnsureNone, RemoraModel
+from remora.models._base import BaseTuple, EnsureBool, EnsureNone, RemoraModel
 from remora.models.types import StrPath
 
-__all__ = ["Cookie", "CookieList"]
+__all__ = ["Cookie", "Cookies"]
 _NETSCAPE_HEADER = re.compile("#( Netscape)? HTTP Cookie File")
 
 
@@ -20,7 +20,7 @@ class Cookie(RemoraModel):
     expires: Annotated[int | None, EnsureNone] = None
 
 
-class CookieList(BaseList[Cookie]):
+class Cookies(BaseTuple[Cookie]):
     # METHODS
 
     def get_expired_cookies(self, domain: str) -> list[Cookie]:

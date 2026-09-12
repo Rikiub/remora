@@ -13,13 +13,13 @@ from remora.extractor import MediaExtractor
 from remora.models import NetworkOptions
 from remora.models.media import (
     AnyExtractResult,
-    EntriesList,
+    Entries,
     LazyMedia,
     LazyPlaylist,
     Media,
     Playlist,
 )
-from remora.models.media.list import _BaseList
+from remora.models.media.list import _BaseEntries
 from remora.models.options.download import DownloadOptions
 from remora.models.progress import (
     BatchState,
@@ -169,9 +169,9 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         match item:
             case LazyMedia():
                 medias = [item]
-            case _BaseList():  # Playlist and SearchList
+            case _BaseEntries():  # Playlist and SearchList
                 medias = list(item.entries.medias())
-            case EntriesList():
+            case Entries():
                 medias = list(item.medias())
             case Iterable():
                 medias = list(item)

@@ -17,7 +17,7 @@ from remora.models import (
     DownloadOptions,
     Playlist,
     RichAVContainer,
-    SearchList,
+    Search,
     StreamQuality,
 )
 from remora.template import validate_template
@@ -168,10 +168,7 @@ async def download(
 
     async with remora:
         async for target, result in extract_queries(query, remora.network_options):
-            if (
-                isinstance(result, (Playlist, SearchList))
-                and not result.entries.medias()
-            ):
+            if isinstance(result, (Playlist, Search)) and not result.entries.medias():
                 url = (
                     result.url
                     if isinstance(result, Playlist)
@@ -179,7 +176,7 @@ async def download(
                 )
                 raise CycloptsError(f"{url} don't have medias to download")
 
-            if isinstance(result, SearchList):
+            if isinstance(result, Search):
                 result = result.entries.medias()[0]
 
             async with (

@@ -5,15 +5,15 @@ import pytest
 from remora.models.metadata.size import Resolution
 from remora.models.metadata.thumbnail import (
     Thumbnail,
-    ThumbnailList,
+    Thumbnails,
 )
 
 
 @pytest.fixture
-def thumbnails() -> ThumbnailList:
+def thumbnails() -> Thumbnails:
     URL = "https://example.com/thumbnail"
 
-    return ThumbnailList(
+    return Thumbnails(
         [
             Thumbnail(
                 id="4",
@@ -41,7 +41,7 @@ def thumbnails() -> ThumbnailList:
     )
 
 
-async def test_sort_best(thumbnails: ThumbnailList):
+async def test_sort_best(thumbnails: Thumbnails):
     sorted = thumbnails.sorted_by("best")
 
     expected_ids = ["2", "1", "3", "4"]  # Must match with the IDs in the fixture

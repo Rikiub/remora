@@ -13,16 +13,16 @@ from remora.models.stream.item import (
     VideoInfo,
     VideoStream,
 )
-from remora.models.stream.list import StreamList
+from remora.models.stream.list import Streams
 
 URL = "https://example.com/video"
 
 
 @pytest.fixture
-def streams() -> StreamList:
+def streams() -> Streams:
     """List of streams for testing."""
 
-    return StreamList(
+    return Streams(
         [
             # Covers: muxed, find_by_id(id="2")
             # Covers: quality=720, protocol="https", container="mp4"
@@ -90,7 +90,7 @@ def streams() -> StreamList:
 @dataclass
 class Case:
     name: str
-    filter_streams: Callable[[StreamList], Sequence[Stream]]
+    filter_streams: Callable[[Streams], Sequence[Stream]]
     expected_class: type | tuple[type, ...]
 
 
@@ -102,7 +102,7 @@ CASES = [
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
-def test_stream_type_filters(streams: StreamList, case: Case):
+def test_stream_type_filters(streams: Streams, case: Case):
     filtered = case.filter_streams(streams)
 
     assert len(filtered) > 0, f"No streams returned for {case.name}"
@@ -113,7 +113,7 @@ def test_stream_type_filters(streams: StreamList, case: Case):
 @dataclass
 class Case:
     name: str
-    filter_streams: Callable[[StreamList], Sequence[Stream]]
+    filter_streams: Callable[[Streams], Sequence[Stream]]
     expected_class: type
 
 
@@ -124,7 +124,7 @@ CASES = [
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.name)
-def test_stream_strict_type_filters(streams: StreamList, case: Case):
+def test_stream_strict_type_filters(streams: Streams, case: Case):
     filtered = case.filter_streams(streams)
     assert len(filtered) > 0, f"No streams returned for {case.name}()"
     assert all(type(s) is case.expected_class for s in filtered)
@@ -139,7 +139,7 @@ def test_stream_strict_type_filters(streams: StreamList, case: Case):
         ("container", "WEBM"),
     ],
 )
-def test_filter_general(streams: StreamList, attribute, filter_value):
+def test_filter_general(streams: Streams, attribute, filter_value):
     filters = {attribute: filter_value}
     filtered = streams.filter(**filters)
 
@@ -147,7 +147,7 @@ def test_filter_general(streams: StreamList, attribute, filter_value):
     assert all(getattr(s, attribute) == filter_value for s in filtered)
 
 
-def test_filter_language(streams: StreamList):
+def test_filter_language(streams: Streams):
     """
     Test filter of partial languages keys.
     Should be able of found audio streams with `es-419` like keys.
@@ -163,7 +163,7 @@ def test_filter_language(streams: StreamList):
     )
 
 
-def test_filter_video_codec_family(streams: StreamList):
+def test_filter_video_codec_family(streams: Streams):
     """Test filter of partial video codec strings."""
 
     codec = "vp9"
@@ -176,7 +176,7 @@ def test_filter_video_codec_family(streams: StreamList):
     )
 
 
-def test_filter_audio_codec_family(streams: StreamList):
+def test_filter_audio_codec_family(streams: Streams):
     """Test filter of partial audio codec strings."""
 
     codec = "opus"
@@ -190,7 +190,7 @@ def test_filter_audio_codec_family(streams: StreamList):
 
 
 # Sorter
-def test_sorted_by_best(streams: StreamList):
+def test_sorted_by_best(streams: Streams):
     streams = streams.sorted_by("best")
 
     match_ids = ["1", "2", "3", "4"]  # Must match with the fixture
@@ -202,18 +202,18 @@ def test_sorted_by_best(streams: StreamList):
 
 
 # Getters
-def test_closest_quality(streams: StreamList):
+def test_closest_quality(streams: Streams):
     stream = streams.get_closest_quality(600)
     assert stream.quality == 720
 
 
-def test_get_by_id(streams: StreamList):
+def test_get_by_id(streams: Streams):
     ID = "1"
     stream = streams.get_by_id(ID)
     assert stream.id == ID
 
 
-def test_missing_get_by_id(streams: StreamList):
+def test_missing_get_by_id(streams: Streams):
     with pytest.raises(KeyError):
         stream_id = "-1"
         streams.get_by_id(stream_id)

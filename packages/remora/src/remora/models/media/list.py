@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from pydantic import AliasChoices, AnyUrl, Discriminator, Field, Tag
 from typing_extensions import TypeVar
 
-from remora.models._base import BaseList
+from remora.models._base import BaseTuple
 from remora.models.media import Media
 from remora.models.media._base import (
     URL_CHOICES,
@@ -19,10 +19,10 @@ from remora.models.media._base import (
 from remora.models.media.item import LazyMedia
 
 __all__ = [
-    "EntriesList",
+    "Entries",
     "LazyPlaylist",
     "Playlist",
-    "SearchList",
+    "Search",
 ]
 
 # Discriminator
@@ -62,28 +62,28 @@ _ExtractDiscriminator = Annotated[
 _Entry = TypeVar("_Entry", bound=_ExtractDiscriminator, default=_ExtractDiscriminator)
 
 
-# Entries List
-class EntriesList(BaseList[_Entry]):
-    def medias(self) -> EntriesList[LazyMedia]:
-        return EntriesList(item for item in self.root if isinstance(item, LazyMedia))
+# Entries
+class Entries(BaseTuple[_Entry]):
+    def medias(self) -> Entries[LazyMedia]:
+        return Entries(item for item in self.root if isinstance(item, LazyMedia))
 
-    def playlists(self) -> EntriesList[LazyPlaylist]:
-        return EntriesList(item for item in self.root if isinstance(item, LazyPlaylist))
+    def playlists(self) -> Entries[LazyPlaylist]:
+        return Entries(item for item in self.root if isinstance(item, LazyPlaylist))
 
 
-class _BaseList(ABC, BaseExtract):
-    entries: Annotated[EntriesList, Field(repr=False, default_factory=EntriesList)]
+class _BaseEntries(ABC, BaseExtract):
+    entries: Annotated[Entries, Field(repr=False, default_factory=Entries)]
 
 
 # Search
-class SearchList(_BaseList):
+class Search(_BaseEntries):
     type: Literal["search"] = "search"
     service: str
     query: str
 
 
 # Playlist
-class LazyPlaylist(_BaseList, ExtractData):
+class LazyPlaylist(_BaseEntries, ExtractData):
     type: Literal["lazy_playlist"] = "lazy_playlist"
 
     id: Annotated[str, Field(alias="playlist_id")]

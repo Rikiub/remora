@@ -24,7 +24,7 @@ from remora.models.container import (
     VideoCodecFamily,
     get_container,
 )
-from remora.models.cookies import CookieList
+from remora.models.cookies import Cookies
 from remora.models.metadata import Resolution
 from remora.models.protocol import Protocol
 
@@ -93,7 +93,7 @@ class VideoInfo(RemoraModel):
 class StreamRequestContext(RemoraModel):
     data: Annotated[bytes | None, Field(alias="request_data")] = None
     headers: Annotated[dict | None, Field(alias="http_headers")] = None
-    cookies: CookieList | None = None
+    cookies: Cookies | None = None
     impersonate: Impersonate = False
     downloader: Annotated[dict | None, Field(alias="downloader_options")] = None
 
@@ -112,7 +112,7 @@ class _BaseStream(ABC, YDLSerializable):
     id: str
     protocol: Protocol
     url: AnyUrl
-    fragments: list[StreamFragment] | None = None
+    fragments: tuple[StreamFragment, ...] | None = None
     request_context: StreamRequestContext = StreamRequestContext()
 
     size_type: SizeType = "unknown"
@@ -175,7 +175,7 @@ class _BaseStream(ABC, YDLSerializable):
             data["id"] = data.get("format_id")
             data["request_context"] = {
                 **data,
-                "cookies": CookieList.from_cookie_header(cookies)
+                "cookies": Cookies.from_cookie_header(cookies)
                 if (cookies := data.get("cookies"))
                 else None,
             }

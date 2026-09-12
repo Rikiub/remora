@@ -4,7 +4,7 @@ from pydantic import Field, model_validator
 from typing_extensions import TypeVar, override
 
 from remora.models._base import (
-    BaseList,
+    BaseTuple,
     FilterValue,
     RemoraModel,
     YDLSerializable,
@@ -15,8 +15,8 @@ from remora.models.metadata.size import Resolution
 
 __all__ = [
     "Thumbnail",
-    "ThumbnailList",
     "ThumbnailRequestContext",
+    "Thumbnails",
 ]
 
 
@@ -57,7 +57,7 @@ class Thumbnail(Metadata, YDLSerializable):
 _T = TypeVar("_T", default=Thumbnail, bound=Thumbnail)
 
 
-class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
+class Thumbnails(YDLSerializable, BaseTuple[_T], Generic[_T]):
     def filter(
         self,
         width: FilterValue[int] = None,
@@ -78,7 +78,7 @@ class ThumbnailList(YDLSerializable, BaseList[_T], Generic[_T]):
                 s for s in self.root if s.resolution and s.resolution.height in values
             )
 
-        return self.__class__(list(items))
+        return self.__class__(items)
 
     def sorted_by(
         self,

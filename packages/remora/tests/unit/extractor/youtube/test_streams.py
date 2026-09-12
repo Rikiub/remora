@@ -1,22 +1,22 @@
 import pytest
 
 from remora.models.stream.item import AudioStream, Stream, VideoStream
-from remora.models.stream.list import StreamList
+from remora.models.stream.list import Streams
 
 
 @pytest.fixture
-async def streams(extract_ydl) -> StreamList:
+async def streams(extract_ydl) -> Streams:
     data = await extract_ydl("youtube/video.json")
     streams = data.streams
 
-    assert isinstance(streams, StreamList)
+    assert isinstance(streams, Streams)
     assert len(streams) > 0
 
     return streams
 
 
 # Stream list validation
-async def test_streams_and_types(streams: StreamList):
+async def test_streams_and_types(streams: Streams):
     """Validate that streams exist and are properly instantiated as StreamList."""
 
     for stream in streams:
@@ -26,7 +26,7 @@ async def test_streams_and_types(streams: StreamList):
 
 
 # Audio streams validation
-async def test_audio_streams_validation(streams: StreamList):
+async def test_audio_streams_validation(streams: Streams):
     """
     Validate properties specific to AudioStream objects.
     (e.g., format_id 139, 140, 249, 251).
@@ -54,7 +54,7 @@ async def test_audio_streams_validation(streams: StreamList):
 
 
 # VIDEO STREAMS VALIDATION
-async def test_video_streams_validation(streams: StreamList):
+async def test_video_streams_validation(streams: Streams):
     """
     Validate properties specific to VideoStream objects.
     (e.g., format_id 160, 133, 134, etc).
@@ -81,7 +81,7 @@ async def test_video_streams_validation(streams: StreamList):
 
 
 # MUXED STREAMS VALIDATION
-async def test_muxed_streams_validation(streams: StreamList):
+async def test_muxed_streams_validation(streams: Streams):
     """
     Validate properties specific to MuxedStream.
     (Video + Audio combined, e.g., format_id 18).
@@ -111,7 +111,7 @@ async def test_muxed_streams_validation(streams: StreamList):
 
 
 # EDGE CASES & SIZE TYPE INFERENCE
-async def test_stream_size_type_mapping(streams: StreamList):
+async def test_stream_size_type_mapping(streams: Streams):
     """
     Validate that `size_type` is correctly inferred.
     The compare is based on `filesize` vs `filesize_approx`.

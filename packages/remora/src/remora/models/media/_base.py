@@ -3,12 +3,12 @@ from typing import Annotated
 from pydantic import AfterValidator, AliasChoices, AnyUrl, Field, model_validator
 from typing_extensions import TypeIs, override
 
-from remora.models._base import EnsureList, EnsureNone, RemoraModel, YDLSerializable
+from remora.models._base import EnsureNone, EnsureTuple, RemoraModel, YDLSerializable
 from remora.models.metadata import (
     Channel,
     DateMetadata,
     Metrics,
-    ThumbnailList,
+    Thumbnails,
     Uploader,
 )
 
@@ -68,16 +68,16 @@ class ExtractData(BaseExtract):
     channel: Annotated[Channel | None, EnsureNone] = None
 
     # Contributors
-    creators: Annotated[list[str], EnsureList] = []  # noqa: RUF012
-    cast: Annotated[list[str], EnsureList] = []  # noqa: RUF012
+    creators: Annotated[tuple[str, ...], EnsureTuple] = ()
+    cast: Annotated[tuple[str, ...], EnsureTuple] = ()
 
     # Metadata
     date: DateMetadata = DateMetadata()
     metrics: Metrics = Metrics()
     thumbnails: Annotated[
-        ThumbnailList,
-        AfterValidator(lambda list: list.sorted_by("best")),
-    ] = ThumbnailList()
+        Thumbnails,
+        AfterValidator(lambda c: c.sorted_by("best")),
+    ] = Thumbnails()
 
     @property
     def _is_audio_only(self) -> bool:

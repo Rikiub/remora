@@ -6,7 +6,7 @@ from pydantic import AnyUrl, Field
 from typing_extensions import TypeVar, override
 
 from remora.models._base import (
-    BaseList,
+    BaseTuple,
     FilterValue,
     Impersonate,
     RemoraModel,
@@ -19,8 +19,8 @@ __all__ = [
     "ExternalSubtitle",
     "InlineSubtitle",
     "Subtitle",
-    "SubtitleList",
     "SubtitleRequestContext",
+    "Subtitles",
 ]
 
 
@@ -63,17 +63,17 @@ Subtitle = ExternalSubtitle | InlineSubtitle
 _T = TypeVar("_T", bound=Subtitle, default=Subtitle)
 
 
-class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
-    def externals(self) -> SubtitleList[ExternalSubtitle]:
+class Subtitles(YDLSerializable, BaseTuple[_T], Generic[_T]):
+    def externals(self) -> Subtitles[ExternalSubtitle]:
         """Subtitles hosted on a URL."""
-        return SubtitleList[ExternalSubtitle](
-            (item for item in self if isinstance(item, ExternalSubtitle)),
+        return Subtitles[ExternalSubtitle](
+            item for item in self if isinstance(item, ExternalSubtitle)
         )
 
-    def inlines(self) -> SubtitleList[InlineSubtitle]:
+    def inlines(self) -> Subtitles[InlineSubtitle]:
         """Subtitles provided directly as string content."""
-        return SubtitleList[InlineSubtitle](  # type: ignore
-            (item for item in self if isinstance(item, InlineSubtitle)),
+        return Subtitles[InlineSubtitle](
+            item for item in self if isinstance(item, InlineSubtitle)
         )
 
     def unique_by_language(self) -> Self:
@@ -166,6 +166,5 @@ class SubtitleList(YDLSerializable, BaseList[_T], Generic[_T]):
                 flat_subtitles.append(transform(value))
 
         # yt-dlp considers the last items as "best"
-        flat_subtitles = list(reversed(flat_subtitles))
-
-        return cls(flat_subtitles)
+        result = reversed(flat_subtitles)
+        return cls(result)

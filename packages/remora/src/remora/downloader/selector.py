@@ -8,7 +8,7 @@ from remora.models.stream import (
     AudioStream,
     MuxedStream,
     Stream,
-    StreamList,
+    Streams,
     VideoStream,
 )
 
@@ -75,7 +75,7 @@ class StreamSelector:
 
         raise ValueError("Unable to determine best streams")
 
-    def _extract_prefered_audios(self, streams: StreamList) -> list[AudioStream]:
+    def _extract_prefered_audios(self, streams: Streams) -> list[AudioStream]:
         candidates = []
 
         if langs := self.download_options.languages:
@@ -92,7 +92,7 @@ class StreamSelector:
 
         return list(candidates)
 
-    def _extract_best(self, streams: StreamList, type: type[_T]) -> _T | None:
+    def _extract_best(self, streams: Streams, type: type[_T]) -> _T | None:
         # Filter candidates
         if type is MuxedStream:
             candidates = streams.muxed()

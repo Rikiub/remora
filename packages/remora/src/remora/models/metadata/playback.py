@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, computed_field
 
 from remora.models.metadata._base import Metadata
 
@@ -11,6 +11,7 @@ class Segment(Metadata):
     start: Annotated[float, Field(alias="start_time")]
     end: Annotated[float, Field(alias="end_time")]
 
+    @computed_field
     @property
     def duration(self) -> float:
         return self.end - self.start

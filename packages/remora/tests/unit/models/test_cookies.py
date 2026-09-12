@@ -1,4 +1,4 @@
-from remora.models import Cookie, CookieList
+from remora.models import Cookie, Cookies
 
 name = "id"
 value = "1"
@@ -17,11 +17,11 @@ data_cookies = Cookie(
 
 
 def test_from_http_cookies():
-    parsed = CookieList.from_cookie_header(http_cookies)
+    parsed = Cookies.from_cookie_header(http_cookies)
     assert parsed[0] == data_cookies
 
 
 def test_to_http_cookies():
-    parsed = CookieList([data_cookies])
+    parsed = Cookies([data_cookies])
     parsed = parsed.to_cookie_header()
     assert parsed == http_cookies

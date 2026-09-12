@@ -9,7 +9,7 @@ from remora.models.media.item import LazyMedia, Media
 from remora.models.media.list import (
     LazyPlaylist,
     Playlist,
-    SearchList,
+    Search,
     _ExtractDiscriminator,
 )
 
@@ -23,6 +23,6 @@ __all__ = [
 
 LazyExtractResult = LazyMedia | LazyPlaylist
 ExtractResult = Media | Playlist
-AnyExtractResult = LazyExtractResult | ExtractResult | SearchList | Sequence[LazyMedia]
+AnyExtractResult = LazyExtractResult | ExtractResult | Search | Sequence[LazyMedia]
 
 ExtractAdapter = TypeAdapter[ExtractResult](_ExtractDiscriminator)

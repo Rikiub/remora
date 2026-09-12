@@ -2,16 +2,16 @@ from typing import Annotated, Literal
 
 from pydantic import AfterValidator, BeforeValidator, Field, model_validator
 
-from remora.models._base import EnsureList, EnsureNone
+from remora.models._base import EnsureNone, EnsureTuple
 from remora.models.media._base import ExtractData, is_ydl_media
 from remora.models.metadata import (
     Chapter,
     Heatmap,
     MusicMetadata,
-    StoryboardList,
-    SubtitleList,
+    Storyboards,
+    Subtitles,
 )
-from remora.models.stream.list import StreamList
+from remora.models.stream.list import Streams
 
 __all__ = [
     "Availability",
@@ -66,11 +66,11 @@ class LazyMedia(ExtractData):
     location: str | None = None
     age_limit: int | None = None
     duration: float | None = None
-    heatmap: Annotated[list[Heatmap], EnsureList] = []  # noqa: RUF012
+    heatmap: Annotated[tuple[Heatmap, ...], EnsureTuple] = ()
     music: Annotated[MusicMetadata | None, EnsureNone] = None
 
-    categories: Annotated[list[str], EnsureList] = []  # noqa: RUF012
-    tags: Annotated[list[str], EnsureList] = []  # noqa: RUF012
+    categories: Annotated[tuple[str, ...], EnsureTuple] = ()
+    tags: Annotated[tuple[str, ...], EnsureTuple] = ()
 
     @model_validator(mode="before")
     @classmethod
@@ -116,29 +116,29 @@ class Media(LazyMedia):
     ] = "media"
 
     subtitles: Annotated[
-        SubtitleList,
-        AfterValidator(lambda list: list.sorted_by("best")),
-    ] = SubtitleList()
-    chapters: Annotated[list[Chapter], EnsureList] = []  # noqa: RUF012
+        Subtitles,
+        AfterValidator(lambda c: c.sorted_by("best")),
+    ] = Subtitles()
+    chapters: Annotated[tuple[Chapter, ...], EnsureTuple] = ()
     storyboards: Annotated[
-        StoryboardList,
-        AfterValidator(lambda list: list.sorted_by("best")),
-    ] = StoryboardList()
+        Storyboards,
+        AfterValidator(lambda c: c.sorted_by("best")),
+    ] = Storyboards()
     streams: Annotated[
-        StreamList,
-        AfterValidator(lambda list: list.sorted_by("best")),
+        Streams,
+        AfterValidator(lambda c: c.sorted_by("best")),
         Field(alias="formats"),
-    ] = StreamList()
+    ] = Streams()
 
     @model_validator(mode="before")
     @classmethod
     def _validate_ydl_full_media(cls, data) -> dict:
         if is_ydl_media(data):
             # Map subtitles
-            data["subtitles"] = SubtitleList._from_ydl_dict(data)
+            data["subtitles"] = Subtitles._from_ydl_dict(data)
 
             # Map storyboards
-            data["storyboards"] = StoryboardList._from_ydl_formats(
+            data["storyboards"] = Storyboards._from_ydl_formats(
                 data.get("formats") or []
             )
 

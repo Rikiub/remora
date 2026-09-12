@@ -1,10 +1,11 @@
+from collections.abc import Iterable
 from typing import Generic, Literal, Self
 
 from pydantic import AnyUrl
 from typing_extensions import TypeVar, override
 
 from remora.models._base import (
-    BaseList,
+    BaseTuple,
     FilterValue,
     RemoraModel,
     YDLSerializable,
@@ -16,7 +17,7 @@ from remora.models.protocol import Protocol
 __all__ = [
     "Storyboard",
     "StoryboardFragment",
-    "StoryboardList",
+    "Storyboards",
 ]
 
 
@@ -33,7 +34,7 @@ class Storyboard(YDLSerializable, RemoraModel):
     fps: float | None = None
     rows: int | None = None
     columns: int | None = None
-    fragments: list[StoryboardFragment]
+    fragments: tuple[StoryboardFragment, ...]
 
     @override
     def _to_ydl_dict(self):
@@ -64,7 +65,7 @@ class Storyboard(YDLSerializable, RemoraModel):
 _T = TypeVar("_T", bound=Storyboard, default=Storyboard)
 
 
-class StoryboardList(YDLSerializable, BaseList[_T], Generic[_T]):
+class Storyboards(YDLSerializable, BaseTuple[_T], Generic[_T]):
     def filter(
         self,
         width: FilterValue[int] = None,
@@ -85,7 +86,7 @@ class StoryboardList(YDLSerializable, BaseList[_T], Generic[_T]):
                 s for s in self.root if s.resolution and s.resolution.height in values
             )
 
-        return self.__class__(list(items))
+        return self.__class__(items)
 
     def sorted_by(
         self,
@@ -114,11 +115,9 @@ class StoryboardList(YDLSerializable, BaseList[_T], Generic[_T]):
         )
 
     @classmethod
-    def _from_ydl_formats(cls, formats: list[dict]) -> Self:
-        entries = []
-
-        for entry in formats:
-            if entry.get("format_note") == "storyboard":
-                entries.append(Storyboard._from_ydl_format_dict(entry))
-
-        return cls(entries)
+    def _from_ydl_formats(cls, formats: Iterable[dict]) -> Self:
+        return cls(
+            Storyboard._from_ydl_format_dict(entry)
+            for entry in formats
+            if entry.get("format_note") == "storyboard"
+        )

@@ -34,7 +34,7 @@ from remora.models.container import (
 )
 from remora.models.container.av import get_container
 from remora.models.media import Media
-from remora.models.metadata import SubtitleList
+from remora.models.metadata import Subtitles
 from remora.models.options.download import DownloadOptions
 from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
@@ -470,7 +470,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         return Path(prc.file_path)
 
-    def _resolve_subtitles(self, media: Media) -> SubtitleList:
+    def _resolve_subtitles(self, media: Media) -> Subtitles:
         # Filter by language preferences
         if (requested_langs := self.download_options.languages) and (
             subtitles := media.subtitles.filter(

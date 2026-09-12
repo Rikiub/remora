@@ -8,7 +8,7 @@ from cyclopts import Parameter, validators
 
 from remora.logs import LoggingLevels
 from remora.models import (
-    CookieList,
+    Cookies,
     ImpersonateClient,
     NetworkOptions,
     SearchService,
@@ -94,7 +94,7 @@ class NetworkParameters:
     def build_options(self) -> NetworkOptions:
         # Init options
         network = NetworkOptions(
-            cookies=CookieList.from_file(self.cookies) if self.cookies else None,
+            cookies=Cookies.from_file(self.cookies) if self.cookies else None,
             proxy=self.proxy,
         )
 

@@ -25,14 +25,14 @@ class YDLSerializable(RemoraModel):
 
 
 # Specializations
-Impersonate = bool | list[str]
+Impersonate = bool | tuple[str, ...]
 
 # BaseList
 _T = TypeVar("_T")
 
 
-class BaseList(RootModel[Sequence], Sequence[_T], Generic[_T]):
-    root: list[_T] = []
+class BaseTuple(RootModel[Sequence], Sequence[_T], Generic[_T]):
+    root: tuple[_T, ...] = ()
 
     def __contains__(self, other) -> bool:
         return other in self.root
@@ -101,8 +101,8 @@ def _validate_or_none(v, handler):
 EnsureNone = WrapValidator(_validate_or_none)
 """Ensure data will be None if field not exists."""
 
-EnsureList = BeforeValidator(lambda v: v if v else [])
-"""Ensure data will be empty list if field not exists."""
+EnsureTuple = BeforeValidator(lambda v: v if v else ())
+"""Ensure data will be empty tuple if field not exists."""
 
 EnsureBool = BeforeValidator(lambda v: bool(v))
 """Ensure data will be False if field not exists."""

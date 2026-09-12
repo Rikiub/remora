@@ -1,13 +1,13 @@
 from . import constants, downloader, exceptions, ffmpeg, logs, models, path, template
 from .api import Remora
 from .extractor import MediaExtractor
-from .models.cookies import Cookie, CookieList
-from .models.media import LazyMedia, LazyPlaylist, Media, Playlist, SearchList
+from .models.cookies import Cookie, Cookies
+from .models.media import LazyMedia, LazyPlaylist, Media, Playlist, Search
 from .models.options import DownloadOptions, NetworkOptions
 
 __all__ = [
     "Cookie",
-    "CookieList",
+    "Cookies",
     "DownloadOptions",
     "LazyMedia",
     "LazyPlaylist",
@@ -16,7 +16,7 @@ __all__ = [
     "NetworkOptions",
     "Playlist",
     "Remora",
-    "SearchList",
+    "Search",
     "constants",
     "downloader",
     "exceptions",

@@ -12,8 +12,8 @@ from remora.downloader.stream.batch import BatchStreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.media import ExtractorInfo
 from remora.models.media.item import Media
-from remora.models.metadata.subtitle import ExternalSubtitle, SubtitleList
-from remora.models.metadata.thumbnail import Thumbnail, ThumbnailList
+from remora.models.metadata.subtitle import ExternalSubtitle, Subtitles
+from remora.models.metadata.thumbnail import Thumbnail, Thumbnails
 from remora.models.options.download import DownloadOptions
 from remora.models.progress import MediaStarted
 from remora.models.progress.media import (
@@ -276,8 +276,8 @@ async def test_empty_processor_metadata(
 
     # Init pipeline
     # And remove metadata
-    dummy_media.subtitles = SubtitleList()
-    dummy_media.thumbnails = ThumbnailList()
+    dummy_media.subtitles = Subtitles()
+    dummy_media.thumbnails = Thumbnails()
 
     pipeline = mock_pipeline(dummy_media)
 

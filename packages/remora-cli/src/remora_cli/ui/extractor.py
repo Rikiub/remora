@@ -9,7 +9,7 @@ from rich.table import Table
 from remora.exceptions import RemoraError
 from remora.extractor import MediaExtractor
 from remora.models import NetworkOptions
-from remora.models.media import ExtractResult, SearchList
+from remora.models.media import ExtractResult, Search
 from remora_cli.parsers import SearchTarget, parse_queries
 from remora_cli.ui.rich import CONSOLE
 
@@ -17,7 +17,7 @@ from remora_cli.ui.rich import CONSOLE
 async def extract_queries(
     queries: Sequence[str],
     network_options: NetworkOptions,
-) -> AsyncIterable[tuple[SearchTarget, ExtractResult | SearchList]]:
+) -> AsyncIterable[tuple[SearchTarget, ExtractResult | Search]]:
     for index, value in enumerate(parse_queries(queries), start=1):
         target, entry = value
         extractor = MediaExtractor(network_options)
