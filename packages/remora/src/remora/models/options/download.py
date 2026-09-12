@@ -51,7 +51,7 @@ class DownloadOptions(RemoraModel):
 
     format_type: AVContainerFormat | None = None
     quality: StreamQuality | int | None = None
-    languages: list[str] | None = None
+    languages: tuple[str, ...] | None = None
 
     convert_to: RichAVContainer | AVContainer | None = None
     embed_metadata: bool = True

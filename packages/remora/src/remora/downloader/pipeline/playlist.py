@@ -191,9 +191,13 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         # Set config
         if playlist:
             self.id = playlist.id
-            self.download_options.output_template = format_template(
-                self.download_options.output_template,
-                playlist=playlist,
+            self.download_options = self.download_options.model_copy(
+                update={
+                    "output_template": format_template(
+                        self.download_options.output_template,
+                        playlist=playlist,
+                    )
+                }
             )
         else:
             import uuid
