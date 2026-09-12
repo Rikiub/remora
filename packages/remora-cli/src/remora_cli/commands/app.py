@@ -5,7 +5,7 @@ from rich import traceback
 
 from remora_cli.commands.download import download
 from remora_cli.commands.extract import extract
-from remora_cli.options import DisplayOptions
+from remora_cli.parameters import DisplayParameters
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -26,7 +26,7 @@ def create() -> App:
     traceback.install(console=CONSOLE)
 
     # Init default display options
-    DisplayOptions()
+    DisplayParameters()
 
     # Create commands
     GROUP = "Subcommands"

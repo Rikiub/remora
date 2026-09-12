@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from cyclopts import App, Parameter
 from loguru import logger
 
-from remora_cli.options import DisplayOptions, NetworkOptions, QueryParameter
+from remora_cli.parameters import DisplayParameters, NetworkParameters, QueryParameter
 from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
@@ -19,7 +19,6 @@ DEFAULT_EXCLUDE = {
     "heatmap",
     "medias",
     "playlists",
-    "is_cache",
 }
 FIELDS_ORDER = [
     "type",
@@ -78,8 +77,8 @@ async def extract(
         ),
     ] = None,
     # SHARED
-    network: NetworkOptions = NetworkOptions(),
-    display: DisplayOptions = DisplayOptions(),
+    network: NetworkParameters = NetworkParameters(),
+    display: DisplayParameters = DisplayParameters(),
 ):
     "Extract metadata from [green]URL[/] or search [green]service[/]."
 

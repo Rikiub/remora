@@ -16,7 +16,7 @@ from remora.models import (
 from remora.models import NetworkOptions as Network
 
 QueryParameter = Annotated[
-    list[str | SearchService],
+    tuple[str | SearchService],
     Parameter(
         help="""[green]URLs[/] and [green]queries[/] to process.
 - Insert a [green]URL[/] to process.
@@ -29,7 +29,7 @@ QueryParameter = Annotated[
 
 @Parameter(name="*", group="Display")
 @dataclass(slots=True)
-class DisplayOptions:
+class DisplayParameters:
     """Commons options for the display of logs and visuals."""
 
     quiet: Annotated[
@@ -64,7 +64,7 @@ class DisplayOptions:
 
 @Parameter(name="*", group="Network")
 @dataclass(slots=True)
-class NetworkOptions:
+class NetworkParameters:
     """Commons network options."""
 
     cookies: Annotated[

@@ -8,9 +8,7 @@ from remora.models.search import SearchService
 SearchTarget = Literal["url", SearchService]
 
 
-def parse_queries(
-    queries: list[str],
-) -> Generator[tuple[SearchTarget, str], None, None]:
+def parse_queries(queries: Iterable[str]) -> Generator[tuple[SearchTarget, str]]:
     providers: list[SearchTarget] = [entry for entry in get_args(SearchTarget)]
     target: SearchTarget
 

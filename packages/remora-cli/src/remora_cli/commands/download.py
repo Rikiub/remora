@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from cyclopts import App, CycloptsError, Parameter, validators
 from loguru import logger
@@ -18,11 +18,12 @@ from remora.models import (
     Playlist,
     RichAVContainer,
     SearchList,
+    StreamQuality,
 )
 from remora.template import validate_template
-from remora_cli.options import (
-    DisplayOptions,
-    NetworkOptions,
+from remora_cli.parameters import (
+    DisplayParameters,
+    NetworkParameters,
     QueryParameter,
 )
 from remora_cli.ui.download_handler import ProgressCallback
@@ -35,7 +36,6 @@ class Panel(StrEnum):
     POST_PROCESS = "Post-process"
 
 
-FormatQuality = Literal[144, 240, 360, 480, 720, 1080]
 app = App()
 
 
@@ -64,7 +64,7 @@ async def download(
         ),
     ] = None,
     quality: Annotated[
-        int | FormatQuality | None,
+        int | StreamQuality | None,
         Parameter(
             help="Prefered target quality. Applies to video by default, but respects --type if provided.",
             short_alias=True,
@@ -72,7 +72,7 @@ async def download(
         ),
     ] = None,
     languages: Annotated[
-        list[str] | None,
+        tuple[str, ...] | None,
         Parameter(
             help="Prefered audio and subtitle languages (e.g. [green]en[/] and [green]es[/]).",
             negative=False,
@@ -133,8 +133,8 @@ async def download(
         ),
     ] = None,
     # SHARED
-    network: NetworkOptions = NetworkOptions(),
-    display: DisplayOptions = DisplayOptions(),
+    network: NetworkParameters = NetworkParameters(),
+    display: DisplayParameters = DisplayParameters(),
 ):
     """Download video/audio from [green]URL[/] or search [green]service[/]."""
 

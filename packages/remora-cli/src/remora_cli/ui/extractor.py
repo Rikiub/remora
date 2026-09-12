@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Sequence
 
 from loguru import logger
 from pydantic import AnyUrl
@@ -15,7 +15,7 @@ from remora_cli.ui.rich import CONSOLE
 
 
 async def extract_queries(
-    queries: list[str],
+    queries: Sequence[str],
     network_options: NetworkOptions,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | SearchList]]:
     for index, value in enumerate(parse_queries(queries), start=1):
