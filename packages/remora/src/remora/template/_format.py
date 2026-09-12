@@ -1,5 +1,6 @@
 import re
 import string
+from functools import cache
 from pathlib import Path
 
 from pathvalidate import sanitize_filepath
@@ -11,18 +12,8 @@ from remora.models._base import RemoraModel
 from remora.models.media import Media, Playlist
 from remora.models.stream import Stream
 from remora.models.types import StrPath
-from remora.template._generator import generate_keys
 
 __all__ = ["format_template", "get_keys", "validate_key", "validate_template"]
-
-
-class _Nested(RemoraModel):
-    playlist: Playlist | None = None
-    stream: Stream | None = None
-
-
-# Generate one time and keep copy
-_KEYS: set[str] = generate_keys([Media, _Nested])
 
 
 class _TemplateFormatter(string.Formatter):
@@ -70,6 +61,7 @@ def format_template(
     media: Media | None = None,
     playlist: Playlist | None = None,
     default_missing: str | None = None,
+    sanitize_path: bool = False,
 ) -> str:
     template_path = Path(output_template)
 
@@ -95,12 +87,14 @@ def format_template(
     formatter = _TemplateFormatter(replace=default_missing)
     output_template = formatter.format(str(output_template), **data)
 
-    # Remove invalid characters and limit length
-    path = sanitize_filepath(
-        output_template,
-        replacement_text="-",
-    )
-    return path
+    if sanitize_path:
+        # Remove invalid characters and limit length
+        output_template = sanitize_filepath(
+            output_template,
+            replacement_text="-",
+        )
+
+    return output_template
 
 
 def validate_template(output: StrPath) -> StrPath:
@@ -125,5 +119,12 @@ def validate_key(key: str) -> str:
     return key
 
 
-def get_keys() -> set[str]:
-    return _KEYS
+@cache
+def get_keys() -> frozenset[str]:
+    from remora.template._generator import generate_keys
+
+    class _Nested(RemoraModel):
+        playlist: Playlist | None = None
+        stream: Stream | None = None
+
+    return frozenset(generate_keys([Media, _Nested]))

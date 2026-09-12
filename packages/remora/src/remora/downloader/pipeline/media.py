@@ -133,6 +133,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
             stream=primary_stream,
             media=self.media,
             default_missing="NA",
+            sanitize_path=True,
         )
         output = anyio.Path(output)
         await output.parent.mkdir(parents=True, exist_ok=True)
