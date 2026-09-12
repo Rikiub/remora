@@ -276,9 +276,12 @@ async def test_empty_processor_metadata(
 
     # Init pipeline
     # And remove metadata
-    dummy_media.subtitles = Subtitles()
-    dummy_media.thumbnails = Thumbnails()
-
+    dummy_media = dummy_media.model_copy(
+        update={
+            "subtitles": Subtitles(),
+            "thumbnails": Thumbnails(),
+        }
+    )
     pipeline = mock_pipeline(dummy_media)
 
     # Consume the async generator

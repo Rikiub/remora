@@ -325,16 +325,17 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Setup events
         file_path = Path(f"{create_temp_file()}.{container.extension}")
-        merging = MediaProcessing(
-            id=self.id,
-            media=self.media,
-            progress=Processing(
-                status="started",
-                task="merge_streams",
-                file_path=file_path,
-            ),
+        await self._emit(
+            MediaProcessing(
+                id=self.id,
+                media=self.media,
+                progress=Processing(
+                    status="started",
+                    task="merge_streams",
+                    file_path=file_path,
+                ),
+            )
         )
-        await self._emit(merging)
         prc = processor.MediaProcessor(file_path, self.ffmpeg_dir)
 
         # Start merging
@@ -361,8 +362,17 @@ class MediaDownloader(BaseDownloader[MediaState]):
             )
 
         # Complete events
-        merging.progress.status = "completed"
-        await self._emit(merging)
+        await self._emit(
+            MediaProcessing(
+                id=self.id,
+                media=self.media,
+                progress=Processing(
+                    status="completed",
+                    task="merge_streams",
+                    file_path=file_path,
+                ),
+            )
+        )
 
         # Return merged file path
         return Path(prc.file_path)
@@ -391,18 +401,23 @@ class MediaDownloader(BaseDownloader[MediaState]):
                 media=self.media,
                 progress=Processing(
                     status="started",
-                    task=task,
                     file_path=prc.file_path,
+                    task=task,
                 ),
             )
             await self._emit(state)
 
             try:
                 yield
-
-                state.progress.file_path = prc.file_path
-                state.progress.status = "completed"
-
+                state = state.model_copy(
+                    update={
+                        "progress": Processing(
+                            status="completed",
+                            file_path=prc.file_path,
+                            task=task,
+                        )
+                    }
+                )
                 await self._emit(state)
             except ProcessorError as error:
                 if raise_exceptions:

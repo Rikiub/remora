@@ -16,7 +16,11 @@ from remora._ydl.types import YDLExtractInfo
 
 # Base Models
 class RemoraModel(BaseModel):
-    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
+    model_config = ConfigDict(
+        validate_by_name=True,
+        validate_by_alias=True,
+        frozen=True,
+    )
 
 
 class YDLSerializable(RemoraModel):

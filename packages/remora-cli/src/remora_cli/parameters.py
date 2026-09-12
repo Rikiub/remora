@@ -98,8 +98,12 @@ class NetworkParameters:
             proxy=self.proxy,
         )
 
-        # Replace directly to avoid trigger validation again
-        network.impersonate = self.impersonate
+        # Set as copy to avoid trigger validation again
+        network = network.model_copy(
+            update={
+                "impersonate": self.impersonate,
+            }
+        )
 
         # Return validated options
         return network
