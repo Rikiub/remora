@@ -1,11 +1,9 @@
 from collections.abc import Callable
-from io import StringIO
 from pathlib import Path
 from typing import Any
 
 from yt_dlp.downloader import get_suitable_downloader
 from yt_dlp.downloader.mhtml import MhtmlFD
-from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._ydl.contextvar import YDL, YDLContext
@@ -52,29 +50,17 @@ class YDLDownloader(YDLContext):
         params: YDLParams,
         retries: int = DEFAULT_RETRIES,
     ) -> Path:
-        config: YDLParams = {
-            "retries": retries,
-            "fragment_retries": retries,
-            "cookiefile": StringIO(cookies.to_netscape_cookies())
-            if (cookies := self.network_options.cookies)
-            else None,
-            "proxy": str(proxy) if (proxy := self.network_options.proxy) else None,
-            "impersonate": ImpersonateTarget.from_str(impersonate)
-            if (impersonate := self.network_options.impersonate)
-            else None,
-        }
+        config: YDLParams = {"retries": retries, "fragment_retries": retries}
 
         try:
             ydl = YDL(
                 params=config | params,
                 session=self._ydl_session,
+                network_options=self.network_options,
                 auto_init=True,
             )
-            result = ydl.process_ie_result(
-                info,  # type: ignore
-                download=True,
-            )
-            filepath = result["requested_downloads"][0]["filepath"]  # type: ignore
+            result = ydl.process_ie_result(info, download=True)
+            filepath = result["requested_downloads"][0]["filepath"]
             return Path(filepath)
         except YDLDownloadError as error:
             raise DownloaderError(
@@ -97,7 +83,7 @@ class YDLDownloader(YDLContext):
         info = {"thumbnails": [thumbnail]}
 
         try:
-            final = ydl._write_thumbnails(  # type: ignore
+            final = ydl._write_thumbnails(
                 label=filepath,
                 info_dict=info,
                 filename=str(filepath),
@@ -131,7 +117,7 @@ class YDLDownloader(YDLContext):
         info = {"requested_subtitles": subs}
 
         try:
-            final: list[tuple[str, str]] = ydl._write_subtitles(  # type: ignore
+            final: list[tuple[str, str]] = ydl._write_subtitles(
                 info_dict=info,
                 filename=str(filepath),
             )
@@ -154,10 +140,7 @@ class YDLDownloader(YDLContext):
         filepath = f"{filepath}.{extension}"
 
         fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
-        fd: MhtmlFD = fd_class(
-            YDL(session=self._ydl_session),
-            {},
-        )
+        fd: MhtmlFD = fd_class(YDL(session=self._ydl_session), {})
         fd.download(filepath, storyboard)
 
         return Path(filepath)

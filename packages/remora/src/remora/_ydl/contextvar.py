@@ -15,11 +15,11 @@ _YDL_SESSION: ContextVar[YDL | None] = ContextVar("ydl_session", default=None)
 
 
 @contextmanager
-def get_ydl_session() -> Generator[YDL]:
+def get_ydl_session(network_options: NetworkOptions | None = None) -> Generator[YDL]:
     if ydl := _YDL_SESSION.get():
         yield ydl
     else:
-        ydl = YDL()
+        ydl = YDL(network_options=network_options)
         token = _YDL_SESSION.set(ydl)
 
         try:
@@ -35,7 +35,7 @@ class YDLContext(ContextManagerMixin, ABC):
 
     @contextmanager
     def __contextmanager__(self) -> Generator[Self, None]:
-        with get_ydl_session() as ydl:
+        with get_ydl_session(self.network_options) as ydl:
             self._ydl_session = ydl
             self._setup()
             yield self

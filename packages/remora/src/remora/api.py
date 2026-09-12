@@ -44,11 +44,11 @@ class Remora(AsyncContextManagerMixin):
     async def __asynccontextmanager__(
         self,
     ) -> AsyncGenerator[Self, None]:
-        with get_ydl_session():
+        with get_ydl_session(self.network_options):
             async with (
-                MediaExtractor(self.network_options) as extractor,
-                MetadataDownloader() as metadata,
                 get_httpx_client(self.network_options),
+                MediaExtractor() as extractor,
+                MetadataDownloader() as metadata,
             ):
                 self._metadata = metadata
                 self._extractor = extractor

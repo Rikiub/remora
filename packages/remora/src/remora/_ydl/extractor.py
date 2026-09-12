@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-from io import StringIO
 from typing import cast
 
 from typing_extensions import override
 from yt_dlp.extractor import get_info_extractor
-from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
@@ -40,19 +38,10 @@ class YDLExtractor(YDLContext):
 
     @override
     def _setup(self):
-        self.ydl = YDL(
-            params={
-                "extract_flat": "in_playlist",
-                "skip_download": True,
-                "cookiefile": StringIO(cookies.to_netscape_cookies())
-                if (cookies := self.network_options.cookies)
-                else None,
-                "proxy": str(proxy) if (proxy := self.network_options.proxy) else None,
-                "impersonate": ImpersonateTarget.from_str(impersonate)
-                if (impersonate := self.network_options.impersonate)
-                else None,
-            },
+        self._ydl_session = YDL(
+            params={"extract_flat": "in_playlist", "skip_download": True},
             session=self._ydl_session,
+            network_options=self.network_options,
             auto_init=True,
         )
 
@@ -73,7 +62,7 @@ class YDLExtractor(YDLContext):
 
     def extract_info(self, query: str) -> YDLExtractInfo:
         try:
-            info = self.ydl.extract_info(query, download=False)
+            info = self._ydl_session.extract_info(query, download=False)
             info = self._normalize_info(info)
 
             # Infer protocol if missing

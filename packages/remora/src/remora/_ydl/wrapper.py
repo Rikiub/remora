@@ -1,11 +1,14 @@
 import tempfile
+from io import StringIO
 
 from loguru import logger
+from typing_extensions import override
 from yt_dlp.networking.common import RequestDirector
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.YoutubeDL import YoutubeDL
 
 from remora._ydl.types import YDLParams
+from remora.models.options import NetworkOptions
 from remora.path import get_cache_dir
 
 
@@ -45,7 +48,8 @@ class YDL(YoutubeDL):
     def __init__(
         self,
         params: YDLParams | None = None,
-        session: YoutubeDL | RequestDirector | None = None,
+        session: YoutubeDL | None = None,
+        network_options: NetworkOptions | None = None,
         auto_init: bool = False,
     ):
         # Default parameters
@@ -68,6 +72,18 @@ class YDL(YoutubeDL):
             "ffmpeg_location": tempfile.gettempdir(),
         }
 
+        # Network parameters
+        self.network_options = network_options or NetworkOptions()
+        opts |= {
+            "cookiefile": StringIO(cookies.to_netscape_cookies())
+            if (cookies := self.network_options.cookies)
+            else None,
+            "proxy": str(proxy) if (proxy := self.network_options.proxy) else None,
+            "impersonate": ImpersonateTarget.from_str(impersonate)
+            if (impersonate := self.network_options.impersonate)
+            else None,
+        }
+
         # Custom parameters
         opts |= params or {}
 
@@ -77,17 +93,18 @@ class YDL(YoutubeDL):
             auto_init,
         )
 
-        # Set shared session
-        self.__dict__["_request_director"] = (
-            session
-            if isinstance(session, RequestDirector)
-            else _get_request_director(session)
-        )
+        # Set shared request session
+        self._shared_request_director = None
 
+        if session:
+            self._shared_request_director = session._request_director
 
-def _get_request_director(ydl: YoutubeDL | None = None) -> RequestDirector:
-    ydl = ydl or YoutubeDL()
-    return ydl._request_director
+    @override
+    def build_request_director(self, handlers, preferences=None) -> RequestDirector:
+        if self._shared_request_director:
+            return self._shared_request_director
+        else:
+            return super().build_request_director(handlers, preferences)
 
 
 def parse_impersonate_target(target: str) -> ImpersonateTarget:
