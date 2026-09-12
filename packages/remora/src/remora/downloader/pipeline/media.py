@@ -382,7 +382,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
         file_path: Path,
         stream: Stream | None = None,
         thumbnail: Path | None = None,
-        subtitles: list[Path] | None = None,
+        subtitles: Iterable[Path] | None = None,
     ) -> Path:
         prc = processor.MediaProcessor(
             file_path=file_path,
@@ -485,6 +485,26 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         return Path(prc.file_path)
 
+    async def _move_to_final(self, src: StrPath, dest: StrPath) -> Path:
+        _src, _dest = anyio.Path(src), anyio.Path(dest)
+
+        final_path = _dest.parent / f"{_dest.name}{_src.suffix}"
+        await final_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Use shutil.move for compability between cross filesystems
+        await run_sync(shutil.move, src, final_path)
+
+        await self._emit(
+            MediaCompleted(
+                id=self.id,
+                media=self.media,
+                file_path=Path(final_path),
+                result="partial" if self.has_missing_data else "success",
+            )
+        )
+
+        return Path(final_path)
+
     def _resolve_subtitles(self, media: Media) -> Subtitles:
         # Filter by language preferences
         if (requested_langs := self.download_options.languages) and (
@@ -513,23 +533,3 @@ class MediaDownloader(BaseDownloader[MediaState]):
             logger.warning("FFmpeg location not found, post-processing disabled")
             ffmpeg_dir = None
         return Path(ffmpeg_dir) if ffmpeg_dir else None
-
-    async def _move_to_final(self, src: StrPath, dest: StrPath) -> Path:
-        _src, _dest = anyio.Path(src), anyio.Path(dest)
-
-        final_path = _dest.parent / f"{_dest.name}{_src.suffix}"
-        await final_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Use shutil.move for compability between cross filesystems
-        await run_sync(shutil.move, src, final_path)
-
-        await self._emit(
-            MediaCompleted(
-                id=self.id,
-                media=self.media,
-                file_path=Path(final_path),
-                result="partial" if self.has_missing_data else "success",
-            )
-        )
-
-        return Path(final_path)
