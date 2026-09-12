@@ -11,14 +11,14 @@ from remora_cli.parsers import parse_keys, remove_missing
 from remora_cli.ui.rich import CONSOLE, Console, smart_print
 
 DEFAULT_EXCLUDE = {
-    "streams",
     "live_status",
+    "heatmap",
     "subtitles",
     "chapters",
     "thumbnails",
-    "heatmap",
-    "medias",
-    "playlists",
+    "storyboards",
+    "streams",
+    "entries",
 }
 FIELDS_ORDER = [
     "type",
@@ -29,9 +29,7 @@ FIELDS_ORDER = [
     "description",
     "live_status",
     "duration",
-    "upload_date",
-    "modified_date",
-    "release_date",
+    "date",
     "uploader",
     "channel",
     "metrics",
