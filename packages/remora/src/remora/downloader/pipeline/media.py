@@ -219,7 +219,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
     async def _download_resources(
         self,
         media: Media,
-        streams: list[Stream],
+        streams: Iterable[Stream],
     ) -> _DownloadContext:
         if not streams:
             raise ValueError("At least one stream must be provided")
