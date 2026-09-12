@@ -10,10 +10,10 @@ from remora.logs import LoggingLevels
 from remora.models import (
     CookieList,
     ImpersonateClient,
+    NetworkOptions,
     SearchService,
     validate_impersonate_target,
 )
-from remora.models import NetworkOptions as Network
 
 QueryParameter = Annotated[
     tuple[str | SearchService],
@@ -91,9 +91,9 @@ class NetworkParameters:
         ),
     ] = None
 
-    def build_options(self) -> Network:
+    def build_options(self) -> NetworkOptions:
         # Init options
-        network = Network(
+        network = NetworkOptions(
             cookies=CookieList.from_file(self.cookies) if self.cookies else None,
             proxy=self.proxy,
         )
