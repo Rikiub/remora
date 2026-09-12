@@ -1,6 +1,7 @@
 from typing import Final
 
 DEFAULT_TEMPLATE: Final = "{uploader.name} - {title}"
+DEFAULT_TEMPLATE_MISSING: Final = "NA"
 
 DEFAULT_WORKERS: Final = 5
 DEFAULT_SEGMENT_WORKERS: Final = 8

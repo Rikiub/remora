@@ -1,5 +1,6 @@
 import pytest
 
+from remora.constants import DEFAULT_TEMPLATE_MISSING
 from remora.models.container import CodecInfo
 from remora.models.media import ExtractorInfo
 from remora.models.media.item import Media
@@ -101,6 +102,7 @@ def format(
             stream=dummy_video_stream,
             media=dummy_media,
             playlist=dummy_playlist,
+            default_missing=DEFAULT_TEMPLATE_MISSING,
         )
 
     return _
@@ -127,8 +129,20 @@ def test_media(format):
 
 
 def test_list(format):
-    assert format("{creators[0]}") == "Creator Name"
     assert format("{creators.0}") == "Creator Name"
+
+    assert format("{streams.0.url}") == "https://example.com/stream"
+    assert format("{streams.0.container}") == "MP4"
+
+
+def test_missing(format):
+    templates = (
+        "{creators.99}",
+        "{streams.99.container}",
+    )
+
+    for t in templates:
+        assert format(t) == "NA"
 
 
 def test_playlist(format):

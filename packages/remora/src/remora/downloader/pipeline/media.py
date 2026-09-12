@@ -11,7 +11,11 @@ from typing_extensions import override
 
 from remora import ffmpeg, processor
 from remora._types import StreamContext
-from remora.constants import DEFAULT_AUDIO_CONTAINER, DEFAULT_VIDEO_CONTAINER
+from remora.constants import (
+    DEFAULT_AUDIO_CONTAINER,
+    DEFAULT_TEMPLATE_MISSING,
+    DEFAULT_VIDEO_CONTAINER,
+)
 from remora.downloader.metadata import _download_subtitle, _download_thumbnail
 from remora.downloader.pipeline._logs import log_event_media
 from remora.downloader.pipeline.base import BaseDownloader
@@ -132,7 +136,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
             self.download_options.output_template,
             stream=primary_stream,
             media=self.media,
-            default_missing="NA",
+            default_missing=DEFAULT_TEMPLATE_MISSING,
             sanitize_path=True,
         )
         output = anyio.Path(output)

@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import re
 import string
 from functools import cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pathvalidate import sanitize_filepath
 from typing_extensions import override
 
 from remora.constants import DEFAULT_TEMPLATE
 from remora.exceptions import OutputTemplateError
-from remora.models._base import RemoraModel
-from remora.models.media import Media, Playlist
-from remora.models.stream import Stream
-from remora.models.types import StrPath
+
+if TYPE_CHECKING:
+    from remora.models.media import Media, Playlist
+    from remora.models.stream import Stream
+    from remora.models.types import StrPath
 
 __all__ = ["format_template", "get_keys", "validate_key", "validate_template"]
 
@@ -34,7 +38,7 @@ class _TemplateFormatter(string.Formatter):
                 raise KeyError(field_name)
 
             return obj, used_key
-        except (KeyError, AttributeError):
+        except (KeyError, IndexError, AttributeError):
             # Fallback for missing keys or attributes
             final_value = (
                 self.replace if self.replace is not None else f"{{{field_name}}}"
@@ -76,7 +80,7 @@ def format_template(
     # Build metadata
     data = {}
     if media:
-        for key in Media.model_fields:
+        for key in type(media).model_fields:
             data[key] = getattr(media, key)
     if stream:
         data["stream"] = stream
@@ -98,8 +102,6 @@ def format_template(
 
 
 def validate_template(output: StrPath) -> StrPath:
-    valid_keys = get_keys()
-
     for _, field_name, _, _ in string.Formatter().parse(str(output)):
         if not field_name or field_name.isdigit():
             continue
@@ -107,9 +109,8 @@ def validate_template(output: StrPath) -> StrPath:
         # Strip brackets so "metadata[0]" or "metadata.0" becomes "metadata"
         base_key = re.sub(r"\[.*?\]|\.\d+", "", field_name)
 
-        if base_key not in valid_keys:
+        if not validate_key(base_key):
             raise OutputTemplateError(f"Key '{{{field_name}}}' is invalid")
-
     return output
 
 
@@ -121,6 +122,9 @@ def validate_key(key: str) -> str:
 
 @cache
 def get_keys() -> frozenset[str]:
+    from remora.models._base import RemoraModel
+    from remora.models.media import Media, Playlist  # noqa: F401
+    from remora.models.stream import Stream  # noqa: F401
     from remora.template._generator import generate_keys
 
     class _Nested(RemoraModel):
