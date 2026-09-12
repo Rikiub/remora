@@ -108,9 +108,7 @@ def validate_template(output: StrPath) -> StrPath:
 
         # Strip brackets so "metadata[0]" or "metadata.0" becomes "metadata"
         base_key = re.sub(r"\[.*?\]|\.\d+", "", field_name)
-
-        if not validate_key(base_key):
-            raise OutputTemplateError(f"Key '{{{field_name}}}' is invalid")
+        validate_key(base_key)
     return output
 
 
