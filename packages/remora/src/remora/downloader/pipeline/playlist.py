@@ -64,12 +64,9 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         self._unresolved_item = item
 
         # Limiters
-        self._extract_limiter = network_limiter or anyio.CapacityLimiter(
-            network_concurrency
-        )
-        self._download_limiter = network_limiter or anyio.CapacityLimiter(
-            network_concurrency
-        )
+        network_limiter = network_limiter or anyio.CapacityLimiter(network_concurrency)
+        self._extract_limiter = network_limiter
+        self._download_limiter = network_limiter
         self._postprocess_limiter = postprocess_limiter or anyio.CapacityLimiter(
             DEFAULT_POSTPROCESS_CONCURRENCY
         )

@@ -90,13 +90,13 @@ class Remora(AsyncContextManagerMixin):
         stream: Stream,
         output_path: StrPath,
         retries: int | None = None,
-        max_workers: int | None = None,
+        concurrency: int | None = None,
     ) -> StreamDownloader:
         return StreamDownloader(
             stream=stream,
             output_path=output_path,
             retries=retries or self.download_options.retries,
-            concurrency=max_workers,
+            concurrency=concurrency,
             network_options=self.network_options,
         )
 
