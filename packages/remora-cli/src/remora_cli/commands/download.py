@@ -98,7 +98,7 @@ async def download(
             negative_alias="--overwrite",
         ),
     ] = True,
-    max_workers: Annotated[
+    concurrency: Annotated[
         int,
         Parameter(
             help="Limit of simultaneous downloads.",
@@ -160,7 +160,7 @@ async def download(
                 convert_to=convert,
                 quality=quality,
                 ffmpeg_location=ffmpeg_location,
-                concurrency=max_workers,
+                concurrency=concurrency,
                 embed_metadata=embed_metadata,
             ),
             network_options=network.build_options(),
