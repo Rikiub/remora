@@ -74,7 +74,6 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                 stream=self.stream,
                 output_path=self.file_path,
                 retries=self.retries,
-                network_options=self.network_options,
             ) as progress:
                 async for state in progress:
                     await self._emit(state)

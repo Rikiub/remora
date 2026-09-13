@@ -14,7 +14,7 @@ ImpersonateClient = Literal[
 
 
 def validate_impersonate_target(target: ImpersonateClient | str) -> str:
-    from remora._ydl.base import parse_impersonate_target
+    from remora._ydl import parse_impersonate_target
 
     parsed = parse_impersonate_target(target)
     return str(parsed)

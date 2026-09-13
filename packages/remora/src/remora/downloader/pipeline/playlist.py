@@ -11,9 +11,9 @@ from remora.constants import (
 from remora.downloader.pipeline._logs import log_event_playlist
 from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.pipeline.media import MediaDownloader
+from remora.downloader.session import DownloadSession
 from remora.exceptions import ExtractorError
 from remora.extractor import MediaExtractor
-from remora.models import NetworkOptions
 from remora.models.media import (
     AnyExtractResult,
     Entries,
@@ -23,7 +23,6 @@ from remora.models.media import (
     Playlist,
 )
 from remora.models.media.list import _BaseEntries
-from remora.models.options.download import DownloadOptions
 from remora.models.progress import (
     BatchState,
     MediaEnded,
@@ -44,31 +43,28 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
     def __init__(
         self,
         item: StrUrl | AnyExtractResult,
-        download_options: DownloadOptions | None = None,
-        network_options: NetworkOptions | None = None,
-        network_limiter: anyio.CapacityLimiter | None = None,
-        postprocess_limiter: anyio.CapacityLimiter | None = None,
+        session: DownloadSession,
     ):
-        super().__init__(
-            download_options=download_options,
-            network_options=network_options,
-        )
+        super().__init__(session)
 
         # Internals
         network_concurrency = (
-            self.download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
+            self.session.options.download.concurrency or DEFAULT_MEDIA_CONCURRENCY
         )
         self._buffer_size = 100 * network_concurrency
 
-        self._extractor = MediaExtractor(self.network_options)
+        self._extractor = MediaExtractor(self.session.ydl_context)
         self._unresolved_item = item
 
         # Limiters
-        network_limiter = network_limiter or anyio.CapacityLimiter(network_concurrency)
+        network_limiter = session.limiters.download or anyio.CapacityLimiter(
+            network_concurrency
+        )
         self._extract_limiter = network_limiter
         self._download_limiter = network_limiter
-        self._postprocess_limiter = postprocess_limiter or anyio.CapacityLimiter(
-            DEFAULT_POSTPROCESS_CONCURRENCY
+        self._postprocess_limiter = (
+            session.limiters.postprocess
+            or anyio.CapacityLimiter(DEFAULT_POSTPROCESS_CONCURRENCY)
         )
 
         # Fields
@@ -145,12 +141,7 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
 
         if resolved_media:
             # Start downloader
-            async with MediaDownloader(
-                resolved_media,
-                self.download_options,
-                download_limiter=self._download_limiter,
-                postprocess_limiter=self._postprocess_limiter,
-            ) as progress:
+            async with MediaDownloader(resolved_media, self.session) as progress:
                 async for state in progress:
                     if isinstance(state, MediaFailed):
                         self.failed += 1
@@ -208,10 +199,10 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         # Set config
         if playlist:
             self.id = playlist.id
-            self.download_options = self.download_options.model_copy(
+            self.session.options.download = self.session.options.download.model_copy(
                 update={
                     "output_template": format_template(
-                        self.download_options.output_template,
+                        self.session.options.download.output_template,
                         playlist=playlist,
                     )
                 }

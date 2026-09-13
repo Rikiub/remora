@@ -17,8 +17,9 @@ from remora._ydl.messages import sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo
 from remora._ydl.wrapper import YDL
 from remora.exceptions import ProcessorError
-from remora.ffmpeg import validate_ffmpeg_dir
 from remora.models.types import StrPath
+
+__all__ = ["RequestedFormat", "YDLProcessor"]
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
@@ -43,6 +44,8 @@ class RequestedFormat(TypedDict):
 
 class YDLProcessor:
     def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None) -> None:
+        from remora.ffmpeg import validate_ffmpeg_dir
+
         self.file_path = Path(file_path)
         self.ffmpeg_dir = validate_ffmpeg_dir(ffmpeg_dir)
 

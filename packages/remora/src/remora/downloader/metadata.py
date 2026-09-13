@@ -1,13 +1,11 @@
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
-from typing import Self
 
 from anyio import AsyncContextManagerMixin
 from anyio.to_thread import run_sync
 
 from remora._ydl.downloader import YDLDownloader
+from remora._ydl.wrapper import NetworkContext
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
 
@@ -15,11 +13,8 @@ __all__ = ["MetadataDownloader"]
 
 
 class MetadataDownloader(AsyncContextManagerMixin):
-    @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        with YDLDownloader() as downloader:
-            self._ydl_downloader = downloader
-            yield self
+    def __init__(self, ydl_context: NetworkContext | None = None):
+        self._ydl_downloader = YDLDownloader(ydl_context)
 
     async def download_resource(
         self,

@@ -5,6 +5,8 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 from remora._ydl.messages import sanitize_ydl_error
 from remora.exceptions import DownloaderError
 
+__all__ = ["extract_cookies_from_browser"]
+
 
 def extract_cookies_from_browser(
     browser_name: str,

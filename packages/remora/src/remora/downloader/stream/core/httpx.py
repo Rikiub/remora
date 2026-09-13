@@ -8,7 +8,7 @@ from anyio import Path
 from loguru import logger
 from typing_extensions import override
 
-from remora._http import get_httpx_client
+from remora._http import build_httpx_client
 from remora.constants import DEFAULT_SEGMENT_CONCURRENCY
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
@@ -42,6 +42,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         self,
         stream: Stream,
         output_path: StrPath,
+        client: httpx.AsyncClient | None = None,
         retries: int | None = None,
         concurrency: int | None = None,
         network_options: NetworkOptions | None = None,
@@ -53,6 +54,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
             network_options=network_options,
         )
         self.concurrency = concurrency or DEFAULT_SEGMENT_CONCURRENCY
+        self.client = client or build_httpx_client(self.network_options)
 
         # Progress
         self.is_continuous = False
@@ -72,9 +74,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         protocol = Protocol(self.stream.protocol)
         logger.debug('Stream protocol is "{}"', str(protocol))
 
-        async with get_httpx_client(self.network_options) as client:
-            self.client = client
-
+        async with self.client:
             try:
                 if protocol.is_segmented:
                     logger.debug("Downloading stream segments")

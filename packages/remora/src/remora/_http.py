@@ -1,41 +1,13 @@
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-from contextvars import ContextVar
-
 import httpx
 from httpx_curl_cffi import AsyncCurlTransport
 
 from remora.models.options import NetworkOptions
 
-__all__ = ["get_httpx_client"]
-
-_HTTPX_CLIENT: ContextVar[httpx.AsyncClient | None] = ContextVar(
-    "httpx_client", default=None
-)
+__all__ = ["build_httpx_client"]
 
 
-@asynccontextmanager
-async def get_httpx_client(
-    network_options: NetworkOptions | None = None,
-    max_connections: int | None = 20,
-) -> AsyncGenerator[httpx.AsyncClient]:
-    if client := _HTTPX_CLIENT.get():
-        # SHARED CLIENT: Yield it, but do not close it when done.
-        yield client
-    else:
-        # FALLBACK CLIENT: Build default client.
-        client = _build_httpx_client(network_options, max_connections)
-        token = _HTTPX_CLIENT.set(client)
-
-        try:
-            async with client:
-                yield client
-        finally:
-            _HTTPX_CLIENT.reset(token)
-
-
-def _build_httpx_client(
-    network_options: NetworkOptions | None = None,
+def build_httpx_client(
+    network_options: NetworkOptions,
     max_connections: int | None = None,
 ) -> httpx.AsyncClient:
     """Builds a configured httpx client from `NetworkOptions`."""

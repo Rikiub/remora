@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 from typing import cast
 
-from typing_extensions import override
 from yt_dlp.extractor import get_info_extractor
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
-from remora._ydl.contextvar import YDL, YDLContext
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo
+from remora._ydl.wrapper import YDL, NetworkContext, YDLContext
 from remora.exceptions import ExtractorError
-from remora.models.options import NetworkOptions
 from remora.models.search import SearchService
 
 __all__ = ["YDLExtractor"]
@@ -33,15 +31,10 @@ SEARCH_QUERIES = {
 
 
 class YDLExtractor(YDLContext):
-    def __init__(self, network_options: NetworkOptions | None = None):
-        super().__init__(network_options)
-
-    @override
-    def _setup(self):
-        self._ydl_session = YDL(
+    def __init__(self, context: NetworkContext | None = None):
+        self.ydl = YDL(
             params={"extract_flat": "in_playlist", "skip_download": True},
-            session=self._ydl_session,
-            network_options=self.network_options,
+            network_context=context,
             auto_init=True,
         )
 
@@ -62,7 +55,7 @@ class YDLExtractor(YDLContext):
 
     def extract_info(self, query: str) -> YDLExtractInfo:
         try:
-            info = self._ydl_session.extract_info(query, download=False)
+            info = self.ydl.extract_info(query, download=False)
             info = self._normalize_info(info)
 
             # Infer protocol if missing

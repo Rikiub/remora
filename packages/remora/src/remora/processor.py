@@ -6,8 +6,7 @@ from typing import Self
 from anyio.to_thread import run_sync
 
 from remora._types import StreamContext
-from remora._ydl.processor import RequestedFormat, YDLProcessor
-from remora._ydl.types import YDLExtractInfo
+from remora._ydl import RequestedFormat, YDLExtractInfo, YDLProcessor
 from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
     AudioContainer,

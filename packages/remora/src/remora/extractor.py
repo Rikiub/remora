@@ -10,7 +10,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import AnyUrl
 
-from remora._ydl.extractor import YDLExtractor
+from remora._ydl import NetworkContext, YDLExtractor
 from remora.models.media import (
     ExtractAdapter,
     LazyMedia,
@@ -19,7 +19,7 @@ from remora.models.media import (
     Playlist,
     Search,
 )
-from remora.models.options.network import NetworkOptions
+from remora.models.options import NetworkOptions
 from remora.models.search import SearchService
 from remora.models.types import StrUrl
 
@@ -27,13 +27,17 @@ __all__ = ["MediaExtractor"]
 
 
 class MediaExtractor(AsyncContextManagerMixin):
-    def __init__(self, network_options: NetworkOptions | None = None):
+    def __init__(
+        self,
+        ydl_context: NetworkContext | None = None,
+        network_options: NetworkOptions | None = None,
+    ):
         self.network_options = network_options or NetworkOptions()
+        self._extractor = YDLExtractor(ydl_context)
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        with YDLExtractor(self.network_options) as extractor:
-            self._ydl_extractor = extractor
+        with self._extractor:
             yield self
 
     @overload
@@ -78,7 +82,7 @@ class MediaExtractor(AsyncContextManagerMixin):
                 )
 
             # Extract info
-            info = await run_sync(partial(self._ydl_extractor.extract_info, query=url))
+            info = await run_sync(partial(self._extractor.extract_info, query=url))
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
@@ -106,7 +110,7 @@ class MediaExtractor(AsyncContextManagerMixin):
             # Extract info
             info = await run_sync(
                 partial(
-                    self._ydl_extractor.extract_query,
+                    self._extractor.extract_query,
                     query=query,
                     service=service,
                     limit=limit,

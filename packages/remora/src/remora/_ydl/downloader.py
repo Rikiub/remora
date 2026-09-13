@@ -6,18 +6,19 @@ from yt_dlp.downloader import get_suitable_downloader
 from yt_dlp.downloader.mhtml import MhtmlFD
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
-from remora._ydl.contextvar import YDL, YDLContext
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
+from remora._ydl.wrapper import YDL, NetworkContext, YDLContext
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
-from remora.models.options import NetworkOptions
 from remora.models.types import StrPath
+
+__all__ = ["YDLDownloader"]
 
 
 class YDLDownloader(YDLContext):
-    def __init__(self, network_options: NetworkOptions | None = None):
-        super().__init__(network_options)
+    def __init__(self, context: NetworkContext | None = None):
+        super().__init__(context)
 
     def download_format(
         self,
@@ -55,8 +56,7 @@ class YDLDownloader(YDLContext):
         try:
             ydl = YDL(
                 params=config | params,
-                session=self._ydl_session,
-                network_options=self.network_options,
+                network_context=self.context,
                 auto_init=True,
             )
             result = ydl.process_ie_result(info, download=True)
@@ -77,7 +77,7 @@ class YDLDownloader(YDLContext):
                     "pl_thumbnail": "",
                 },
             },
-            session=self._ydl_session,
+            network_context=self.context,
         )
 
         info = {"thumbnails": [thumbnail]}
@@ -107,7 +107,7 @@ class YDLDownloader(YDLContext):
 
         ydl = YDL(
             {"writesubtitles": True, "allsubtitles": True},
-            session=self._ydl_session,
+            network_context=self.context,
         )
         subs = ydl.process_subtitles(
             str(filepath),
@@ -140,7 +140,7 @@ class YDLDownloader(YDLContext):
         filepath = f"{filepath}.{extension}"
 
         fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
-        fd: MhtmlFD = fd_class(YDL(session=self._ydl_session), {})
+        fd: MhtmlFD = fd_class(YDL(network_context=self.context), {})
         fd.download(filepath, storyboard)
 
         return Path(filepath)

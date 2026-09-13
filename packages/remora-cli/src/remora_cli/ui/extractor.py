@@ -15,7 +15,7 @@ from remora_cli.ui.rich import CONSOLE
 
 async def extract_queries(
     queries: Sequence[str],
-    session: Remora,
+    remora: Remora,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | Search]]:
     for index, value in enumerate(parse_queries(queries), start=1):
         target, entry = value
@@ -23,7 +23,7 @@ async def extract_queries(
         try:
             if (
                 target == "url"
-                and (cookies := session.network_options.cookies)
+                and (cookies := remora._session.options.network.cookies)
                 and (url_host := AnyUrl(entry).host)
                 and cookies.get_expired_cookies(url_host)
             ):
@@ -36,7 +36,7 @@ async def extract_queries(
             with CONSOLE.status("Searching[blink]...[/]"):
                 if target == "url":
                     logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
-                    result = await session.extract(entry)
+                    result = await remora.extract(entry)
 
                     if result.type == "playlist":
                         logger.info(
@@ -53,7 +53,7 @@ async def extract_queries(
                         icon="🔎",
                     )
 
-                    result = await session.extract_search(entry, target)
+                    result = await remora.extract_search(entry, target)
 
                     if not result.entries.medias():
                         logger.warning("No results found")

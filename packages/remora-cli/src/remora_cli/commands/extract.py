@@ -87,11 +87,11 @@ async def extract(
     with CONSOLE.status("Starting[blink]...[/]"):
         from rich.json import JSON
 
-        from remora.extractor import MediaExtractor
+        from remora import Remora
         from remora_cli.ui.extractor import dict_to_table, extract_queries
 
         console = Console()
-        extractor = MediaExtractor(network.build_options())
+        remora = Remora(network_options=network.build_options())
 
     # Determine user intent
     sel_format = format
@@ -109,7 +109,7 @@ async def extract(
         sel_exclude.discard(key)
 
     # Extract queries
-    async for _, result in extract_queries(query, extractor.network_options):
+    async for _, result in extract_queries(query, remora):
         logger.success("Successful extraction")
 
         # Show

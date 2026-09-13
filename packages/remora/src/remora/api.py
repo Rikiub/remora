@@ -3,15 +3,18 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Self, overload
 
+import anyio
 from anyio import AsyncContextManagerMixin
 
-from remora._http import get_httpx_client
-from remora._ydl.contextvar import get_ydl_session
+from remora._http import build_httpx_client
+from remora._ydl import NetworkContext
+from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.downloader import (
     MediaDownloader,
     MetadataDownloader,
     PlaylistDownloader,
     StreamDownloader,
+    session,
 )
 from remora.extractor import MediaExtractor
 from remora.models.media import (
@@ -37,22 +40,42 @@ class Remora(AsyncContextManagerMixin):
         download_options: DownloadOptions | None = None,
         network_options: NetworkOptions | None = None,
     ):
-        self.download_options = download_options or DownloadOptions()
-        self.network_options = network_options or NetworkOptions()
+        download_options = download_options or DownloadOptions()
+        network_options = network_options or NetworkOptions()
+
+        self._session = session.DownloadSession(
+            options=session.Options(
+                download=download_options,
+                network=network_options,
+            ),
+            limiters=session.Limiters(
+                extract=anyio.CapacityLimiter(
+                    download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
+                ),
+                download=anyio.CapacityLimiter(
+                    download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
+                ),
+                postprocess=anyio.CapacityLimiter(DEFAULT_POSTPROCESS_CONCURRENCY),
+            ),
+            ydl_context=NetworkContext.from_options(network_options),
+            httpx_client=build_httpx_client(network_options),
+        )
+        self._extractor = MediaExtractor(
+            self._session.ydl_context,
+            network_options=network_options,
+        )
+        self._metadata = MetadataDownloader(self._session.ydl_context)
 
     @asynccontextmanager
     async def __asynccontextmanager__(
         self,
     ) -> AsyncGenerator[Self, None]:
-        with get_ydl_session(self.network_options):
-            async with (
-                get_httpx_client(self.network_options),
-                MediaExtractor() as extractor,
-                MetadataDownloader() as metadata,
-            ):
-                self._metadata = metadata
-                self._extractor = extractor
+        try:
+            async with self._session.httpx_client:
                 yield self
+        finally:
+            if request_director := self._session.ydl_context.request_director:
+                request_director.close()
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -79,18 +102,10 @@ class Remora(AsyncContextManagerMixin):
         return await self._extractor.extract_search(query, service, limit)
 
     def download_playlist(self, item: StrUrl | AnyExtractResult) -> PlaylistDownloader:
-        return PlaylistDownloader(
-            item,
-            download_options=self.download_options,
-            network_options=self.network_options,
-        )
+        return PlaylistDownloader(item, self._session)
 
     def download_media(self, media: Media) -> MediaDownloader:
-        return MediaDownloader(
-            media,
-            download_options=self.download_options,
-            network_options=self.network_options,
-        )
+        return MediaDownloader(media, self._session)
 
     def download_stream(
         self,
@@ -102,9 +117,9 @@ class Remora(AsyncContextManagerMixin):
         return StreamDownloader(
             stream=stream,
             output_path=output_path,
-            retries=retries or self.download_options.retries,
             concurrency=concurrency,
-            network_options=self.network_options,
+            retries=retries or self._session.options.download.retries,
+            network_options=self._session.options.network,
         )
 
     async def download_resource(
