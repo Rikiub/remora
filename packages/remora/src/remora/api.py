@@ -96,7 +96,7 @@ class Remora(AsyncContextManagerMixin):
             stream=stream,
             output_path=output_path,
             retries=retries or self.download_options.retries,
-            max_workers=max_workers,
+            concurrency=max_workers,
             network_options=self.network_options,
         )
 

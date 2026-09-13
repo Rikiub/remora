@@ -4,7 +4,10 @@ import anyio
 from loguru import logger
 from typing_extensions import override
 
-from remora.constants import DEFAULT_WORKERS
+from remora.constants import (
+    DEFAULT_MEDIA_CONCURRENCY,
+    DEFAULT_POSTPROCESS_CONCURRENCY,
+)
 from remora.downloader.pipeline._logs import log_event_playlist
 from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.pipeline.media import MediaDownloader
@@ -43,15 +46,33 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         item: StrUrl | AnyExtractResult,
         download_options: DownloadOptions | None = None,
         network_options: NetworkOptions | None = None,
+        network_limiter: anyio.CapacityLimiter | None = None,
+        postprocess_limiter: anyio.CapacityLimiter | None = None,
     ):
-        # Internals
-        super().__init__(download_options=download_options)
-        self.extractor = MediaExtractor(network_options)
-        self.max_workers = self.download_options.max_workers or DEFAULT_WORKERS
-        self._buffer_size = 100 * self.max_workers
+        super().__init__(
+            download_options=download_options,
+            network_options=network_options,
+        )
 
-        self.limiter = anyio.CapacityLimiter(self.max_workers)
+        # Internals
+        network_concurrency = (
+            self.download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
+        )
+        self._buffer_size = 100 * network_concurrency
+
+        self._extractor = MediaExtractor(self.network_options)
         self._unresolved_item = item
+
+        # Limiters
+        self._extract_limiter = network_limiter or anyio.CapacityLimiter(
+            network_concurrency
+        )
+        self._download_limiter = network_limiter or anyio.CapacityLimiter(
+            network_concurrency
+        )
+        self._postprocess_limiter = postprocess_limiter or anyio.CapacityLimiter(
+            DEFAULT_POSTPROCESS_CONCURRENCY
+        )
 
         # Fields
         self.id: str
@@ -71,53 +92,50 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
     @override
     async def _run_pipeline(self) -> None:
         await self._setup()
-        await self._emit(
-            PlaylistStarted(
-                id=self.id,
-                completed=self.completed,
-                total=self.total,
-            )
-        )
 
         with logger.contextualize(
             list_id=self.id,
             list_title=self.playlist.title if self.playlist else None,
             list_total=len(self.medias),
         ):
+            await self._emit(
+                PlaylistStarted(
+                    id=self.id,
+                    completed=self.completed,
+                    total=self.total,
+                )
+            )
+
             async with anyio.create_task_group() as tg:
                 for media in self.medias:
-                    tg.start_soon(
-                        self._worker,
-                        media,
-                        name=f"{self.__class__.__name__}.worker({media.id})",
-                    )
+                    tg.start_soon(self._worker, media)
 
-        await self._emit(
-            PlaylistCompleted(
-                id=self.id,
-                completed=self.completed,
-                total=self.total,
-                result="partial" if self.failed else "success",
+            await self._emit(
+                PlaylistCompleted(
+                    id=self.id,
+                    completed=self.completed,
+                    total=self.total,
+                    result="partial" if self.failed else "success",
+                )
             )
-        )
-        await self._emit(
-            PlaylistEnded(
-                id=self.id,
-                completed=self.completed,
-                total=self.total,
+            await self._emit(
+                PlaylistEnded(
+                    id=self.id,
+                    completed=self.completed,
+                    total=self.total,
+                )
             )
-        )
 
     async def _worker(self, media: LazyMedia):
-        async with self.limiter:
-            # Resolve media
-            resolved_media = None
+        # Resolve media
+        resolved_media = None
 
-            if type(media) is LazyMedia:
+        if type(media) is LazyMedia:
+            async with self._extract_limiter:
                 await self._emit(MediaExtracting(id=media.id, media=media))
 
                 try:
-                    resolved_media = await self.extractor.extract(media)
+                    resolved_media = await self._extractor.extract(media)
                 except ExtractorError as error:
                     self.failed += 1
 
@@ -125,33 +143,35 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
                         MediaFailed(id=media.id, media=media, message=str(error))
                     )
                     await self._emit(MediaEnded(id=media.id, media=media))
-            elif isinstance(media, Media):
-                resolved_media = media
+        elif isinstance(media, Media):
+            resolved_media = media
 
-            if resolved_media:
-                # Start downloader
-                async with MediaDownloader(
-                    resolved_media,
-                    self.download_options,
-                ) as progress:
-                    async for state in progress:
-                        if isinstance(state, MediaFailed):
-                            self.failed += 1
-                        elif isinstance(state, MediaEnded):
-                            self.completed += 1
-                        await self._emit(state)
+        if resolved_media:
+            # Start downloader
+            async with MediaDownloader(
+                resolved_media,
+                self.download_options,
+                download_limiter=self._download_limiter,
+                postprocess_limiter=self._postprocess_limiter,
+            ) as progress:
+                async for state in progress:
+                    if isinstance(state, MediaFailed):
+                        self.failed += 1
+                    elif isinstance(state, MediaEnded):
+                        self.completed += 1
+                    await self._emit(state)
 
-            await self._emit(
-                PlaylistInProgress(
-                    id=self.id,
-                    completed=self.completed,
-                    total=self.total,
-                )
+        await self._emit(
+            PlaylistInProgress(
+                id=self.id,
+                completed=self.completed,
+                total=self.total,
             )
+        )
 
     async def _setup(self):
         if isinstance(self._unresolved_item, StrUrl):
-            item = await self.extractor.extract(self._unresolved_item)
+            item = await self._extractor.extract(self._unresolved_item)
         else:
             item = self.medias or self._unresolved_item
 
@@ -159,7 +179,7 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         playlist = None
 
         if type(item) is LazyPlaylist:
-            playlist = await self.extractor.extract(item)
+            playlist = await self._extractor.extract(item)
         elif isinstance(item, Playlist):
             playlist = item
 

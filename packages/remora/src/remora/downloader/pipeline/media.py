@@ -75,15 +75,25 @@ class MediaDownloader(BaseDownloader[MediaState]):
         media: Media,
         download_options: DownloadOptions | None = None,
         network_options: NetworkOptions | None = None,
+        download_limiter: anyio.CapacityLimiter | None = None,
+        postprocess_limiter: anyio.CapacityLimiter | None = None,
     ):
-        super().__init__(download_options=download_options)
-        self.network_options = network_options
+        super().__init__(
+            download_options=download_options,
+            network_options=network_options,
+        )
 
+        # Metadata
         self.id: str = media.id
         self.media: Media = media
 
+        # Post-processor
         self.ffmpeg_dir = self._determine_ffmpeg_dir()
         self.has_missing_data = False
+
+        # Limiters
+        self._download_limiter = download_limiter or anyio.CapacityLimiter(1)
+        self._postprocess_limiter = postprocess_limiter or anyio.CapacityLimiter(1)
 
     @override
     async def _run_pipeline(self):
@@ -157,29 +167,30 @@ class MediaDownloader(BaseDownloader[MediaState]):
         if not results.streams:
             raise ValueError("Neither video or audio was downloaded")
 
-        # Determine stable file
-        if self.ffmpeg_dir and len(results.streams) >= 2:
-            file_path = await self._merge_streams(streams=results.streams)
-        else:
-            file_path = results.streams[0].path
+        async with self._postprocess_limiter:
+            # Determine stable file
+            if self.ffmpeg_dir and len(results.streams) >= 2:
+                file_path = await self._merge_streams(streams=results.streams)
+            else:
+                file_path = results.streams[0].path
 
-        # Post-process file
-        if self.ffmpeg_dir:
-            with logger.contextualize(status="processing"):
-                file_path = await self._post_process(
-                    file_path,
-                    primary_stream,
-                    results.thumbnail,
-                    results.subtitles,
+            # Post-process file
+            if self.ffmpeg_dir:
+                with logger.contextualize(status="processing"):
+                    file_path = await self._post_process(
+                        file_path,
+                        primary_stream,
+                        results.thumbnail,
+                        results.subtitles,
+                    )
+            else:
+                await self._emit(
+                    MediaWarning(
+                        id=self.id,
+                        media=self.media,
+                        message="FFmpeg binaries unavailable, skipping post-processing",
+                    )
                 )
-        else:
-            await self._emit(
-                MediaWarning(
-                    id=self.id,
-                    media=self.media,
-                    message="FFmpeg binaries unavailable, skipping post-processing",
-                )
-            )
 
         # Complete (Move file to target)
         await self._move_to_final(file_path, output)
@@ -227,13 +238,17 @@ class MediaDownloader(BaseDownloader[MediaState]):
         context = _DownloadContext()
 
         async def download_streams():
-            async with BatchStreamDownloader(
-                stream=[
-                    StreamContext(stream=s, path=create_temp_file()) for s in streams
-                ],
-                retries=self.download_options.retries,
-                network_options=self.network_options,
-            ) as progress:
+            async with (
+                self._download_limiter,
+                BatchStreamDownloader(
+                    stream=[
+                        StreamContext(stream=s, path=create_temp_file())
+                        for s in streams
+                    ],
+                    retries=self.download_options.retries,
+                    network_options=self.network_options,
+                ) as progress,
+            ):
                 async for state in progress:
                     if isinstance(state, BatchStreamDownloading):
                         await self._emit(

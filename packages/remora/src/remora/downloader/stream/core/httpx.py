@@ -9,7 +9,7 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._http import get_httpx_client
-from remora.constants import DEFAULT_SEGMENT_WORKERS
+from remora.constants import DEFAULT_SEGMENT_CONCURRENCY
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.options.network import NetworkOptions
@@ -43,7 +43,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         stream: Stream,
         output_path: StrPath,
         retries: int | None = None,
-        max_workers: int | None = None,
+        concurrency: int | None = None,
         network_options: NetworkOptions | None = None,
     ):
         super().__init__(
@@ -52,7 +52,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
             retries=retries,
             network_options=network_options,
         )
-        self.max_workers = max_workers or DEFAULT_SEGMENT_WORKERS
+        self.concurrency = concurrency or DEFAULT_SEGMENT_CONCURRENCY
 
         # Progress
         self.is_continuous = False
@@ -136,7 +136,7 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
                 file_size=self.total_bytes,
                 size_type=self.size_type,
             )
-            workers = self.max_workers if (supports_range and self.total_bytes) else 1
+            workers = self.concurrency if (supports_range and self.total_bytes) else 1
 
             async with anyio.create_task_group() as tg:
                 if supports_range and self.total_bytes:

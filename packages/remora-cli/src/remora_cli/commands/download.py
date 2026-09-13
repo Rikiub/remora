@@ -9,7 +9,7 @@ from typing import Annotated
 from cyclopts import App, CycloptsError, Parameter, validators
 from loguru import logger
 
-from remora.constants import DEFAULT_TEMPLATE, DEFAULT_WORKERS
+from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_TEMPLATE
 from remora.exceptions import FFmpegNotFoundError
 from remora.ffmpeg import get_ffmpeg_dir, validate_ffmpeg_dir
 from remora.models import (
@@ -104,7 +104,7 @@ async def download(
             help="Limit of simultaneous downloads.",
             group=Panel.DOWNLOADER,
         ),
-    ] = DEFAULT_WORKERS,
+    ] = DEFAULT_MEDIA_CONCURRENCY,
     # POST-PROCESS
     convert: Annotated[
         RichAVContainer | None,
@@ -160,7 +160,7 @@ async def download(
                 convert_to=convert,
                 quality=quality,
                 ffmpeg_location=ffmpeg_location,
-                max_workers=max_workers,
+                concurrency=max_workers,
                 embed_metadata=embed_metadata,
             ),
             network_options=network.build_options(),

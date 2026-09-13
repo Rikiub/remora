@@ -40,7 +40,7 @@ class DownloadOptions(RemoraModel):
         embed_metadata: Embed title, uploader, thumbnail, subtitles, etc. *[FFmpeg]*
         ffmpeg_dir: Directory with both FFmpeg and FFprobe binaries. *[FFmpeg]*
 
-        max_workers: Limit of simultaneous downloads.
+        concurrency: Limit of simultaneous downloads.
     """
 
     output_template: Annotated[
@@ -57,5 +57,5 @@ class DownloadOptions(RemoraModel):
     embed_metadata: bool = True
     ffmpeg_location: Annotated[StrPath | None, AfterValidator(_validate_ffmpeg)] = None
 
-    max_workers: int | None = None
+    concurrency: int | None = None
     retries: int | None = None

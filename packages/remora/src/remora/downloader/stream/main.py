@@ -17,7 +17,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
         stream: Stream,
         output_path: StrPath,
         retries: int | None = None,
-        max_workers: int | None = None,
+        concurrency: int | None = None,
         network_options: NetworkOptions | None = None,
     ):
         super().__init__(
@@ -26,7 +26,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
             retries=retries,
             network_options=network_options,
         )
-        self.max_workers = max_workers
+        self.concurrency = concurrency
 
     @override
     async def _run_pipeline(self) -> None:
@@ -45,7 +45,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                     stream=self.stream,
                     output_path=self.file_path,
                     retries=self.retries,
-                    max_workers=self.max_workers,
+                    concurrency=self.concurrency,
                     network_options=self.network_options,
                 ) as progress:
                     async for state in progress:
