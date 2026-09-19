@@ -5,9 +5,8 @@ from typing import Self, overload
 
 import anyio
 from anyio import AsyncContextManagerMixin
+from typing_extensions import override
 
-from remora._http import build_httpx_client
-from remora._ydl import NetworkContext
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.downloader import (
     MediaDownloader,
@@ -57,8 +56,8 @@ class Remora(AsyncContextManagerMixin):
                 ),
                 postprocess=anyio.CapacityLimiter(DEFAULT_POSTPROCESS_CONCURRENCY),
             ),
-            ydl_context=NetworkContext.from_options(network_options),
-            httpx_client=build_httpx_client(network_options),
+            ydl_context=session.NetworkContext.from_options(network_options),
+            httpx_client=session.build_httpx_client(network_options),
         )
         self._extractor = MediaExtractor(
             self._session.ydl_context,
@@ -66,10 +65,9 @@ class Remora(AsyncContextManagerMixin):
         )
         self._metadata = MetadataDownloader(self._session.ydl_context)
 
+    @override
     @asynccontextmanager
-    async def __asynccontextmanager__(
-        self,
-    ) -> AsyncGenerator[Self, None]:
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
         try:
             async with self._session.httpx_client:
                 yield self

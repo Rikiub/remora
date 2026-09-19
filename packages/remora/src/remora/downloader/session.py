@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import anyio
 from httpx import AsyncClient
 
+from remora._http import build_httpx_client  # noqa: F401
 from remora._ydl import NetworkContext
 from remora.models.options import DownloadOptions, NetworkOptions
 

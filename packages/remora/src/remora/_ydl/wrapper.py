@@ -84,27 +84,9 @@ class NetworkContext:
         )
 
 
-class _CleanupScope:
-    def __init__(self) -> None:
-        self._depth = 0
-        self._done = False
-
-    def __enter__(self) -> bool:
-        self._depth += 1
-        return self._depth == 1
-
-    def __exit__(self, *_) -> bool:
-        self._depth -= 1
-        if self._depth == 0 and not self._done:
-            self._done = True
-            return True
-        return False
-
-
 class YDLContext(ContextManagerMixin, ABC):
     def __init__(self, context: NetworkContext | None = None):
         self.context = context or NetworkContext()
-        self._scope = _CleanupScope()
 
     def close(self):
         if cookiejar := self.context.cookiejar:
