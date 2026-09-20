@@ -6,8 +6,9 @@ import pytest
 from pytest_mock import MockerFixture
 from typing_extensions import override
 
-import remora.downloader.pipeline.media as downloader
+import remora.downloader.pipeline.media as pipeline_media
 from remora.downloader.pipeline.media import MediaDownloader
+from remora.downloader.session import DownloadSession
 from remora.downloader.stream.batch import BatchStreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.media import ExtractorInfo
@@ -29,7 +30,7 @@ from remora.models.progress.stream import (
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 from remora.processor import MediaProcessor
 
-MODULE_PATH = downloader.__name__
+MODULE_PATH = pipeline_media.__name__
 
 
 # Fake dependencies
@@ -109,15 +110,15 @@ def mock_pipeline(
     def _(media: Media) -> MediaDownloader:
         # Mock File System Paths
         mocker.patch.object(
-            downloader,
-            downloader.create_temp_file.__name__,
+            pipeline_media,
+            pipeline_media.create_temp_file.__name__,
             return_value=tmp_path / "temp",
         )
 
         # Mock Shutil to prevent file moving
         mocker.patch.object(
-            downloader.shutil,
-            downloader.shutil.move.__name__,
+            pipeline_media.shutil,
+            pipeline_media.shutil.move.__name__,
         )
 
         # Mock Stream Selectors to return dummy streams
@@ -132,28 +133,28 @@ def mock_pipeline(
             audio = None
 
         mock_selector = mocker.patch.object(
-            downloader,
-            downloader.StreamSelector.__name__,
+            pipeline_media,
+            pipeline_media.StreamSelector.__name__,
         )
         mock_selector.return_value.resolve.return_value = [video, audio]
 
         # Mock stream downloader
         mocker.patch.object(
-            downloader,
-            downloader.BatchStreamDownloader.__name__,
+            pipeline_media,
+            pipeline_media.BatchStreamDownloader.__name__,
             FakeBatchDownloader,
         )
 
         # Mock metadata downloaders
         mocker.patch.object(
-            downloader,
-            downloader._download_thumbnail.__name__,
+            pipeline_media.MetadataDownloader,
+            pipeline_media.MetadataDownloader.download_thumbnail.__name__,
             new_callable=AsyncMock,
             return_value=tmp_path / "thumbnail.jpg",
         )
         mocker.patch.object(
-            downloader,
-            downloader._download_subtitle.__name__,
+            pipeline_media.MetadataDownloader,
+            pipeline_media.MetadataDownloader.download_subtitle.__name__,
             new_callable=AsyncMock,
             return_value=[tmp_path / "subtitle.srt"],
         )
@@ -161,9 +162,11 @@ def mock_pipeline(
         # Init pipeline
         pipeline = MediaDownloader(
             media=media,
-            download_options=DownloadOptions(
-                output_template=tmp_path,
-                embed_metadata=True,
+            session=DownloadSession.create(
+                download_options=DownloadOptions(
+                    output_template=tmp_path,
+                    embed_metadata=True,
+                )
             ),
         )
         return pipeline

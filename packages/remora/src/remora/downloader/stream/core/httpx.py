@@ -8,8 +8,8 @@ from anyio import Path
 from loguru import logger
 from typing_extensions import override
 
-from remora._http import build_httpx_client
 from remora.constants import DEFAULT_SEGMENT_CONCURRENCY
+from remora.downloader.session import build_httpx_client
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.options.network import NetworkOptions

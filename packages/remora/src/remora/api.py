@@ -3,17 +3,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Self, overload
 
-import anyio
 from anyio import AsyncContextManagerMixin
 from typing_extensions import override
 
-from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.downloader import (
+    DownloadSession,
     MediaDownloader,
     MetadataDownloader,
     PlaylistDownloader,
     StreamDownloader,
-    session,
 )
 from remora.extractor import MediaExtractor
 from remora.models.media import (
@@ -42,22 +40,11 @@ class Remora(AsyncContextManagerMixin):
         download_options = download_options or DownloadOptions()
         network_options = network_options or NetworkOptions()
 
-        self._session = session.DownloadSession(
-            options=session.Options(
-                download=download_options,
-                network=network_options,
-            ),
-            limiters=session.Limiters(
-                extract=anyio.CapacityLimiter(
-                    download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
-                ),
-                download=anyio.CapacityLimiter(
-                    download_options.concurrency or DEFAULT_MEDIA_CONCURRENCY
-                ),
-                postprocess=anyio.CapacityLimiter(DEFAULT_POSTPROCESS_CONCURRENCY),
-            ),
-            ydl_context=session.NetworkContext.from_options(network_options),
-            httpx_client=session.build_httpx_client(network_options),
+        self._session = DownloadSession.create(
+            download_options=download_options,
+            network_options=network_options,
+            extract_limit=download_options.concurrency,
+            download_limit=download_options.concurrency,
         )
         self._extractor = MediaExtractor(
             self._session.ydl_context,

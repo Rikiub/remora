@@ -18,7 +18,7 @@ from yt_dlp.YoutubeDL import YoutubeDL
 from remora._ydl.types import YDLParams
 from remora.path import get_cache_dir
 
-__all__ = ["YDL", "NetworkContext"]
+__all__ = ["YDL", "YDLNetworkContext"]
 
 if TYPE_CHECKING:
     from remora.models.options import NetworkOptions
@@ -55,7 +55,7 @@ class _LoguruYDLWrapper:
 
 
 @dataclass(slots=True)
-class NetworkContext:
+class YDLNetworkContext:
     request_director: RequestDirector | None = None
     cookiejar: YoutubeDLCookieJar | None = None
     proxies: dict[str, Any] | None = None
@@ -85,14 +85,18 @@ class NetworkContext:
 
 
 class YDLContext(ContextManagerMixin, ABC):
-    def __init__(self, context: NetworkContext | None = None):
-        self.context = context or NetworkContext()
+    def __init__(self, context: YDLNetworkContext | None = None):
+        self.context = context or YDLNetworkContext()
 
     def close(self):
         if cookiejar := self.context.cookiejar:
             cookiejar.save()
         if request_director := self.context.request_director:
             request_director.close()
+
+    @override
+    def __contextmanager__(self):
+        pass
 
 
 class YDL(YoutubeDL):
@@ -101,10 +105,10 @@ class YDL(YoutubeDL):
     def __init__(
         self,
         params: YDLParams | None = None,
-        network_context: NetworkContext | None = None,
+        network_context: YDLNetworkContext | None = None,
         auto_init: bool = False,
     ):
-        self.network_context = network_context or NetworkContext()
+        self.network_context = network_context or YDLNetworkContext()
 
         # Default parameters
         opts: YDLParams = {

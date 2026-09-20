@@ -8,7 +8,7 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
-from remora._ydl.wrapper import YDL, NetworkContext, YDLContext
+from remora._ydl.wrapper import YDL, YDLContext, YDLNetworkContext
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
 from remora.models.types import StrPath
@@ -17,7 +17,7 @@ __all__ = ["YDLDownloader"]
 
 
 class YDLDownloader(YDLContext):
-    def __init__(self, context: NetworkContext | None = None):
+    def __init__(self, context: YDLNetworkContext | None = None):
         super().__init__(context)
 
     def download_format(
