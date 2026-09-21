@@ -6,16 +6,16 @@ from anyio.to_thread import run_sync
 from typing_extensions import override
 
 from remora._ydl.downloader import YDLDownloader
-from remora._ydl.wrapper import YDLNetworkContext
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
+from remora.session import Session
 
 __all__ = ["MetadataDownloader"]
 
 
 class MetadataDownloader(AsyncContextManagerMixin):
-    def __init__(self, ydl_context: YDLNetworkContext | None = None):
-        self._ydl_downloader = YDLDownloader(ydl_context)
+    def __init__(self, session: Session):
+        self._ydl_downloader = YDLDownloader(session.ydl_context)
 
     @override
     def __asynccontextmanager__(self):

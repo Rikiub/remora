@@ -8,7 +8,6 @@ from typing_extensions import override
 
 import remora.downloader.pipeline.media as pipeline_media
 from remora.downloader.pipeline.media import MediaDownloader
-from remora.downloader.session import DownloadSession
 from remora.downloader.stream.batch import BatchStreamDownloader
 from remora.models.container import CodecInfo
 from remora.models.media import ExtractorInfo
@@ -29,6 +28,7 @@ from remora.models.progress.stream import (
 )
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
 from remora.processor import MediaProcessor
+from remora.session import Session
 
 MODULE_PATH = pipeline_media.__name__
 
@@ -162,7 +162,7 @@ def mock_pipeline(
         # Init pipeline
         pipeline = MediaDownloader(
             media=media,
-            session=DownloadSession.create(
+            session=Session.create(
                 download_options=DownloadOptions(
                     output_template=tmp_path,
                     embed_metadata=True,

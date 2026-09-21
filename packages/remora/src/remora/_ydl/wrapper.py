@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import tempfile
 from abc import ABC
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
 from io import StringIO
@@ -55,7 +57,7 @@ class _LoguruYDLWrapper:
 
 
 @dataclass(slots=True)
-class YDLNetworkContext:
+class YDLNetworkContext(ContextManagerMixin):
     request_director: RequestDirector | None = None
     cookiejar: YoutubeDLCookieJar | None = None
     proxies: dict[str, Any] | None = None
@@ -82,6 +84,15 @@ class YDLNetworkContext:
             cookiejar=ydl.cookiejar,
             proxies=ydl.proxies,
         )
+
+    @override
+    @contextmanager
+    def __contextmanager__(self) -> Generator[Self, None]:
+        try:
+            yield self
+        finally:
+            if request_director := self.request_director:
+                request_director.close()
 
 
 class YDLContext(ContextManagerMixin, ABC):

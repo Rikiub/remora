@@ -23,7 +23,7 @@ async def extract_queries(
         try:
             if (
                 target == "url"
-                and (cookies := remora._session.options.network.cookies)
+                and (cookies := remora._session.network_options.cookies)
                 and (url_host := AnyUrl(entry).host)
                 and cookies.get_expired_cookies(url_host)
             ):

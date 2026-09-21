@@ -1,34 +1,30 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import Self
 
 import anyio
 import httpx
 from httpx import AsyncClient
 from httpx_curl_cffi import AsyncCurlTransport
+from typing_extensions import override
 
 from remora._ydl import YDLNetworkContext
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.models.options import DownloadOptions, NetworkOptions
 
-__all__ = ["DownloadSession", "build_httpx_client"]
+__all__ = ["Session", "build_httpx_client"]
 
 
 @dataclass(slots=True)
-class Limiters:
-    extract: anyio.CapacityLimiter
-    download: anyio.CapacityLimiter
-    postprocess: anyio.CapacityLimiter
+class Session(anyio.AsyncContextManagerMixin):
+    network_options: NetworkOptions
+    download_options: DownloadOptions
 
+    extract_limiter: anyio.CapacityLimiter
+    download_limiter: anyio.CapacityLimiter
+    postprocess_limiter: anyio.CapacityLimiter
 
-@dataclass(slots=True)
-class Options:
-    download: DownloadOptions
-    network: NetworkOptions
-
-
-@dataclass(slots=True)
-class DownloadSession:
-    options: Options
-    limiters: Limiters
     httpx_client: AsyncClient
     ydl_context: YDLNetworkContext
 
@@ -40,29 +36,32 @@ class DownloadSession:
         download_limit: float | None = None,
         extract_limit: float | None = None,
         postprocess_limit: float | None = None,
-    ):
-        download_options = download_options or DownloadOptions()
+    ) -> Self:
         network_options = network_options or NetworkOptions()
+        download_options = download_options or DownloadOptions()
 
         return cls(
-            options=Options(
-                download=download_options,
-                network=network_options,
+            network_options=network_options,
+            download_options=download_options,
+            extract_limiter=anyio.CapacityLimiter(
+                extract_limit or DEFAULT_MEDIA_CONCURRENCY
             ),
-            limiters=Limiters(
-                extract=anyio.CapacityLimiter(
-                    extract_limit or DEFAULT_MEDIA_CONCURRENCY
-                ),
-                download=anyio.CapacityLimiter(
-                    download_limit or DEFAULT_MEDIA_CONCURRENCY
-                ),
-                postprocess=anyio.CapacityLimiter(
-                    postprocess_limit or DEFAULT_POSTPROCESS_CONCURRENCY
-                ),
+            download_limiter=anyio.CapacityLimiter(
+                download_limit or DEFAULT_MEDIA_CONCURRENCY
+            ),
+            postprocess_limiter=anyio.CapacityLimiter(
+                postprocess_limit or DEFAULT_POSTPROCESS_CONCURRENCY
             ),
             httpx_client=build_httpx_client(network_options),
             ydl_context=YDLNetworkContext.from_options(network_options),
         )
+
+    @override
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
+        with self.ydl_context:
+            async with self.httpx_client:
+                yield self
 
 
 def build_httpx_client(

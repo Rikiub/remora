@@ -10,7 +10,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import AnyUrl
 
-from remora._ydl import YDLExtractor, YDLNetworkContext
+from remora._ydl import YDLExtractor
 from remora.models.media import (
     ExtractAdapter,
     LazyMedia,
@@ -19,21 +19,17 @@ from remora.models.media import (
     Playlist,
     Search,
 )
-from remora.models.options import NetworkOptions
 from remora.models.search import SearchService
 from remora.models.types import StrUrl
+from remora.session import Session
 
 __all__ = ["MediaExtractor"]
 
 
 class MediaExtractor(AsyncContextManagerMixin):
-    def __init__(
-        self,
-        ydl_context: YDLNetworkContext | None = None,
-        network_options: NetworkOptions | None = None,
-    ):
-        self.network_options = network_options or NetworkOptions()
-        self._extractor = YDLExtractor(ydl_context)
+    def __init__(self, session: Session):
+        self.network_options = session.network_options
+        self._extractor = YDLExtractor(session.ydl_context)
 
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:

@@ -20,7 +20,6 @@ from remora.downloader.metadata import MetadataDownloader
 from remora.downloader.pipeline._logs import log_event_media
 from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.selector import StreamSelector
-from remora.downloader.session import DownloadSession
 from remora.downloader.stream import BatchStreamDownloader
 from remora.exceptions import (
     DownloaderError,
@@ -54,6 +53,7 @@ from remora.models.progress import (
 from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.models.types import StrPath
 from remora.path import create_temp_file
+from remora.session import Session
 from remora.template import format_template
 
 __all__ = ["MediaDownloader"]
@@ -69,9 +69,9 @@ class _DownloadContext:
 class MediaDownloader(BaseDownloader[MediaState]):
     """Handles the lifecycle of a single media download."""
 
-    def __init__(self, media: Media, session: DownloadSession):
+    def __init__(self, media: Media, session: Session):
         super().__init__(session)
-        self.metatada_downloader = MetadataDownloader(session.ydl_context)
+        self.metatada_downloader = MetadataDownloader(session)
 
         # Metadata
         self.id: str = media.id
@@ -80,14 +80,6 @@ class MediaDownloader(BaseDownloader[MediaState]):
         # Post-processor
         self.ffmpeg_dir = self._determine_ffmpeg_dir()
         self.has_missing_data = False
-
-        # Limiters
-        self._download_limiter = (
-            self.session.limiters.download or anyio.CapacityLimiter(1)
-        )
-        self._postprocess_limiter = (
-            self.session.limiters.extract or anyio.CapacityLimiter(1)
-        )
 
     @override
     async def _run_pipeline(self):
@@ -122,7 +114,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Select Best Streams
         selected_streams = StreamSelector(
-            download_options=self.session.options.download,
+            download_options=self.session.download_options,
             merge_available=bool(self.ffmpeg_dir),
         ).resolve(self.media)
 
@@ -137,7 +129,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Calculate Path & Check Existence
         output = format_template(
-            self.session.options.download.output_template,
+            self.session.download_options.output_template,
             stream=primary_stream,
             media=self.media,
             default_missing=DEFAULT_TEMPLATE_MISSING,
@@ -148,7 +140,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Skip if option is enabled and a duplicate is found
         if (
-            self.session.options.download.skip_existing
+            self.session.download_options.skip_existing
             and await self._check_output_duplicate(output, type(primary_stream))
         ):
             return
@@ -162,7 +154,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
         if not results.streams:
             raise ValueError("Neither video or audio was downloaded")
 
-        async with self._postprocess_limiter:
+        async with self.session.postprocess_limiter:
             # Determine stable file
             if self.ffmpeg_dir and len(results.streams) >= 2:
                 file_path = await self._merge_streams(streams=results.streams)
@@ -234,14 +226,14 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         async def download_streams():
             async with (
-                self._download_limiter,
+                self.session.download_limiter,
                 BatchStreamDownloader(
                     stream=[
                         StreamContext(stream=s, path=create_temp_file())
                         for s in streams
                     ],
-                    retries=self.session.options.download.retries,
-                    network_options=self.session.options.network,
+                    retries=self.session.download_options.retries,
+                    network_options=self.session.network_options,
                 ) as progress,
             ):
                 async for state in progress:
@@ -317,7 +309,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
             async with anyio.create_task_group() as tg:
                 tg.start_soon(download_streams)
 
-                if self.ffmpeg_dir and self.session.options.download.embed_metadata:
+                if self.ffmpeg_dir and self.session.download_options.embed_metadata:
                     tg.start_soon(download_subtitle_files)
                     tg.start_soon(download_thumbnail_file)
         except* DownloaderError as eg:
@@ -328,7 +320,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
     async def _merge_streams(self, streams: Iterable[StreamContext]) -> Path:
         # Get container and extension
         try:
-            convert = get_container(self.session.options.download.convert_to)
+            convert = get_container(self.session.download_options.convert_to)
             if not isinstance(convert, VideoContainer):
                 raise TypeError(convert)
             container = convert
@@ -401,8 +393,8 @@ class MediaDownloader(BaseDownloader[MediaState]):
             ffmpeg_dir=self.ffmpeg_dir,
         )
         convert_container = (
-            get_container(self.session.options.download.convert_to)
-            if self.session.options.download.convert_to
+            get_container(self.session.download_options.convert_to)
+            if self.session.download_options.convert_to
             else None
         )
 
@@ -463,7 +455,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
                     await prc.change_container(convert_container)
 
             # If user requested audio and there is only a VideoStream, then extract audio from it.
-            elif self.session.options.download.format_type == "audio":
+            elif self.session.download_options.format_type == "audio":
                 async with track_prc("convert_audio"):
                     await prc.convert_audio(DEFAULT_AUDIO_CONTAINER)
 
@@ -487,7 +479,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Metadata
         # Must run before embed the thumbnail.
-        if self.session.options.download.embed_metadata:
+        if self.session.download_options.embed_metadata:
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
@@ -519,7 +511,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
     def _resolve_subtitles(self, media: Media) -> Subtitles:
         # Filter by language preferences
-        if (requested_langs := self.session.options.download.languages) and (
+        if (requested_langs := self.session.download_options.languages) and (
             subtitles := media.subtitles.filter(
                 language=requested_langs
             ).unique_by_language()
@@ -531,7 +523,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
         return media.subtitles.filter(autogenerated=False).unique_by_language()
 
     def _determine_ffmpeg_dir(self) -> Path | None:
-        if ffmpeg_dir := self.session.options.download.ffmpeg_location:
+        if ffmpeg_dir := self.session.download_options.ffmpeg_location:
             logger.info('Using "ffmpeg" and "ffprobe" binaries from provided path')
         elif ffmpeg_dir := ffmpeg.find_wheel_ffmpeg_dir():
             logger.info(

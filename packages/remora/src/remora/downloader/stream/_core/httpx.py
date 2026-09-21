@@ -9,7 +9,6 @@ from loguru import logger
 from typing_extensions import override
 
 from remora.constants import DEFAULT_SEGMENT_CONCURRENCY
-from remora.downloader.session import build_httpx_client
 from remora.downloader.stream.base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.options.network import NetworkOptions
@@ -22,20 +21,21 @@ from remora.models.progress import (
 from remora.models.protocol import Protocol
 from remora.models.stream import SizeType, Stream
 from remora.models.types import StrPath
+from remora.session import build_httpx_client
 
 __all__ = ["HttpxStreamDownloader"]
 
 
 class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(
-        {
+        (
             Protocol.HTTP,
             Protocol.HTTPS,
             Protocol.M3U8,
             Protocol.M3U8_NATIVE,
             Protocol.HTTP_DASH_SEGMENTS,
             Protocol.HTTP_DASH_SEGMENTS_GENERATOR,
-        }
+        )
     )
 
     def __init__(

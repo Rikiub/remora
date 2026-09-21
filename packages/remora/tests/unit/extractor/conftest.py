@@ -3,13 +3,14 @@ from pytest_mock import MockerFixture
 
 from remora._ydl.wrapper import YDL
 from remora.extractor import MediaExtractor
+from remora.session import Session
 
 
 @pytest.fixture
 async def extract_ydl(mock_extractor):
     async def _(filename: str):
         mock_extractor(filename)
-        return await MediaExtractor().extract("")
+        return await MediaExtractor(Session.create()).extract("")
 
     return _
 

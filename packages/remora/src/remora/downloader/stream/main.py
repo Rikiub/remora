@@ -39,7 +39,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
         ):
             # Main Downloader
             try:
-                from remora.downloader.stream.core.httpx import HttpxStreamDownloader
+                from remora.downloader.stream._core.httpx import HttpxStreamDownloader
 
                 async with HttpxStreamDownloader(
                     stream=self.stream,
@@ -66,7 +66,7 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                     raise
 
             # Fallback downloader
-            from remora.downloader.stream.core.ydl import YDLStreamDownloader
+            from remora.downloader.stream._core.ydl import YDLStreamDownloader
 
             logger.debug("Retrying with YDL downloader")
 

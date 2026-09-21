@@ -4,14 +4,9 @@ import anyio
 from loguru import logger
 from typing_extensions import override
 
-from remora.constants import (
-    DEFAULT_MEDIA_CONCURRENCY,
-    DEFAULT_POSTPROCESS_CONCURRENCY,
-)
 from remora.downloader.pipeline._logs import log_event_playlist
 from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.pipeline.media import MediaDownloader
-from remora.downloader.session import DownloadSession
 from remora.exceptions import ExtractorError
 from remora.extractor import MediaExtractor
 from remora.models.media import (
@@ -34,6 +29,7 @@ from remora.models.progress import (
     PlaylistStarted,
 )
 from remora.models.types import StrUrl
+from remora.session import Session
 from remora.template import format_template
 
 __all__ = ["PlaylistDownloader"]
@@ -43,29 +39,15 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
     def __init__(
         self,
         item: StrUrl | AnyExtractResult,
-        session: DownloadSession,
+        session: Session,
     ):
         super().__init__(session)
 
         # Internals
-        network_concurrency = (
-            self.session.options.download.concurrency or DEFAULT_MEDIA_CONCURRENCY
-        )
-        self._buffer_size = 100 * network_concurrency
+        self._buffer_size = 100 * (self.session.download_options.concurrency or 1)
 
-        self._extractor = MediaExtractor(self.session.ydl_context)
+        self._extractor = MediaExtractor(self.session)
         self._unresolved_item = item
-
-        # Limiters
-        network_limiter = session.limiters.download or anyio.CapacityLimiter(
-            network_concurrency
-        )
-        self._extract_limiter = network_limiter
-        self._download_limiter = network_limiter
-        self._postprocess_limiter = (
-            session.limiters.postprocess
-            or anyio.CapacityLimiter(DEFAULT_POSTPROCESS_CONCURRENCY)
-        )
 
         # Fields
         self.id: str
@@ -124,7 +106,7 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         resolved_media = None
 
         if type(media) is LazyMedia:
-            async with self._extract_limiter:
+            async with self.session.extract_limiter:
                 await self._emit(MediaExtracting(id=media.id, media=media))
 
                 try:
@@ -199,10 +181,10 @@ class PlaylistDownloader(BaseDownloader[BatchState]):
         # Set config
         if playlist:
             self.id = playlist.id
-            self.session.options.download = self.session.options.download.model_copy(
+            self.session.download_options = self.session.download_options.model_copy(
                 update={
                     "output_template": format_template(
-                        self.session.options.download.output_template,
+                        self.session.download_options.output_template,
                         playlist=playlist,
                     )
                 }

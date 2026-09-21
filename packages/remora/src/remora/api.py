@@ -7,7 +7,6 @@ from anyio import AsyncContextManagerMixin
 from typing_extensions import override
 
 from remora.downloader import (
-    DownloadSession,
     MediaDownloader,
     MetadataDownloader,
     PlaylistDownloader,
@@ -27,6 +26,7 @@ from remora.models.options import DownloadOptions, NetworkOptions
 from remora.models.search import SearchService
 from remora.models.stream import Stream
 from remora.models.types import StrPath, StrUrl
+from remora.session import Session
 
 __all__ = ["Remora"]
 
@@ -40,27 +40,20 @@ class Remora(AsyncContextManagerMixin):
         download_options = download_options or DownloadOptions()
         network_options = network_options or NetworkOptions()
 
-        self._session = DownloadSession.create(
+        self._session = Session.create(
             download_options=download_options,
             network_options=network_options,
             extract_limit=download_options.concurrency,
             download_limit=download_options.concurrency,
         )
-        self._extractor = MediaExtractor(
-            self._session.ydl_context,
-            network_options=network_options,
-        )
-        self._metadata = MetadataDownloader(self._session.ydl_context)
+        self._extractor = MediaExtractor(self._session)
+        self._metadata = MetadataDownloader(self._session)
 
     @override
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        try:
-            async with self._session.httpx_client:
-                yield self
-        finally:
-            if request_director := self._session.ydl_context.request_director:
-                request_director.close()
+        async with self._session:
+            yield self
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -103,8 +96,8 @@ class Remora(AsyncContextManagerMixin):
             stream=stream,
             output_path=output_path,
             concurrency=concurrency,
-            retries=retries or self._session.options.download.retries,
-            network_options=self._session.options.network,
+            retries=retries or self._session.download_options.retries,
+            network_options=self._session.network_options,
         )
 
     async def download_resource(
