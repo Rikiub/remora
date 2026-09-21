@@ -43,6 +43,8 @@ class Session(anyio.AsyncContextManagerMixin):
         return cls(
             network_options=network_options,
             download_options=download_options,
+            ydl_session=YDLNetworkSession.from_options(network_options),
+            httpx_client=build_httpx_client(network_options),
             extract_limiter=anyio.CapacityLimiter(
                 extract_limit or DEFAULT_MEDIA_CONCURRENCY
             ),
@@ -52,8 +54,6 @@ class Session(anyio.AsyncContextManagerMixin):
             postprocess_limiter=anyio.CapacityLimiter(
                 postprocess_limit or DEFAULT_POSTPROCESS_CONCURRENCY
             ),
-            httpx_client=build_httpx_client(network_options),
-            ydl_session=YDLNetworkSession.from_options(network_options),
         )
 
     async def close(self) -> None:
