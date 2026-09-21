@@ -5,9 +5,10 @@ from yt_dlp.extractor import get_info_extractor
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
+from remora._ydl.context import YDLContext, YDLNetworkContext
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.types import YDLExtractInfo
-from remora._ydl.wrapper import YDL, YDLContext, YDLNetworkContext
+from remora._ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
 
