@@ -6,15 +6,15 @@ from anyio.to_thread import run_sync
 from remora._ydl.downloader import YDLDownloader
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
-from remora.session import Session, SessionContext
+from remora.session import Session
 
 __all__ = ["MetadataDownloader"]
 
 
-class MetadataDownloader(SessionContext):
+class MetadataDownloader:
     def __init__(self, session: Session):
-        super().__init__(session)
-        self._ydl_downloader = YDLDownloader(session.ydl_context)
+        self._session = session
+        self._ydl_downloader = YDLDownloader(session.ydl_session)
 
     async def download_resource(
         self,

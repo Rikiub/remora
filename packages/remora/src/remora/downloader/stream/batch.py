@@ -8,7 +8,7 @@ from typing_extensions import override
 from remora._types import _T, StreamContext
 from remora.constants import DEFAULT_RETRIES
 from remora.downloader._state_streamer import AsyncStateStreamer
-from remora.downloader.stream.base import _DEFAULT_BUFFER_SIZE
+from remora.downloader.stream._base import _DEFAULT_BUFFER_SIZE
 from remora.downloader.stream.main import StreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.options.network import NetworkOptions

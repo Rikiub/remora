@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -17,11 +16,11 @@ from yt_dlp.YoutubeDL import YoutubeDL
 if TYPE_CHECKING:
     from remora.models.options import NetworkOptions
 
-__all__ = ["YDLNetworkContext"]
+__all__ = ["YDLNetworkSession"]
 
 
 @dataclass(slots=True)
-class YDLNetworkContext(ContextManagerMixin):
+class YDLNetworkSession(ContextManagerMixin):
     request_director: RequestDirector
     cookiejar: YoutubeDLCookieJar
     proxies: dict[str, Any]
@@ -69,14 +68,3 @@ class YDLNetworkContext(ContextManagerMixin):
             yield self
         finally:
             self.close()
-
-
-class YDLContext(ContextManagerMixin, ABC):
-    def __init__(self, context: YDLNetworkContext | None = None):
-        self.context = context or YDLNetworkContext.create()
-
-    @override
-    @contextmanager
-    def __contextmanager__(self) -> Generator[Self, None]:
-        with self.context:
-            yield self

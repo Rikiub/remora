@@ -7,11 +7,11 @@ from yt_dlp.cookies import YoutubeDLCookieJar
 from yt_dlp.networking.common import RequestDirector
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from remora._ydl.context import YDLNetworkContext
+from remora._ydl.session import YDLNetworkSession
 from remora._ydl.types import YDLParams
 from remora.path import get_cache_dir
 
-__all__ = ["YDL", "YDLNetworkContext"]
+__all__ = ["YDL"]
 
 
 class _LoguruYDLWrapper:
@@ -50,10 +50,10 @@ class YDL(YoutubeDL):
     def __init__(
         self,
         params: YDLParams | None = None,
-        network_context: YDLNetworkContext | None = None,
+        network_session: YDLNetworkSession | None = None,
         auto_init: bool = False,
     ):
-        self.network_context = network_context or YDLNetworkContext.create()
+        self.network_session = network_session or YDLNetworkSession.create()
 
         # Default parameters
         opts: YDLParams = {
@@ -87,14 +87,14 @@ class YDL(YoutubeDL):
     @override
     @cached_property
     def proxies(self) -> dict:
-        return self.network_context.proxies
+        return self.network_session.proxies
 
     @override
     @cached_property
     def cookiejar(self) -> YoutubeDLCookieJar:
-        return self.network_context.cookiejar
+        return self.network_session.cookiejar
 
     @override
     @cached_property
     def _request_director(self) -> RequestDirector:
-        return self.network_context.request_director
+        return self.network_session.request_director

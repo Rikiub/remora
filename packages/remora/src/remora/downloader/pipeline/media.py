@@ -17,8 +17,8 @@ from remora.constants import (
     DEFAULT_VIDEO_CONTAINER,
 )
 from remora.downloader.metadata import MetadataDownloader
+from remora.downloader.pipeline._base import BaseDownloader
 from remora.downloader.pipeline._logs import log_event_media
-from remora.downloader.pipeline.base import BaseDownloader
 from remora.downloader.selector import StreamSelector
 from remora.downloader.stream import BatchStreamDownloader
 from remora.exceptions import (

@@ -1,7 +1,7 @@
 from typing import Any
 
-Dict = dict[str, Any]
-YDLDict = Dict
-YDLExtractInfo = Dict
-YDLFormatInfo = Dict
-YDLParams = Dict
+_Dict = dict[str, Any]
+YDLDict = _Dict
+YDLExtractInfo = _Dict
+YDLFormatInfo = _Dict
+YDLParams = _Dict

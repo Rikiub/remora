@@ -9,11 +9,11 @@ from httpx import AsyncClient
 from httpx_curl_cffi import AsyncCurlTransport
 from typing_extensions import override
 
-from remora._ydl import YDLNetworkContext
+from remora._ydl import YDLNetworkSession
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.models.options import DownloadOptions, NetworkOptions
 
-__all__ = ["Session", "SessionContext", "build_httpx_client"]
+__all__ = ["Session", "build_httpx_client"]
 
 
 @dataclass(slots=True)
@@ -21,12 +21,12 @@ class Session(anyio.AsyncContextManagerMixin):
     network_options: NetworkOptions
     download_options: DownloadOptions
 
+    ydl_session: YDLNetworkSession
+    httpx_client: AsyncClient
+
     extract_limiter: anyio.CapacityLimiter
     download_limiter: anyio.CapacityLimiter
     postprocess_limiter: anyio.CapacityLimiter
-
-    httpx_client: AsyncClient
-    ydl_context: YDLNetworkContext
 
     @classmethod
     def create(
@@ -53,19 +53,20 @@ class Session(anyio.AsyncContextManagerMixin):
                 postprocess_limit or DEFAULT_POSTPROCESS_CONCURRENCY
             ),
             httpx_client=build_httpx_client(network_options),
-            ydl_context=YDLNetworkContext.from_options(network_options),
+            ydl_session=YDLNetworkSession.from_options(network_options),
         )
 
     async def close(self) -> None:
-        self.ydl_context.close()
+        self.ydl_session.close()
         await self.httpx_client.aclose()
 
     @override
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        with self.ydl_context:
-            async with self.httpx_client:
-                yield self
+        try:
+            yield self
+        finally:
+            await self.close()
 
 
 def build_httpx_client(
@@ -91,23 +92,10 @@ def build_httpx_client(
                 path=cookie.path,
             )
 
-    limits = httpx.Limits(max_connections=max_connections)
-
     return httpx.AsyncClient(
         cookies=cookies,
         proxy=str(network_options.proxy) if network_options.proxy else None,
         transport=transport,
         follow_redirects=True,
-        limits=limits,
+        limits=httpx.Limits(max_connections=max_connections),
     )
-
-
-class SessionContext(anyio.AsyncContextManagerMixin):
-    def __init__(self, session: Session):
-        self._session = session
-
-    @override
-    @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        async with self._session:
-            yield self

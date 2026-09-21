@@ -18,15 +18,15 @@ from remora.models.media import (
 )
 from remora.models.search import SearchService
 from remora.models.types import StrUrl
-from remora.session import Session, SessionContext
+from remora.session import Session
 
 __all__ = ["MediaExtractor"]
 
 
-class MediaExtractor(SessionContext):
+class MediaExtractor:
     def __init__(self, session: Session):
-        super().__init__(session)
-        self._ydl_extractor = YDLExtractor(session.ydl_context)
+        self._session = session
+        self._ydl_extractor = YDLExtractor(session.ydl_session)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...

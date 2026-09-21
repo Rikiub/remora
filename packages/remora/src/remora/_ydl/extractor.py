@@ -5,8 +5,8 @@ from yt_dlp.extractor import get_info_extractor
 from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
-from remora._ydl.context import YDLContext, YDLNetworkContext
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
+from remora._ydl.session import YDLNetworkSession
 from remora._ydl.types import YDLExtractInfo
 from remora._ydl.wrapper import YDL
 from remora.exceptions import ExtractorError
@@ -31,11 +31,12 @@ SEARCH_QUERIES = {
 }
 
 
-class YDLExtractor(YDLContext):
-    def __init__(self, context: YDLNetworkContext | None = None):
+class YDLExtractor:
+    def __init__(self, session: YDLNetworkSession):
+        self.session = session
         self.ydl = YDL(
             params={"extract_flat": "in_playlist", "skip_download": True},
-            network_context=context,
+            network_session=session,
             auto_init=True,
         )
 

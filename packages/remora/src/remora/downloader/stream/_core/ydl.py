@@ -6,9 +6,9 @@ from loguru import logger
 from typing_extensions import override
 
 from remora._ydl.downloader import YDLDownloader
-from remora._ydl.wrapper import YDLNetworkContext
+from remora._ydl.wrapper import YDLNetworkSession
 from remora.constants import DEFAULT_IMPERSONATE_TARGET, DEFAULT_RETRIES
-from remora.downloader.stream.base import BaseStreamDownloader
+from remora.downloader.stream._base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,
@@ -31,14 +31,16 @@ class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
         stream: Stream,
         output_path: StrPath,
         retries: int = DEFAULT_RETRIES,
-        network_context: YDLNetworkContext | None = None,
+        network_session: YDLNetworkSession | None = None,
     ):
         super().__init__(
             stream=stream,
             output_path=output_path,
             retries=retries,
         )
-        self._ydl_downloader = YDLDownloader(network_context)
+        self._ydl_downloader = YDLDownloader(
+            network_session or YDLNetworkSession.create()
+        )
 
         self.downloaded_bytes = 0
         self.total_bytes = 0
