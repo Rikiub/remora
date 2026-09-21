@@ -1,11 +1,8 @@
 """Raw info extractor."""
 
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from functools import partial
-from typing import Self, overload
+from typing import overload
 
-from anyio import AsyncContextManagerMixin
 from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import AnyUrl
@@ -21,20 +18,15 @@ from remora.models.media import (
 )
 from remora.models.search import SearchService
 from remora.models.types import StrUrl
-from remora.session import Session
+from remora.session import Session, SessionContext
 
 __all__ = ["MediaExtractor"]
 
 
-class MediaExtractor(AsyncContextManagerMixin):
+class MediaExtractor(SessionContext):
     def __init__(self, session: Session):
-        self.network_options = session.network_options
-        self._extractor = YDLExtractor(session.ydl_context)
-
-    @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        with self._extractor:
-            yield self
+        super().__init__(session)
+        self._ydl_extractor = YDLExtractor(session.ydl_context)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
@@ -56,7 +48,7 @@ class MediaExtractor(AsyncContextManagerMixin):
             # Logs
             logger.info("Extracting URL: {url}", url=url)
 
-            if cookies := self.network_options.cookies:
+            if cookies := self._session.network_options.cookies:
                 logger.info(
                     "Using cookies list with {cookies_length} items",
                     cookies_length=len(cookies),
@@ -70,15 +62,15 @@ class MediaExtractor(AsyncContextManagerMixin):
                         "It could do unexpected behaviour. "
                         "Please update your cookies the next time."
                     )
-            if proxy := self.network_options.proxy:
+            if proxy := self._session.network_options.proxy:
                 logger.info('Using proxy: "{proxy_url}"', proxy=proxy)
-            if impersonate := self.network_options.impersonate:
+            if impersonate := self._session.network_options.impersonate:
                 logger.info(
                     'Using impersonate target: "{impersonate}"', impersonate=impersonate
                 )
 
             # Extract info
-            info = await run_sync(partial(self._extractor.extract_info, query=url))
+            info = await run_sync(partial(self._ydl_extractor.extract_info, query=url))
             result = ExtractAdapter.validate_python(info, by_alias=True)
 
             logger.success("Extraction successful")
@@ -106,7 +98,7 @@ class MediaExtractor(AsyncContextManagerMixin):
             # Extract info
             info = await run_sync(
                 partial(
-                    self._extractor.extract_query,
+                    self._ydl_extractor.extract_query,
                     query=query,
                     service=service,
                     limit=limit,

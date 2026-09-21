@@ -1,25 +1,20 @@
 from functools import partial
 from pathlib import Path
 
-from anyio import AsyncContextManagerMixin
 from anyio.to_thread import run_sync
-from typing_extensions import override
 
 from remora._ydl.downloader import YDLDownloader
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
-from remora.session import Session
+from remora.session import Session, SessionContext
 
 __all__ = ["MetadataDownloader"]
 
 
-class MetadataDownloader(AsyncContextManagerMixin):
+class MetadataDownloader(SessionContext):
     def __init__(self, session: Session):
+        super().__init__(session)
         self._ydl_downloader = YDLDownloader(session.ydl_context)
-
-    @override
-    def __asynccontextmanager__(self):
-        pass
 
     async def download_resource(
         self,

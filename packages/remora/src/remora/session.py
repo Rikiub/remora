@@ -13,7 +13,7 @@ from remora._ydl import YDLNetworkContext
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.models.options import DownloadOptions, NetworkOptions
 
-__all__ = ["Session", "build_httpx_client"]
+__all__ = ["Session", "SessionContext", "build_httpx_client"]
 
 
 @dataclass(slots=True)
@@ -56,6 +56,10 @@ class Session(anyio.AsyncContextManagerMixin):
             ydl_context=YDLNetworkContext.from_options(network_options),
         )
 
+    async def close(self) -> None:
+        self.ydl_context.close()
+        await self.httpx_client.aclose()
+
     @override
     @asynccontextmanager
     async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
@@ -96,3 +100,14 @@ def build_httpx_client(
         follow_redirects=True,
         limits=limits,
     )
+
+
+class SessionContext(anyio.AsyncContextManagerMixin):
+    def __init__(self, session: Session):
+        self._session = session
+
+    @override
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
+        async with self._session:
+            yield self

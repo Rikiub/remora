@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tempfile
 from abc import ABC
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
@@ -58,14 +58,15 @@ class _LoguruYDLWrapper:
 
 @dataclass(slots=True)
 class YDLNetworkContext(ContextManagerMixin):
-    request_director: RequestDirector | None = None
-    cookiejar: YoutubeDLCookieJar | None = None
-    proxies: dict[str, Any] | None = None
+    request_director: RequestDirector
+    cookiejar: YoutubeDLCookieJar
+    proxies: dict[str, Any]
+    close_hooks: list[Callable[[], None]]
 
     @classmethod
     def from_options(cls, options: NetworkOptions) -> Self:
-        ydl = YDL(
-            params={
+        ydl = YoutubeDL(
+            {
                 "cookiefile": StringIO(cookies.to_netscape_cookies())
                 if (cookies := options.cookies)
                 else None,
@@ -73,7 +74,8 @@ class YDLNetworkContext(ContextManagerMixin):
                 "impersonate": ImpersonateTarget.from_str(impersonate)
                 if (impersonate := options.impersonate)
                 else None,
-            }
+            },
+            auto_init=False,
         )
         return cls.from_ydl(ydl)
 
@@ -83,7 +85,18 @@ class YDLNetworkContext(ContextManagerMixin):
             request_director=ydl._request_director,
             cookiejar=ydl.cookiejar,
             proxies=ydl.proxies,
+            close_hooks=ydl._close_hooks,
         )
+
+    @classmethod
+    def create(cls) -> Self:
+        return cls.from_ydl(YoutubeDL(auto_init=False))
+
+    def close(self) -> None:
+        self.request_director.close()
+
+        for close_hook in self.close_hooks:
+            close_hook()
 
     @override
     @contextmanager
@@ -91,23 +104,18 @@ class YDLNetworkContext(ContextManagerMixin):
         try:
             yield self
         finally:
-            if request_director := self.request_director:
-                request_director.close()
+            self.close()
 
 
 class YDLContext(ContextManagerMixin, ABC):
     def __init__(self, context: YDLNetworkContext | None = None):
-        self.context = context or YDLNetworkContext()
-
-    def close(self):
-        if cookiejar := self.context.cookiejar:
-            cookiejar.save()
-        if request_director := self.context.request_director:
-            request_director.close()
+        self.context = context or YDLNetworkContext.create()
 
     @override
-    def __contextmanager__(self):
-        pass
+    @contextmanager
+    def __contextmanager__(self) -> Generator[Self, None]:
+        with self.context:
+            yield self
 
 
 class YDL(YoutubeDL):
@@ -119,7 +127,7 @@ class YDL(YoutubeDL):
         network_context: YDLNetworkContext | None = None,
         auto_init: bool = False,
     ):
-        self.network_context = network_context or YDLNetworkContext()
+        self.network_context = network_context or YDLNetworkContext.create()
 
         # Default parameters
         opts: YDLParams = {
@@ -153,23 +161,14 @@ class YDL(YoutubeDL):
     @override
     @cached_property
     def proxies(self) -> dict:
-        if proxies := self.network_context.proxies:
-            return proxies
-        else:
-            return super().proxies
+        return self.network_context.proxies
 
     @override
     @cached_property
     def cookiejar(self) -> YoutubeDLCookieJar:
-        if cookiejar := self.network_context.cookiejar:
-            return cookiejar
-        else:
-            return super().cookiejar
+        return self.network_context.cookiejar
 
     @override
     @cached_property
     def _request_director(self) -> RequestDirector:
-        if request_director := self.network_context.request_director:
-            return request_director
-        else:
-            return super()._request_director
+        return self.network_context.request_director

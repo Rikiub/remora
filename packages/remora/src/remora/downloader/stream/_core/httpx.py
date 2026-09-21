@@ -74,30 +74,27 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         protocol = Protocol(self.stream.protocol)
         logger.debug('Stream protocol is "{}"', str(protocol))
 
-        async with self.client:
-            try:
-                if protocol.is_segmented:
-                    logger.debug("Downloading stream segments")
-                    path = await self._download_segments()
+        try:
+            if protocol.is_segmented:
+                logger.debug("Downloading stream segments")
+                path = await self._download_segments()
 
-                elif protocol in (Protocol.HTTP, Protocol.HTTPS):
-                    logger.debug('Downloading stream as "HTTP"')
+            elif protocol in (Protocol.HTTP, Protocol.HTTPS):
+                logger.debug('Downloading stream as "HTTP"')
 
-                    self.is_continuous = True
-                    path = await self._download_multi_part()
+                self.is_continuous = True
+                path = await self._download_multi_part()
 
-                else:
-                    raise TypeError(
-                        f"Unable to handle protocol: {self.stream.protocol}"
-                    )
-            except* (httpx.HTTPError, OSError, ValueError, TypeError) as eg:
-                error = eg.exceptions[0]
-                status_code = None
+            else:
+                raise TypeError(f"Unable to handle protocol: {self.stream.protocol}")
+        except* (httpx.HTTPError, OSError, ValueError, TypeError) as eg:
+            error = eg.exceptions[0]
+            status_code = None
 
-                if isinstance(error, httpx.HTTPStatusError):
-                    status_code = error.response.status_code
+            if isinstance(error, httpx.HTTPStatusError):
+                status_code = error.response.status_code
 
-                raise DownloaderError(str(error), status_code=status_code) from error
+            raise DownloaderError(str(error), status_code=status_code) from error
 
         path = await self._fix_extension(path)
         self.file_path = path

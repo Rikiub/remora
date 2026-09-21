@@ -24,7 +24,7 @@ __all__ = ["YDLStreamDownloader"]
 
 
 class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
-    SUPPORTED_PROTOCOLS = frozenset(Protocol)
+    SUPPORTED_PROTOCOLS = frozenset(p for p in Protocol)
 
     def __init__(
         self,

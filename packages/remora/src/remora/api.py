@@ -1,10 +1,5 @@
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Self, overload
-
-from anyio import AsyncContextManagerMixin
-from typing_extensions import override
+from typing import overload
 
 from remora.downloader import (
     MediaDownloader,
@@ -26,12 +21,12 @@ from remora.models.options import DownloadOptions, NetworkOptions
 from remora.models.search import SearchService
 from remora.models.stream import Stream
 from remora.models.types import StrPath, StrUrl
-from remora.session import Session
+from remora.session import Session, SessionContext
 
 __all__ = ["Remora"]
 
 
-class Remora(AsyncContextManagerMixin):
+class Remora(SessionContext):
     def __init__(
         self,
         download_options: DownloadOptions | None = None,
@@ -40,20 +35,15 @@ class Remora(AsyncContextManagerMixin):
         download_options = download_options or DownloadOptions()
         network_options = network_options or NetworkOptions()
 
-        self._session = Session.create(
+        session = Session.create(
             download_options=download_options,
             network_options=network_options,
             extract_limit=download_options.concurrency,
             download_limit=download_options.concurrency,
         )
-        self._extractor = MediaExtractor(self._session)
-        self._metadata = MetadataDownloader(self._session)
-
-    @override
-    @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[Self, None]:
-        async with self._session:
-            yield self
+        self._extractor = MediaExtractor(session)
+        self._metadata = MetadataDownloader(session)
+        super().__init__(session)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
