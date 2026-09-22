@@ -47,7 +47,7 @@ class BaseTuple(RootModel[Sequence], Sequence[_T], Generic[_T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self) -> Iterator[_T]:  # type: ignore
+    def __iter__(self) -> Iterator[_T]:  # ty: ignore[invalid-method-override]
         return iter(self.root)
 
     @overload
@@ -61,8 +61,6 @@ class BaseTuple(RootModel[Sequence], Sequence[_T], Generic[_T]):
             return self.__class__(self.root[index])
         elif isinstance(index, int):
             return self.root[index]
-        else:
-            raise TypeError(f"Invalid argument type: {type(index)}")
 
 
 # Recursive getattr
@@ -73,7 +71,6 @@ _R = TypeVar("_R")
 def rgetattr(obj: Any, attr: str) -> Any: ...
 
 
-# Overload 2: Called with a default value. Returns either the found type or the default type
 @overload
 def rgetattr(obj: Any, attr: str, default: _R) -> Any | _R: ...
 
