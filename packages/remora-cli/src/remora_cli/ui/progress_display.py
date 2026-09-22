@@ -1,7 +1,10 @@
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Self
 
 import anyio
 from loguru import logger
+from typing_extensions import override
 
 from remora.models.media import LazyMedia
 from remora.models.progress import (
@@ -23,21 +26,21 @@ from remora.models.progress import (
 )
 from remora_cli.ui.download_progress import DownloadProgress
 
+__all__ = ["ProgressDisplay"]
 
-class ProgressCallback:
+
+class ProgressDisplay(anyio.AsyncContextManagerMixin):
     def __init__(self, disable: bool = False):
         self.disable = disable
         self.progress = DownloadProgress(disable)
 
-    async def __aenter__(self) -> Self:
-        self._tg = anyio.create_task_group()
-        await self._tg.__aenter__()
-        self.progress.start()
-        return self
-
-    async def __aexit__(self, *args):
-        await self._tg.__aexit__(*args)
-        self.progress.stop()
+    @override
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
+        with self.progress:
+            async with anyio.create_task_group() as tg:
+                self._tg = tg
+                yield self
 
     async def playlist_callback(self, state: BatchState):
         if self.disable:

@@ -26,7 +26,7 @@ from remora_cli.parameters import (
     NetworkParameters,
     QueryParameter,
 )
-from remora_cli.ui.download_handler import ProgressCallback
+from remora_cli.ui.progress_display import ProgressDisplay
 from remora_cli.ui.rich import CONSOLE
 
 
@@ -141,7 +141,7 @@ async def download(
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
         from remora import Remora
-        from remora_cli.ui.extractor import extract_queries
+        from remora_cli.pipeline.extractor import extract_queries
 
         try:
             get_ffmpeg_dir(ffmpeg_location)
@@ -180,8 +180,8 @@ async def download(
                 result = result.entries.medias()[0]
 
             async with (
-                ProgressCallback(display.quiet) as wrapper,
+                ProgressDisplay(display.quiet) as bar,
                 remora.download_playlist(result) as progress,
             ):
                 async for state in progress:
-                    await wrapper.playlist_callback(state)
+                    await bar.playlist_callback(state)

@@ -12,6 +12,8 @@ from rich.table import Column
 
 from remora_cli.ui.rich import CONSOLE
 
+__all__ = ["DownloadProgress"]
+
 
 class CounterProgress:
     def __init__(

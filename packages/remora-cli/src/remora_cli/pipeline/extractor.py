@@ -68,7 +68,7 @@ async def extract_queries(
                 CONSOLE.rule(style="white")
 
 
-hlt = ReprHighlighter()
+_hlt = ReprHighlighter()
 
 
 def dict_to_table(data: dict) -> Table:
@@ -78,25 +78,25 @@ def dict_to_table(data: dict) -> Table:
 
     for key, value in data.items():
         if isinstance(value, dict):
-            table.add_row(key, gen_table(value))
+            table.add_row(key, _gen_table(value))
         elif isinstance(value, list):
-            table.add_row(key, gen_list_output(value))
+            table.add_row(key, _gen_list_output(value))
         else:
-            table.add_row(key, hlt(str(value)))
+            table.add_row(key, _hlt(str(value)))
 
     return table
 
 
-def gen_table(data: dict) -> Table:
+def _gen_table(data: dict) -> Table:
     table = Table(show_header=False, box=box.ROUNDED, padding=(0, 1))
     table.add_column("K", style="bold yellow", no_wrap=True)
     table.add_column("V")
 
     for k, v in data.items():
         if isinstance(v, dict):
-            table.add_row(k, gen_table(v))
+            table.add_row(k, _gen_table(v))
         elif isinstance(v, list):
-            table.add_row(k, gen_list_output(v))
+            table.add_row(k, _gen_list_output(v))
         else:
             # Handle long strings/URLs so they don't break the table
             value = str(v)
@@ -104,24 +104,24 @@ def gen_table(data: dict) -> Table:
             if len(value) > 80:
                 value = f"{value[:77]}..."
 
-            table.add_row(k, hlt(value))
+            table.add_row(k, _hlt(value))
 
     return table
 
 
-def gen_list_output(data_list: list):
+def _gen_list_output(data_list: list):
     """Helper to decide how to show a list."""
 
     if not data_list:
-        return hlt("[]")
+        return _hlt("[]")
 
     # If it's a list of dicts, stack them as nested tables
     if isinstance(data_list[0], dict):
         # We use a Grid or a transparent table to stack the nested dict tables
         stack = Table.grid(padding=(1, 0))
         for item in data_list:
-            stack.add_row(gen_table(item))
+            stack.add_row(_gen_table(item))
         return stack
 
     # Otherwise, just return the highlighted string representation
-    return hlt(str(data_list))
+    return _hlt(str(data_list))

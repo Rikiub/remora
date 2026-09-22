@@ -88,7 +88,7 @@ async def extract(
         from rich.json import JSON
 
         from remora import Remora
-        from remora_cli.ui.extractor import dict_to_table, extract_queries
+        from remora_cli.pipeline.extractor import dict_to_table, extract_queries
 
         console = Console()
         remora = Remora(network_options=network.build_options())
