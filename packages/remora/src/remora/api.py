@@ -85,19 +85,11 @@ class Remora(AsyncContextManagerMixin):
     def download_media(self, media: Media) -> MediaDownloader:
         return MediaDownloader(media, self._session)
 
-    def download_stream(
-        self,
-        stream: Stream,
-        output_path: StrPath,
-        retries: int | None = None,
-        concurrency: int | None = None,
-    ) -> StreamDownloader:
+    def download_stream(self, stream: Stream, output_path: StrPath) -> StreamDownloader:
         return StreamDownloader(
             stream=stream,
             output_path=output_path,
-            concurrency=concurrency,
-            retries=retries or self._session.download_options.retries,
-            network_options=self._session.network_options,
+            session=self._session,
         )
 
     async def download_resource(

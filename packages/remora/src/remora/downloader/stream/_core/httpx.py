@@ -9,9 +9,7 @@ from loguru import logger
 from typing_extensions import override
 
 from remora.constants import DEFAULT_SEGMENT_CONCURRENCY
-from remora.downloader.stream._base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
     StreamCompleted,
     StreamContinuous,
@@ -21,12 +19,13 @@ from remora.models.progress import (
 from remora.models.protocol import Protocol
 from remora.models.stream import SizeType, Stream
 from remora.models.types import StrPath
-from remora.session import build_httpx_client
+
+from ._base import Downloader
 
 __all__ = ["HttpxStreamDownloader"]
 
 
-class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
+class HttpxStreamDownloader(Downloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(
         (
             Protocol.HTTP,
@@ -42,19 +41,17 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
         self,
         stream: Stream,
         output_path: StrPath,
-        client: httpx.AsyncClient | None = None,
+        client: httpx.AsyncClient,
         retries: int | None = None,
         concurrency: int | None = None,
-        network_options: NetworkOptions | None = None,
     ):
         super().__init__(
             stream=stream,
             output_path=output_path,
             retries=retries,
-            network_options=network_options,
         )
+        self.client = client
         self.concurrency = concurrency or DEFAULT_SEGMENT_CONCURRENCY
-        self.client = client or build_httpx_client(self.network_options)
 
         # Progress
         self.is_continuous = False
@@ -65,9 +62,6 @@ class HttpxStreamDownloader(BaseStreamDownloader[StreamState]):
 
         self.current_segment = 0
         self.total_segments = 0
-
-        # Log
-        self._log_stream()
 
     @override
     async def _run_pipeline(self) -> None:

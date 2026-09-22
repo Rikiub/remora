@@ -6,18 +6,17 @@ import anyio
 from typing_extensions import override
 
 from remora._types import _T, StreamContext
-from remora.constants import DEFAULT_RETRIES
-from remora.downloader._state_streamer import AsyncStateStreamer
-from remora.downloader.stream._base import _DEFAULT_BUFFER_SIZE
 from remora.downloader.stream.main import StreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.options.network import NetworkOptions
 from remora.models.progress import (
     BatchStreamCompleted,
     BatchStreamDownloading,
     BatchStreamState,
     StreamProgressState,
 )
+from remora.session import Session
+
+from ._base import Downloader
 
 __all__ = ["BatchStreamDownloader"]
 
@@ -27,21 +26,16 @@ class _StreamManager(StreamContext[_T]):
     state: StreamProgressState | None = None
 
 
-class BatchStreamDownloader(AsyncStateStreamer[BatchStreamState]):
+class BatchStreamDownloader(Downloader[BatchStreamState]):
     SYNC_INTERVAL = 0.5
 
     def __init__(
         self,
         stream: Iterable[StreamContext],
-        retries: int | None = None,
-        network_options: NetworkOptions | None = None,
+        session: Session | None = None,
     ):
-        super().__init__(buffer_size=_DEFAULT_BUFFER_SIZE)
-
+        super().__init__(session=session)
         self.streams = [_StreamManager(stream=s.stream, path=s.path) for s in stream]
-        self.network_options = network_options
-        self.retries = retries or DEFAULT_RETRIES
-
         self._last_sync_time = 0.0
 
     @override
@@ -64,10 +58,9 @@ class BatchStreamDownloader(AsyncStateStreamer[BatchStreamState]):
 
     async def _download(self, ctx: _StreamManager) -> None:
         async with StreamDownloader(
-            output_path=ctx.path,
             stream=ctx.stream,
-            retries=self.retries,
-            network_options=self.network_options,
+            output_path=ctx.path,
+            session=self.session,
         ) as progress:
             async for state in progress:
                 if state.status == "downloading":

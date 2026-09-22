@@ -5,10 +5,9 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
+from remora._ydl import YDLNetworkSession
 from remora._ydl.downloader import YDLDownloader
-from remora._ydl.wrapper import YDLNetworkSession
-from remora.constants import DEFAULT_IMPERSONATE_TARGET, DEFAULT_RETRIES
-from remora.downloader.stream._base import BaseStreamDownloader
+from remora.constants import DEFAULT_IMPERSONATE_TARGET
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
     StreamCompleted,
@@ -20,27 +19,27 @@ from remora.models.protocol import Protocol
 from remora.models.stream import Stream
 from remora.models.types import StrPath
 
+from ._base import Downloader
+
 __all__ = ["YDLStreamDownloader"]
 
 
-class YDLStreamDownloader(BaseStreamDownloader[StreamState]):
+class YDLStreamDownloader(Downloader[StreamState]):
     SUPPORTED_PROTOCOLS = frozenset(p for p in Protocol)
 
     def __init__(
         self,
         stream: Stream,
         output_path: StrPath,
-        retries: int = DEFAULT_RETRIES,
-        network_session: YDLNetworkSession | None = None,
+        ydl_session: YDLNetworkSession,
+        retries: int | None = None,
     ):
         super().__init__(
             stream=stream,
             output_path=output_path,
             retries=retries,
         )
-        self._ydl_downloader = YDLDownloader(
-            network_session or YDLNetworkSession.create()
-        )
+        self._ydl_downloader = YDLDownloader(ydl_session)
 
         self.downloaded_bytes = 0
         self.total_bytes = 0

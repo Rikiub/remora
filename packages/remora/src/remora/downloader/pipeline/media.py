@@ -232,8 +232,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
                         StreamContext(stream=s, path=create_temp_file())
                         for s in streams
                     ],
-                    retries=self.session.download_options.retries,
-                    network_options=self.session.network_options,
+                    session=self.session,
                 ) as progress,
             ):
                 async for state in progress:

@@ -1,32 +1,29 @@
+from pathlib import Path
+
 from loguru import logger
 from typing_extensions import override
 
-from remora.downloader.stream._base import BaseStreamDownloader
 from remora.exceptions import DownloaderError
-from remora.models.options.network import NetworkOptions
 from remora.models.progress import StreamState
-from remora.models.stream import Stream
+from remora.models.stream import AudioStream, Stream, VideoStream
 from remora.models.types import StrPath
+from remora.session import Session
+
+from ._base import Downloader
 
 __all__ = ["StreamDownloader"]
 
 
-class StreamDownloader(BaseStreamDownloader[StreamState]):
+class StreamDownloader(Downloader[StreamState]):
     def __init__(
         self,
         stream: Stream,
         output_path: StrPath,
-        retries: int | None = None,
-        concurrency: int | None = None,
-        network_options: NetworkOptions | None = None,
+        session: Session | None = None,
     ):
-        super().__init__(
-            stream=stream,
-            output_path=output_path,
-            retries=retries,
-            network_options=network_options,
-        )
-        self.concurrency = concurrency
+        super().__init__(session=session)
+        self.stream = stream
+        self.file_path = Path(output_path)
 
     @override
     async def _run_pipeline(self) -> None:
@@ -44,12 +41,18 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
                 async with HttpxStreamDownloader(
                     stream=self.stream,
                     output_path=self.file_path,
-                    retries=self.retries,
-                    concurrency=self.concurrency,
-                    network_options=self.network_options,
+                    client=self.session.httpx_client,
+                    retries=self.session.download_options.retries,
+                    concurrency=self.session.download_options.concurrency,
                 ) as progress:
+                    self._log_stream(
+                        stream=self.stream,
+                        downloader=HttpxStreamDownloader,
+                    )
+
                     async for state in progress:
                         await self._emit(state)
+
                     return
             except (TypeError, DownloaderError) as error:
                 if isinstance(error, TypeError):
@@ -73,7 +76,30 @@ class StreamDownloader(BaseStreamDownloader[StreamState]):
             async with YDLStreamDownloader(
                 stream=self.stream,
                 output_path=self.file_path,
-                retries=self.retries,
+                ydl_session=self.session.ydl_session,
+                retries=self.session.download_options.retries,
             ) as progress:
+                self._log_stream(
+                    stream=self.stream,
+                    downloader=YDLStreamDownloader,
+                )
+
                 async for state in progress:
                     await self._emit(state)
+
+    def _log_stream(self, stream: Stream, downloader: type):
+        stream_type = "video" if isinstance(stream, VideoStream) else "audio"
+
+        logger.bind(status="downloading").debug(
+            'Downloading {stream_type} stream "{stream_id}" '
+            "(extension:{extension} "
+            "| quality:{quality} "
+            "| language:{language}) "
+            'with "{downloader}"',
+            stream_id=stream.id,
+            stream_type=stream_type,
+            quality=stream.quality,
+            extension=stream.container.extension,
+            language=stream.language if isinstance(stream, AudioStream) else "None",
+            downloader=downloader,
+        )
