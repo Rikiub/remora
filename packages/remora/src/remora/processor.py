@@ -6,7 +6,7 @@ from typing import Self
 from anyio.to_thread import run_sync
 
 from remora._types import StreamContext
-from remora._ydl import RequestedFormat, YDLExtractInfo, YDLProcessor
+from remora._ydl import RequestedFormat, YDLDict, YDLProcessor
 from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
     AudioContainer,
@@ -127,7 +127,7 @@ class MediaProcessor:
         return self
 
 
-def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLExtractInfo:
+def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLDict:
     info = {}
 
     # Track Title

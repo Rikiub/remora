@@ -14,8 +14,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 )
 
 from remora._ydl.messages import sanitize_ydl_error
-from remora._ydl.types import YDLExtractInfo
-from remora._ydl.wrapper import YDL
+from remora._ydl.wrapper import YDL, YDLDict
 from remora.exceptions import ProcessorError
 from remora.models.types import StrPath
 
@@ -81,7 +80,7 @@ class YDLProcessor:
         return self._sync(data)
 
     @catch
-    def embed_metadata(self, data: YDLExtractInfo) -> Self:
+    def embed_metadata(self, data: YDLDict) -> Self:
         pp = FFmpegMetadataPP(
             self._ydl(),
             add_metadata=True,
@@ -176,6 +175,6 @@ class YDLProcessor:
         }
         return info
 
-    def _sync(self, data: YDLExtractInfo) -> Self:
+    def _sync(self, data: YDLDict) -> Self:
         self.file_path = Path(data["filepath"])
         return self

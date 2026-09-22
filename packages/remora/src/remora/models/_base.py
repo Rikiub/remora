@@ -11,8 +11,6 @@ from pydantic import (
     WrapValidator,
 )
 
-from remora._ydl.types import YDLExtractInfo
-
 
 # Base Models
 class RemoraModel(BaseModel):
@@ -24,7 +22,7 @@ class RemoraModel(BaseModel):
 
 
 class YDLSerializable(RemoraModel):
-    def _to_ydl_dict(self) -> YDLExtractInfo:
+    def _to_ydl_dict(self) -> dict[str, Any]:
         return self.model_dump(by_alias=True, mode="json")
 
 

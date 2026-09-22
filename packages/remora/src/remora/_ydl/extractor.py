@@ -7,8 +7,7 @@ from yt_dlp.utils._utils import determine_protocol
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.session import YDLNetworkSession
-from remora._ydl.types import YDLExtractInfo
-from remora._ydl.wrapper import YDL
+from remora._ydl.wrapper import YDL, YDLDict
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
 
@@ -45,7 +44,7 @@ class YDLExtractor:
         query: str,
         service: str | SearchService,
         limit: int = 20,
-    ) -> YDLExtractInfo:
+    ) -> YDLDict:
         """Extract info from search service."""
 
         for item in SEARCH_QUERIES:
@@ -55,7 +54,7 @@ class YDLExtractor:
 
         raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
-    def extract_info(self, query: str) -> YDLExtractInfo:
+    def extract_info(self, query: str) -> YDLDict:
         try:
             info = self.ydl.extract_info(query, download=False)
             info = self._normalize_info(info)
@@ -69,7 +68,7 @@ class YDLExtractor:
                 status_code=extract_status_code(error),
             )
 
-        return cast(YDLExtractInfo, info)
+        return cast(YDLDict, info)
 
     def _normalize_info(self, info: dict) -> dict:
         # Normalize the current level extractor fields

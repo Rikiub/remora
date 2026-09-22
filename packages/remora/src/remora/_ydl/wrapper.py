@@ -1,5 +1,6 @@
 import tempfile
 from functools import cached_property
+from typing import Any
 
 from loguru import logger
 from typing_extensions import override
@@ -8,10 +9,11 @@ from yt_dlp.networking.common import RequestDirector
 from yt_dlp.YoutubeDL import YoutubeDL
 
 from remora._ydl.session import YDLNetworkSession
-from remora._ydl.types import YDLParams
 from remora.path import get_cache_dir
 
-__all__ = ["YDL"]
+__all__ = ["YDL", "YDLDict"]
+
+YDLDict = dict[str, Any]
 
 
 class _LoguruYDLWrapper:
@@ -49,14 +51,14 @@ class YDL(YoutubeDL):
 
     def __init__(
         self,
-        params: YDLParams | None = None,
+        params: YDLDict | None = None,
         network_session: YDLNetworkSession | None = None,
         auto_init: bool = False,
     ):
         self.network_session = network_session or YDLNetworkSession.create()
 
         # Default parameters
-        opts: YDLParams = {
+        opts: YDLDict = {
             # Adapt logs
             "logger": _LoguruYDLWrapper(),
             "no_warnings": False,

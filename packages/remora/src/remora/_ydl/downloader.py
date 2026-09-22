@@ -8,8 +8,7 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
 from remora._ydl.session import YDLNetworkSession
-from remora._ydl.types import YDLExtractInfo, YDLFormatInfo, YDLParams
-from remora._ydl.wrapper import YDL
+from remora._ydl.wrapper import YDL, YDLDict
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
 from remora.models.types import StrPath
@@ -24,7 +23,7 @@ class YDLDownloader:
     def download_format(
         self,
         filepath: StrPath,
-        format_info: YDLFormatInfo,
+        format_info: YDLDict,
         callback: Callable[[dict[str, Any]], None] | None = None,
         retries: int = DEFAULT_RETRIES,
     ) -> Path:
@@ -48,11 +47,11 @@ class YDLDownloader:
 
     def download_from_info(
         self,
-        info: YDLExtractInfo,
-        params: YDLParams,
+        info: YDLDict,
+        params: YDLDict,
         retries: int = DEFAULT_RETRIES,
     ) -> Path:
-        config: YDLParams = {"retries": retries, "fragment_retries": retries}
+        config: YDLDict = {"retries": retries, "fragment_retries": retries}
 
         try:
             ydl = YDL(
@@ -69,7 +68,7 @@ class YDLDownloader:
                 status_code=extract_status_code(error),
             )
 
-    def download_thumbnail(self, filepath: StrPath, thumbnail: YDLExtractInfo) -> Path:
+    def download_thumbnail(self, filepath: StrPath, thumbnail: YDLDict) -> Path:
         ydl = YDL(
             {
                 "writethumbnail": True,
@@ -101,8 +100,8 @@ class YDLDownloader:
     def download_subtitles(
         self,
         filepath: StrPath,
-        subtitles: YDLExtractInfo,
-        automatic_captions: YDLExtractInfo | None = None,
+        subtitles: YDLDict,
+        automatic_captions: YDLDict | None = None,
     ) -> list[Path]:
         automatic_captions = automatic_captions or {}
 
@@ -135,7 +134,7 @@ class YDLDownloader:
     def download_storyboard(
         self,
         filepath: StrPath,
-        storyboard: YDLExtractInfo,
+        storyboard: YDLDict,
     ) -> Path:
         extension = storyboard["ext"]
         filepath = f"{filepath}.{extension}"
