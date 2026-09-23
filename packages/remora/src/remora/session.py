@@ -13,7 +13,7 @@ from remora import _ydl
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.models.options import DownloadOptions, NetworkOptions
 
-__all__ = ["Session", "build_httpx_client"]
+__all__ = ["Session"]
 
 
 @dataclass(slots=True)
