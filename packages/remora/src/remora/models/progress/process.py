@@ -9,7 +9,7 @@ __all__ = [
 
 ProcessorTask = Literal[
     "change_container",
-    "convert_audio",
+    "convert_to_audio",
     "embed_metadata",
     "embed_thumbnail",
     "embed_subtitles",

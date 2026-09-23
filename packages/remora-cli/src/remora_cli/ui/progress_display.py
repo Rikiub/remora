@@ -119,7 +119,7 @@ class ProgressDisplay(anyio.AsyncContextManagerMixin):
 
         if state.status == "started":
             match state.task:
-                case "convert_audio":
+                case "convert_to_audio":
                     self.progress.update(id, status="Converting[blink]...[/]")
                 case "merge_streams":
                     self.progress.update(id, status="Merging[blink]...[/]")

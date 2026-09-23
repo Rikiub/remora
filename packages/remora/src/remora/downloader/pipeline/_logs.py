@@ -83,7 +83,7 @@ async def _processor_callback(state: Processing):
                         'File container changed to "{extension}"',
                         extension=state.file_extension,
                     )
-                case "convert_audio":
+                case "convert_to_audio":
                     logger.debug(
                         'File converted to "{extension}"',
                         extension=state.file_extension,

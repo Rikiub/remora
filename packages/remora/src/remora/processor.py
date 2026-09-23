@@ -46,7 +46,7 @@ class MediaProcessor:
         result = await run_sync(partial(self._prc.video_remuxer, extension))
         return self._sync(result)
 
-    async def convert_audio(
+    async def convert_to_audio(
         self,
         container: RichAudioContainer | AudioContainer | None = None,
         quality: StreamQuality | int | None = None,
@@ -76,7 +76,7 @@ class MediaProcessor:
     async def merge_streams(
         self,
         streams: Iterable[StreamContext],
-        merge_container: RichVideoContainer | VideoContainer,
+        container: RichVideoContainer | VideoContainer,
     ) -> Self:
         """
         Merge multiple streams in a single file.
@@ -91,10 +91,10 @@ class MediaProcessor:
             raise FileExistsError(self.file_path)
 
         # Validate container
-        container = get_container(merge_container)
-        if isinstance(container, AudioContainer):
+        merge_container = get_container(container)
+        if isinstance(merge_container, AudioContainer):
             raise TypeError(
-                f"'{container}' is a audio-only container. Please select a container with video and audio support."
+                f"'{merge_container}' is a audio-only container. Please select a container with video and audio support."
             )
 
         # Convert streams to YDL format dict
@@ -107,7 +107,7 @@ class MediaProcessor:
         result = await run_sync(
             partial(
                 self._prc.merge_formats,
-                container.extension,
+                merge_container.extension,
                 real_streams,
             )
         )

@@ -351,7 +351,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
         try:
             prc = await prc.merge_streams(
                 streams=streams,
-                merge_container=container,
+                container=container,
             )
         except ProcessorError:
             logger.debug(
@@ -361,7 +361,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
             )
             prc = await prc.merge_streams(
                 streams=streams,
-                merge_container=VideoContainer.MKV,
+                container=VideoContainer.MKV,
             )
 
         # Complete events
@@ -444,8 +444,8 @@ class MediaDownloader(BaseDownloader[MediaState]):
                     async with track_prc("change_container", True):
                         await prc.change_container(target_container)
                 except ProcessorError:
-                    async with track_prc("convert_audio"):
-                        await prc.convert_audio(target_container)  # ty: ignore[invalid-argument-type]
+                    async with track_prc("convert_to_audio"):
+                        await prc.convert_to_audio(target_container)  # ty: ignore[invalid-argument-type]
 
         if isinstance(stream, VideoStream):
             # If user requested a container, then convert to it.
@@ -455,8 +455,8 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
             # If user requested audio and there is only a VideoStream, then extract audio from it.
             elif self.session.download_options.format_type == "audio":
-                async with track_prc("convert_audio"):
-                    await prc.convert_audio(DEFAULT_AUDIO_CONTAINER)
+                async with track_prc("convert_to_audio"):
+                    await prc.convert_to_audio(DEFAULT_AUDIO_CONTAINER)
 
             # If the file isn't in a common container, normalize it.
             elif not prc.file_container.is_common:
