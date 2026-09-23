@@ -1,7 +1,9 @@
+import sys
 from collections.abc import Generator, Iterable, Sequence
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
-from typing import Any, Literal, Self, get_args
+from typing import Any, Literal, Self, TextIO, get_args
 
 from cyclopts import CycloptsError, Token, validators
 
@@ -17,19 +19,32 @@ class Query:
     entry: str
 
     @classmethod
-    def parse(cls, type_, tokens: Sequence[Token]) -> Generator[Self]:
+    def parse_any(cls, type_, tokens: Sequence[Token]) -> Generator[Self]:
         for token in tokens:
-            path = Path(token.value)
-
-            if path.is_file():
-                validators.Path(
-                    exists=True,
-                    file_okay=True,
-                    dir_okay=False,
-                )(type_, path)
-                yield from cls.parse_file_urls(type_, path)
+            if token.value == "-":
+                yield from cls.parse_lines(type_, sys.stdin.read())
+                break
+            elif (path := Path(token.value)).is_file():
+                yield from cls.parse_file(type_, path)
             else:
                 yield cls.parse_str(type_, token)
+
+    @classmethod
+    def parse_file(cls, type_, path: Path) -> Generator[Self]:
+        validators.Path(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        )(type_, path)
+
+        with path.open() as file:
+            yield from cls.parse_lines(type_, file)
+
+    @classmethod
+    def parse_lines(cls, type_, content: str | TextIO) -> Generator[Self]:
+        for line in StringIO(content) if isinstance(content, str) else content:
+            if line.startswith(("http://", "https://")):
+                yield cls(target="url", entry=line.strip())
 
     @classmethod
     def parse_str(cls, type_, token: Token) -> Self:
@@ -53,19 +68,6 @@ class Query:
             )
 
         return cls(target=target, entry=entry)
-
-    @classmethod
-    def parse_file_urls(cls, type_, path: Path) -> Generator[Self]:
-        validators.Path(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-        )(type_, path)
-
-        with path.open() as file:
-            for line in file:
-                if line.startswith(("http://", "https://")):
-                    yield cls(target="url", entry=line.strip())
 
 
 def parse_keys(keys: Iterable[str]) -> set[str]:
