@@ -1,31 +1,71 @@
-from collections.abc import Generator, Iterable
-from typing import Any, Literal, get_args
+from collections.abc import Generator, Iterable, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal, Self, get_args
 
-from cyclopts import CycloptsError
+from cyclopts import CycloptsError, Token, validators
 
 from remora.models.search import SearchService
 
 SearchTarget = Literal["url", SearchService]
+_SERVICES: set[SearchTarget] = {entry for entry in get_args(SearchTarget)}
 
 
-def parse_queries(queries: Iterable[str]) -> Generator[tuple[SearchTarget, str]]:
-    providers: list[SearchTarget] = [entry for entry in get_args(SearchTarget)]
+@dataclass(slots=True)
+class Query:
     target: SearchTarget
+    entry: str
 
-    for entry in queries:
-        selection = entry.split(":")[0]
+    @classmethod
+    def parse(cls, type_, tokens: Sequence[Token]) -> Generator[Self]:
+        for token in tokens:
+            path = Path(token.value)
 
-        if entry.startswith(("http://", "https://")):
+            if path.is_file():
+                validators.Path(
+                    exists=True,
+                    file_okay=True,
+                    dir_okay=False,
+                )(type_, path)
+                yield from cls.parse_file_urls(type_, path)
+            else:
+                yield cls.parse_str(type_, token)
+
+    @classmethod
+    def parse_str(cls, type_, token: Token) -> Self:
+        query = token.value
+
+        selection = query.split(":")[0]
+        entry = query
+
+        if query.startswith(("http://", "https://")):
             target = "url"
-        elif selection in providers:
+        elif selection in _SERVICES:
             target = selection  # type: ignore
-            entry = entry.split(":")[1].strip()
+
+            try:
+                entry = query.split(":")[1].strip()
+            except IndexError:
+                raise CycloptsError(f"'{selection}' must have a entry.")
         else:
             raise CycloptsError(
-                f"'{selection}' is invalid. Should be URL or search SERVICE."
+                f"'{selection}' is invalid. Should be URL, service:query, or text FILE with list of URLs."
             )
 
-        yield target, entry
+        return cls(target=target, entry=entry)
+
+    @classmethod
+    def parse_file_urls(cls, type_, path: Path) -> Generator[Self]:
+        validators.Path(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        )(type_, path)
+
+        with path.open() as file:
+            for line in file:
+                if line.startswith(("http://", "https://")):
+                    yield cls(target="url", entry=line.strip())
 
 
 def parse_keys(keys: Iterable[str]) -> set[str]:

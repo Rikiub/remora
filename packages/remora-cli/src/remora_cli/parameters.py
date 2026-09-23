@@ -1,5 +1,6 @@
 """Reusable option groups shared across commands."""
 
+from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
@@ -11,18 +12,19 @@ from remora.models import (
     Cookies,
     ImpersonateClient,
     NetworkOptions,
-    SearchService,
     validate_impersonate_target,
 )
+from remora_cli.parsers import Query
 
 QueryParameter = Annotated[
-    tuple[str | SearchService],
+    Generator[Query],
     Parameter(
         help="""[green]URLs[/] and [green]queries[/] to process.
 - Insert a [green]URL[/] to process.
 - Insert a [green]service[/]:[green]query[/] to search and process.
 """,
         negative=False,
+        converter=lambda type_, tokens: Query.parse(type_, tokens),
     ),
 ]
 

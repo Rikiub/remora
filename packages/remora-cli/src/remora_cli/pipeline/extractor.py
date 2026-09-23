@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterable, Sequence
+from collections.abc import AsyncIterable, Iterable
 
 from loguru import logger
 from pydantic import AnyUrl
@@ -9,22 +9,20 @@ from rich.table import Table
 from remora import Remora
 from remora.exceptions import RemoraError
 from remora.models.media import ExtractResult, Search
-from remora_cli.parsers import SearchTarget, parse_queries
+from remora_cli.parsers import Query, SearchTarget
 from remora_cli.ui.rich import CONSOLE
 
 
 async def extract_queries(
-    queries: Sequence[str],
+    queries: Iterable[Query],
     remora: Remora,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | Search]]:
-    for index, value in enumerate(parse_queries(queries), start=1):
-        target, entry = value
-
+    for query in queries:
         try:
             if (
-                target == "url"
+                query.target == "url"
                 and (cookies := remora._session.network_options.cookies)
-                and (url_host := AnyUrl(entry).host)
+                and (url_host := AnyUrl(query.entry).host)
                 and cookies.get_expired_cookies(url_host)
             ):
                 logger.warning(
@@ -34,9 +32,9 @@ async def extract_queries(
                 )
 
             with CONSOLE.status("Searching[blink]...[/]"):
-                if target == "url":
-                    logger.info('Extract URL: "{url}"', url=entry, icon="🔎")
-                    result = await remora.extract(entry)
+                if query.target == "url":
+                    logger.info('Extract URL: "{url}"', url=query.entry, icon="🔎")
+                    result = await remora.extract(query.entry)
 
                     if result.type == "playlist":
                         logger.info(
@@ -48,24 +46,21 @@ async def extract_queries(
                 else:
                     logger.info(
                         'Search from {extractor}: "{query}"',
-                        extractor=target,
-                        query=entry,
+                        extractor=query.target,
+                        query=query.entry,
                         icon="🔎",
                     )
 
-                    result = await remora.extract_search(entry, target)
+                    result = await remora.extract_search(query.entry, query.target)
 
                     if not result.entries.medias():
                         logger.warning("No results found")
                         raise SystemExit()
 
                 await logger.complete()
-            yield target, result
+            yield query.target, result
         except RemoraError as error:
             logger.error("{message}", message=str(error))
-        finally:
-            if len(queries) != index:
-                CONSOLE.rule(style="white")
 
 
 _hlt = ReprHighlighter()
