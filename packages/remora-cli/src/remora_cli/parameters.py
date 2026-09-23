@@ -24,8 +24,8 @@ QueryParameter = Annotated[
 - Insert a [green]service[/]:[green]query[/] to search and process.
 """,
         negative=False,
-        converter=lambda type_, tokens: tuple(Query.parse_any(type_, tokens)),
         allow_leading_hyphen=True,
+        converter=lambda type_, tokens: Query.parse_any(type_, tokens),
     ),
 ]
 
