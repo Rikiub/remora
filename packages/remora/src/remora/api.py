@@ -37,14 +37,14 @@ class Remora(AsyncContextManagerMixin):
         download_options: DownloadOptions | None = None,
         network_options: NetworkOptions | None = None,
     ):
-        download_options = download_options or DownloadOptions()
-        network_options = network_options or NetworkOptions()
+        self.download_options = download_options or DownloadOptions()
+        self.network_options = network_options or NetworkOptions()
 
         self._session = Session.create(
-            download_options=download_options,
-            network_options=network_options,
-            extract_limit=download_options.concurrency,
-            download_limit=download_options.concurrency,
+            download_options=self.download_options,
+            network_options=self.network_options,
+            extract_limit=self.download_options.concurrency,
+            download_limit=self.download_options.concurrency,
         )
         self._extractor = MediaExtractor(self._session)
         self._metadata = MetadataDownloader(self._session)
