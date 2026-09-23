@@ -44,8 +44,8 @@ from remora.models.progress import (
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
-    MediaStarted,
     MediaState,
+    MediaWaiting,
     MediaWarning,
     Processing,
     ProcessorTask,
@@ -85,7 +85,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
     async def _run_pipeline(self):
         with logger.contextualize(media_id=self.id, media_title=self.media.title):
             try:
-                await self._emit(MediaStarted(id=self.id, media=self.media))
+                await self._emit(MediaWaiting(id=self.id, media=self.media))
                 await self._pipeline()
             except (DownloaderError, ExtractorError, ProcessorError) as error:
                 await self._emit(
@@ -253,6 +253,7 @@ class MediaDownloader(BaseDownloader[MediaState]):
                             "Streams downloaded: {paths}",
                             paths=[str(p.path) for p in context.streams],
                         )
+            await self._emit(MediaWaiting(id=self.id, media=self.media))
 
         async def download_subtitle_files():
             if media.subtitles:

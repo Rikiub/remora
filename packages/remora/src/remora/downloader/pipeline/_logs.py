@@ -2,14 +2,12 @@ from loguru import logger
 
 from remora.models.progress import (
     BatchState,
-    MediaCancelled,
     MediaCompleted,
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
     MediaState,
     MediaWarning,
-    PlaylistCancelled,
     PlaylistCompleted,
     PlaylistInProgress,
     PlaylistStarted,
@@ -30,8 +28,6 @@ async def log_event_playlist(state: BatchState):
                 playlist_completed=state.completed,
                 playlist_total=state.total,
             )
-        case PlaylistCancelled():
-            logger.warning("Download cancelled")
 
         case PlaylistCompleted(result="success"):
             logger.success("Download completed")
@@ -52,8 +48,6 @@ async def log_event_media(state: MediaState):
                 logger.warning("Warning: {}", state.message)
             case MediaFailed():
                 logger.error("Download failed: {}", state.message)
-            case MediaCancelled():
-                logger.info("Download cancelled")
             case MediaSkipped():
                 logger.success(
                     'Skipped (Exists as "{file_extension}")',

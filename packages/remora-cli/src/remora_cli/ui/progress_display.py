@@ -16,8 +16,8 @@ from remora.models.progress import (
     MediaFailed,
     MediaProcessing,
     MediaSkipped,
-    MediaStarted,
     MediaState,
+    MediaWaiting,
     MediaWarning,
     PlaylistCompleted,
     PlaylistInProgress,
@@ -65,11 +65,11 @@ class ProgressDisplay(anyio.AsyncContextManagerMixin):
                     logger.success("Download completed (Some items failed)")
 
                 # Media
-                case MediaStarted():
+                case MediaWaiting():
                     self.progress.update(
                         state.id,
                         description=media_title,
-                        status="Starting[blink]...[/]",
+                        status="Waiting[blink]...[/]",
                     )
                 case MediaExtracting():
                     placeholder = "Extracting[blink]...[/]"

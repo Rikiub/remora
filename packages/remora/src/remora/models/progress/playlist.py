@@ -5,7 +5,6 @@ from remora.models.progress.media import MediaState
 
 __all__ = [
     "BatchState",
-    "PlaylistCancelled",
     "PlaylistCompleted",
     "PlaylistEnded",
     "PlaylistInProgress",
@@ -34,19 +33,9 @@ class PlaylistCompleted(_BasePlaylist):
     result: Literal["success", "partial"]
 
 
-class PlaylistCancelled(_BasePlaylist):
-    status: Literal["cancelled"] = "cancelled"
-
-
 class PlaylistEnded(_BasePlaylist):
     status: Literal["ended"] = "ended"
 
 
-PlaylistState = (
-    PlaylistStarted
-    | PlaylistInProgress
-    | PlaylistCompleted
-    | PlaylistCancelled
-    | PlaylistEnded
-)
+PlaylistState = PlaylistStarted | PlaylistInProgress | PlaylistCompleted | PlaylistEnded
 BatchState = PlaylistState | MediaState

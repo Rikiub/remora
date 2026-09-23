@@ -6,7 +6,6 @@ from remora.models.progress.process import Processing
 from remora.models.progress.stream import BatchStreamDownloading
 
 __all__ = [
-    "MediaCancelled",
     "MediaCompleted",
     "MediaDownloading",
     "MediaEnded",
@@ -14,8 +13,8 @@ __all__ = [
     "MediaFailed",
     "MediaProcessing",
     "MediaSkipped",
-    "MediaStarted",
     "MediaState",
+    "MediaWaiting",
     "MediaWarning",
 ]
 
@@ -25,8 +24,8 @@ class _BaseMedia(BaseStateID):
     media: Media
 
 
-class MediaStarted(_BaseMedia):
-    status: Literal["started"] = "started"
+class MediaWaiting(_BaseMedia):
+    status: Literal["waiting"] = "waiting"
     media: LazyMedia
 
 
@@ -65,18 +64,13 @@ class MediaWarning(_BaseMedia):
     message: str
 
 
-class MediaCancelled(_BaseMedia):
-    status: Literal["cancelled"] = "cancelled"
-    media: LazyMedia | Media
-
-
 class MediaEnded(_BaseMedia):
     status: Literal["ended"] = "ended"
     media: LazyMedia
 
 
 MediaState = (
-    MediaStarted
+    MediaWaiting
     | MediaExtracting
     | MediaDownloading
     | MediaProcessing
@@ -84,6 +78,5 @@ MediaState = (
     | MediaSkipped
     | MediaFailed
     | MediaWarning
-    | MediaCancelled
     | MediaEnded
 )
