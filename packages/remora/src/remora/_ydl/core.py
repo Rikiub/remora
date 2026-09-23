@@ -1,26 +1,24 @@
 import tempfile
-from typing import Any
 
 from loguru import logger
 from yt_dlp.YoutubeDL import YoutubeDL
 
+from remora.models.types import AnyDict
 from remora.path import get_cache_dir
 
-__all__ = ["SilentYoutubeDL", "YDLDict"]
-
-YDLDict = dict[str, Any]
+__all__ = ["SilentYoutubeDL"]
 
 
 class SilentYoutubeDL(YoutubeDL):
-    """Custom `YoutubeDL` class."""
+    """Custom `YoutubeDL` with output supressed."""
 
     def __init__(
         self,
-        params: YDLDict | None = None,
+        params: AnyDict | None = None,
         auto_init: bool = False,
     ):
         # Default parameters
-        opts: YDLDict = {
+        opts = {
             # Adapt logs
             "logger": _LoguruYDLWrapper(),
             "no_warnings": False,

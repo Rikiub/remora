@@ -5,8 +5,8 @@ from typing import Self
 
 from anyio.to_thread import run_sync
 
+from remora import _ydl
 from remora._types import StreamContext
-from remora._ydl import RequestedFormat, YDLDict, YDLProcessor
 from remora.ffmpeg import get_ffmpeg_dir
 from remora.models.container import (
     AudioContainer,
@@ -33,7 +33,7 @@ class MediaProcessor:
 
         # Validate FFmpeg
         self.ffmpeg_dir = get_ffmpeg_dir(ffmpeg_dir)
-        self._prc = YDLProcessor(self.file_path, self.ffmpeg_dir)
+        self._prc = _ydl.Processor(self.file_path, self.ffmpeg_dir)
 
         # Sync state
         self._sync(self._prc)
@@ -98,7 +98,7 @@ class MediaProcessor:
             )
 
         # Convert streams to YDL format dict
-        real_streams: list[RequestedFormat] = []
+        real_streams: list[_ydl.RequestedFormat] = []
         for ctx in streams:
             fmt = ctx.stream._to_ydl_dict() | {"filepath": str(ctx.path)}
             real_streams.append(fmt)
@@ -113,7 +113,7 @@ class MediaProcessor:
         )
         return self._sync(result)
 
-    def _sync(self, processor: YDLProcessor) -> Self:
+    def _sync(self, processor: _ydl.Processor) -> Self:
         self.file_path = Path(processor.file_path)
         self.file_extension = self.file_path.suffix[1:]
 
@@ -127,7 +127,7 @@ class MediaProcessor:
         return self
 
 
-def _media_to_ydl_music(media: Media, music: MusicMetadata) -> YDLDict:
+def _media_to_ydl_music(media: Media, music: MusicMetadata) -> dict:
     info = {}
 
     # Track Title

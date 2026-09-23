@@ -3,7 +3,7 @@ from pathlib import Path
 
 from anyio.to_thread import run_sync
 
-from remora._ydl.downloader import YDLDownloader
+from remora import _ydl
 from remora.models.metadata import Storyboard, Subtitle, Thumbnail
 from remora.models.types import StrPath
 from remora.session import Session
@@ -14,7 +14,7 @@ __all__ = ["MetadataDownloader"]
 class MetadataDownloader:
     def __init__(self, session: Session):
         self._session = session
-        self._ydl_downloader = YDLDownloader(session.ydl_session)
+        self._ydl_downloader = _ydl.Downloader(session.ydl_session)
 
     async def download_resource(
         self,

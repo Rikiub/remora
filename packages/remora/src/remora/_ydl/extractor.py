@@ -6,11 +6,12 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
-from remora._ydl.session import YDL, YDLDict, YDLSession
+from remora._ydl.session import YDL, Session
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
+from remora.models.types import AnyDict
 
-__all__ = ["YDLExtractor"]
+__all__ = ["Extractor"]
 
 
 @dataclass(slots=True, frozen=True)
@@ -29,8 +30,8 @@ SEARCH_QUERIES = {
 }
 
 
-class YDLExtractor:
-    def __init__(self, session: YDLSession):
+class Extractor:
+    def __init__(self, session: Session):
         self.session = session
         self._ydl = YDL(
             params={"extract_flat": "in_playlist", "skip_download": True},
@@ -43,7 +44,7 @@ class YDLExtractor:
         query: str,
         service: str | SearchService,
         limit: int = 20,
-    ) -> YDLDict:
+    ) -> AnyDict:
         """Extract info from search service."""
 
         for item in SEARCH_QUERIES:
@@ -53,7 +54,7 @@ class YDLExtractor:
 
         raise ValueError(f"{service} is invalid. Should be: {SearchService}")
 
-    def extract_info(self, query: str) -> YDLDict:
+    def extract_info(self, query: str) -> AnyDict:
         try:
             info = self._ydl.extract_info(query, download=False)
             info = self._normalize_info(info)
@@ -67,7 +68,7 @@ class YDLExtractor:
                 status_code=extract_status_code(error),
             )
 
-        return cast(YDLDict, info)
+        return cast(AnyDict, info)
 
     def _normalize_info(self, info: dict) -> dict:
         # Normalize the current level extractor fields

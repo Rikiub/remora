@@ -7,22 +7,22 @@ from yt_dlp.downloader.mhtml import MhtmlFD
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
-from remora._ydl.session import YDL, YDLDict, YDLSession
+from remora._ydl.session import YDL, Session
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
-from remora.models.types import StrPath
+from remora.models.types import AnyDict, StrPath
 
-__all__ = ["YDLDownloader"]
+__all__ = ["Downloader"]
 
 
-class YDLDownloader:
-    def __init__(self, session: YDLSession):
+class Downloader:
+    def __init__(self, session: Session):
         self.session = session
 
     def download_format(
         self,
         filepath: StrPath,
-        format_info: YDLDict,
+        format_info: AnyDict,
         callback: Callable[[dict[str, Any]], None] | None = None,
         retries: int = DEFAULT_RETRIES,
     ) -> Path:
@@ -46,11 +46,11 @@ class YDLDownloader:
 
     def download_from_info(
         self,
-        info: YDLDict,
-        params: YDLDict,
+        info: AnyDict,
+        params: AnyDict,
         retries: int = DEFAULT_RETRIES,
     ) -> Path:
-        config: YDLDict = {"retries": retries, "fragment_retries": retries}
+        config = {"retries": retries, "fragment_retries": retries}
 
         try:
             ydl = YDL(
@@ -67,7 +67,7 @@ class YDLDownloader:
                 status_code=extract_status_code(error),
             )
 
-    def download_thumbnail(self, filepath: StrPath, thumbnail: YDLDict) -> Path:
+    def download_thumbnail(self, filepath: StrPath, thumbnail: AnyDict) -> Path:
         ydl = YDL(
             {
                 "writethumbnail": True,
@@ -99,8 +99,8 @@ class YDLDownloader:
     def download_subtitles(
         self,
         filepath: StrPath,
-        subtitles: YDLDict,
-        automatic_captions: YDLDict | None = None,
+        subtitles: AnyDict,
+        automatic_captions: AnyDict | None = None,
     ) -> list[Path]:
         automatic_captions = automatic_captions or {}
 
@@ -133,7 +133,7 @@ class YDLDownloader:
     def download_storyboard(
         self,
         filepath: StrPath,
-        storyboard: YDLDict,
+        storyboard: AnyDict,
     ) -> Path:
         extension = storyboard["ext"]
         filepath = f"{filepath}.{extension}"

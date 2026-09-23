@@ -14,16 +14,17 @@ from yt_dlp.networking.common import RequestDirector
 from yt_dlp.networking.impersonate import ImpersonateTarget
 from yt_dlp.YoutubeDL import YoutubeDL
 
-from remora._ydl.core import SilentYoutubeDL, YDLDict
+from remora._ydl.core import SilentYoutubeDL
+from remora.models.types import AnyDict
 
 if TYPE_CHECKING:
     from remora.models.options import NetworkOptions
 
-__all__ = ["YDL", "YDLDict", "YDLSession"]
+__all__ = ["YDL", "Session"]
 
 
 @dataclass(slots=True)
-class YDLSession(ContextManagerMixin):
+class Session(ContextManagerMixin):
     request_director: RequestDirector
     cookiejar: YoutubeDLCookieJar
     proxies: dict[str, Any]
@@ -78,13 +79,13 @@ class YDL(SilentYoutubeDL):
 
     def __init__(
         self,
-        params: YDLDict | None = None,
-        session: YDLSession | None = None,
+        params: AnyDict | None = None,
+        session: Session | None = None,
         auto_init: bool = False,
     ):
         super().__init__(params, auto_init)
 
-        self.session = session or YDLSession.create()
+        self.session = session or Session.create()
         self._close_hooks = self.session.close_hooks
 
     @override

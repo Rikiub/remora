@@ -5,8 +5,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from typing_extensions import override
 
-from remora._ydl import YDLSession
-from remora._ydl.downloader import YDLDownloader
+from remora import _ydl
 from remora.constants import DEFAULT_IMPERSONATE_TARGET
 from remora.exceptions import DownloaderError
 from remora.models.progress import (
@@ -31,7 +30,7 @@ class YDLStreamDownloader(Downloader[StreamState]):
         self,
         stream: Stream,
         output_path: StrPath,
-        ydl_session: YDLSession,
+        ydl_session: _ydl.Session,
         retries: int | None = None,
     ):
         super().__init__(
@@ -39,7 +38,7 @@ class YDLStreamDownloader(Downloader[StreamState]):
             output_path=output_path,
             retries=retries,
         )
-        self._ydl_downloader = YDLDownloader(ydl_session)
+        self._ydl_downloader = _ydl.Downloader(ydl_session)
 
         self.downloaded_bytes = 0
         self.total_bytes = 0

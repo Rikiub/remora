@@ -14,11 +14,11 @@ from yt_dlp.postprocessor.ffmpeg import (
 )
 
 from remora._ydl.messages import sanitize_ydl_error
-from remora._ydl.session import YDL, YDLDict
+from remora._ydl.session import YDL
 from remora.exceptions import ProcessorError
-from remora.models.types import StrPath
+from remora.models.types import AnyDict, StrPath
 
-__all__ = ["RequestedFormat", "YDLProcessor"]
+__all__ = ["Processor", "RequestedFormat"]
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
@@ -41,7 +41,7 @@ class RequestedFormat(TypedDict):
     acodec: str
 
 
-class YDLProcessor:
+class Processor:
     def __init__(self, file_path: StrPath, ffmpeg_dir: StrPath | None = None) -> None:
         from remora.ffmpeg import validate_ffmpeg_dir
 
@@ -80,7 +80,7 @@ class YDLProcessor:
         return self._sync(data)
 
     @catch
-    def embed_metadata(self, data: YDLDict) -> Self:
+    def embed_metadata(self, data: AnyDict) -> Self:
         pp = FFmpegMetadataPP(
             self._ydl(),
             add_metadata=True,
@@ -175,6 +175,6 @@ class YDLProcessor:
         }
         return info
 
-    def _sync(self, data: YDLDict) -> Self:
+    def _sync(self, data: AnyDict) -> Self:
         self.file_path = Path(data["filepath"])
         return self

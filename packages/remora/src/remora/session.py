@@ -9,7 +9,7 @@ from httpx import AsyncClient
 from httpx_curl_cffi import AsyncCurlTransport
 from typing_extensions import override
 
-from remora._ydl import YDLSession
+from remora import _ydl
 from remora.constants import DEFAULT_MEDIA_CONCURRENCY, DEFAULT_POSTPROCESS_CONCURRENCY
 from remora.models.options import DownloadOptions, NetworkOptions
 
@@ -21,7 +21,7 @@ class Session(anyio.AsyncContextManagerMixin):
     network_options: NetworkOptions
     download_options: DownloadOptions
 
-    ydl_session: YDLSession
+    ydl_session: _ydl.Session
     httpx_client: AsyncClient
 
     extract_limiter: anyio.CapacityLimiter
@@ -43,7 +43,7 @@ class Session(anyio.AsyncContextManagerMixin):
         return cls(
             network_options=network_options,
             download_options=download_options,
-            ydl_session=YDLSession.from_options(network_options),
+            ydl_session=_ydl.Session.from_options(network_options),
             httpx_client=build_httpx_client(network_options),
             extract_limiter=anyio.CapacityLimiter(
                 extract_limit or DEFAULT_MEDIA_CONCURRENCY

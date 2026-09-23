@@ -7,7 +7,7 @@ from anyio.to_thread import run_sync
 from loguru import logger
 from pydantic import AnyUrl
 
-from remora._ydl import YDLExtractor
+from remora._ydl import Extractor
 from remora.models.media import (
     ExtractAdapter,
     LazyMedia,
@@ -26,7 +26,7 @@ __all__ = ["MediaExtractor"]
 class MediaExtractor:
     def __init__(self, session: Session):
         self._session = session
-        self._ydl_extractor = YDLExtractor(session.ydl_session)
+        self._ydl_extractor = Extractor(session.ydl_session)
 
     @overload
     async def extract(self, item: StrUrl) -> Media | Playlist: ...
