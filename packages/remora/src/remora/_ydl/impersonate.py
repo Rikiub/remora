@@ -1,6 +1,6 @@
 from yt_dlp.networking.impersonate import ImpersonateTarget
 
-from remora._ydl.wrapper import YDL
+from remora._ydl.session import YDL
 
 __all__ = ["parse_impersonate_target"]
 

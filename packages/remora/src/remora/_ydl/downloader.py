@@ -7,8 +7,7 @@ from yt_dlp.downloader.mhtml import MhtmlFD
 from yt_dlp.utils import DownloadError as YDLDownloadError
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
-from remora._ydl.session import YDLNetworkSession
-from remora._ydl.wrapper import YDL, YDLDict
+from remora._ydl.session import YDL, YDLDict, YDLSession
 from remora.constants import DEFAULT_RETRIES
 from remora.exceptions import DownloaderError, MetadataDownloaderError
 from remora.models.types import StrPath
@@ -17,7 +16,7 @@ __all__ = ["YDLDownloader"]
 
 
 class YDLDownloader:
-    def __init__(self, session: YDLNetworkSession):
+    def __init__(self, session: YDLSession):
         self.session = session
 
     def download_format(
@@ -56,7 +55,7 @@ class YDLDownloader:
         try:
             ydl = YDL(
                 params=config | params,
-                network_session=self.session,
+                session=self.session,
                 auto_init=True,
             )
             result = ydl.process_ie_result(info, download=True)
@@ -77,7 +76,7 @@ class YDLDownloader:
                     "pl_thumbnail": "",
                 },
             },
-            network_session=self.session,
+            session=self.session,
         )
 
         info = {"thumbnails": [thumbnail]}
@@ -107,7 +106,7 @@ class YDLDownloader:
 
         ydl = YDL(
             {"writesubtitles": True, "allsubtitles": True},
-            network_session=self.session,
+            session=self.session,
         )
         subs = ydl.process_subtitles(
             str(filepath),
@@ -140,7 +139,7 @@ class YDLDownloader:
         filepath = f"{filepath}.{extension}"
 
         fd_class = get_suitable_downloader(storyboard, {}, protocol="mhtml")
-        fd: MhtmlFD = fd_class(YDL(network_session=self.session), {})
+        fd: MhtmlFD = fd_class(YDL(session=self.session), {})
         fd.download(filepath, storyboard)
 
         return Path(filepath)

@@ -6,8 +6,7 @@ from yt_dlp.utils import DownloadError as YDLDownloadError
 from yt_dlp.utils._utils import determine_protocol
 
 from remora._ydl.messages import extract_status_code, sanitize_ydl_error
-from remora._ydl.session import YDLNetworkSession
-from remora._ydl.wrapper import YDL, YDLDict
+from remora._ydl.session import YDL, YDLDict, YDLSession
 from remora.exceptions import ExtractorError
 from remora.models.search import SearchService
 
@@ -31,11 +30,11 @@ SEARCH_QUERIES = {
 
 
 class YDLExtractor:
-    def __init__(self, session: YDLNetworkSession):
+    def __init__(self, session: YDLSession):
         self.session = session
-        self.ydl = YDL(
+        self._ydl = YDL(
             params={"extract_flat": "in_playlist", "skip_download": True},
-            network_session=session,
+            session=session,
             auto_init=True,
         )
 
@@ -56,7 +55,7 @@ class YDLExtractor:
 
     def extract_info(self, query: str) -> YDLDict:
         try:
-            info = self.ydl.extract_info(query, download=False)
+            info = self._ydl.extract_info(query, download=False)
             info = self._normalize_info(info)
 
             # Infer protocol if missing

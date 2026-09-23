@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from remora._ydl.wrapper import YDL
+from remora._ydl.session import YDL
 from remora.extractor import MediaExtractor
 from remora.session import Session
 

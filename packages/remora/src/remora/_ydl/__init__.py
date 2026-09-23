@@ -6,4 +6,3 @@ from .extractor import *
 from .impersonate import *
 from .processor import *
 from .session import *
-from .wrapper import *

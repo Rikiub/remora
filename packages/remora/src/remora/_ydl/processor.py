@@ -14,7 +14,7 @@ from yt_dlp.postprocessor.ffmpeg import (
 )
 
 from remora._ydl.messages import sanitize_ydl_error
-from remora._ydl.wrapper import YDL, YDLDict
+from remora._ydl.session import YDL, YDLDict
 from remora.exceptions import ProcessorError
 from remora.models.types import StrPath
 
