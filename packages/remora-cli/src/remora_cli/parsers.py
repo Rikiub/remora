@@ -19,37 +19,34 @@ class Query:
     entry: str
 
     @classmethod
-    def parse_any(cls, type_, tokens: Sequence[Token]) -> Generator[Self]:
+    def parse(cls, type_, tokens: Sequence[Token]) -> Generator[Self]:
         for token in tokens:
             if token.value == "-":
-                yield from cls.parse_lines(type_, sys.stdin.read())
+                yield from cls.from_lines(sys.stdin.read())
                 break
             elif (path := Path(token.value)).is_file():
-                yield from cls.parse_file(type_, path)
+                validators.Path(
+                    exists=True,
+                    file_okay=True,
+                    dir_okay=False,
+                )(type_, path)
+                yield from cls.from_file(path)
             else:
-                yield cls.parse_str(type_, token)
+                yield cls.from_str(token.value)
 
     @classmethod
-    def parse_file(cls, type_, path: Path) -> Generator[Self]:
-        validators.Path(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-        )(type_, path)
-
+    def from_file(cls, path: Path) -> Generator[Self]:
         with path.open() as file:
-            yield from cls.parse_lines(type_, file)
+            yield from cls.from_lines(file)
 
     @classmethod
-    def parse_lines(cls, type_, content: str | TextIO) -> Generator[Self]:
+    def from_lines(cls, content: str | TextIO) -> Generator[Self]:
         for line in StringIO(content) if isinstance(content, str) else content:
             if line.startswith(("http://", "https://")):
                 yield cls(target="url", entry=line.strip())
 
     @classmethod
-    def parse_str(cls, type_, token: Token) -> Self:
-        query = token.value
-
+    def from_str(cls, query: str) -> Self:
         selection = query.split(":")[0]
         entry = query
 

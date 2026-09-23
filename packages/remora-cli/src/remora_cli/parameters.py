@@ -25,7 +25,7 @@ QueryParameter = Annotated[
 """,
         negative=False,
         allow_leading_hyphen=True,
-        converter=lambda type_, tokens: Query.parse_any(type_, tokens),
+        converter=lambda type_, tokens: Query.parse(type_, tokens),
     ),
 ]
 
