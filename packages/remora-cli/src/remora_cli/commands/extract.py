@@ -65,6 +65,7 @@ async def extract(
         set[str] | None,
         Parameter(
             help="Keys to include.",
+            metavar="KEY...",
             group=Panel.FORMAT,
             negative=False,
         ),
@@ -73,6 +74,7 @@ async def extract(
         set[str] | None,
         Parameter(
             help="Keys to exclude.",
+            metavar="KEY...",
             group=Panel.FORMAT,
             negative=False,
         ),

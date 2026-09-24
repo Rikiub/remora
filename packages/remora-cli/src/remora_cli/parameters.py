@@ -74,6 +74,7 @@ class NetworkParameters:
         Path | None,
         Parameter(
             help="Path to a cookies file.",
+            metavar="FILE",
             validator=validators.Path(
                 exists=True,
                 file_okay=True,
@@ -84,12 +85,16 @@ class NetworkParameters:
     ] = None
     proxy: Annotated[
         str | None,
-        Parameter(help="HTTP/HTTPS/SOCKS5 proxy URL."),
+        Parameter(
+            help="HTTP/HTTPS/SOCKS5 proxy URL.",
+            metavar="URL",
+        ),
     ] = None
     impersonate: Annotated[
         ImpersonateClient | str | None,
         Parameter(
             help="Target browser to impersonate.",
+            metavar="BROWSER",
             validator=lambda type, v: validate_impersonate_target(v) if v else None,
         ),
     ] = None

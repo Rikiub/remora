@@ -67,6 +67,7 @@ async def download(
         int | StreamQuality | None,
         Parameter(
             help="Prefered target quality. Applies to video by default, but respects --type if provided.",
+            metavar="INT",
             short_alias=True,
             group=Panel.FILTERS,
         ),
@@ -85,6 +86,7 @@ async def download(
         Parameter(
             help="Path template for the saved file.",
             short_alias=True,
+            metavar="TEMPLATE",
             group=Panel.DOWNLOADER,
             validator=lambda type, v: validate_template(v),
         ),
@@ -110,6 +112,7 @@ async def download(
         RichAVContainer | None,
         Parameter(
             help="Remux or recode the downloaded file into a specific container.",
+            metavar="CONTAINER",
             short_alias=True,
             show_default=False,
             group=Panel.POST_PROCESS,
@@ -127,6 +130,7 @@ async def download(
         Path | None,
         Parameter(
             help="FFmpeg and FFprobe executable directory to use.",
+            metavar="DIRECTORY",
             show_default=False,
             group=Panel.POST_PROCESS,
             validator=_validate_ffmpeg,
