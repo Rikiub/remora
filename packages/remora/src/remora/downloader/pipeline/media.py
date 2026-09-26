@@ -1,7 +1,8 @@
 import shutil
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 import anyio
@@ -62,7 +63,7 @@ __all__ = ["MediaDownloader"]
 @dataclass(slots=True)
 class _DownloadContext:
     streams: list[StreamContext] | None = None
-    thumbnail: Path | None = None
+    thumbnails: list[Path] | None = None
     subtitles: list[Path] | None = None
 
 
@@ -151,36 +152,48 @@ class MediaDownloader(BaseDownloader[MediaState]):
                 media=self.media, streams=selected_streams
             )
 
-        if not results.streams:
-            raise ValueError("Neither video or audio was downloaded")
+        await self._write_metadata(results, output)
 
-        async with self.session.postprocess_limiter:
-            # Determine stable file
-            if self.ffmpeg_dir and len(results.streams) >= 2:
-                file_path = await self._merge_streams(streams=results.streams)
-            else:
-                file_path = results.streams[0].path
+        if self.session.download_options.streams:
+            if not results.streams:
+                raise ValueError("Neither video or audio was downloaded")
 
-            # Post-process file
-            if self.ffmpeg_dir:
-                with logger.contextualize(status="processing"):
-                    file_path = await self._post_process(
-                        file_path,
-                        primary_stream,
-                        results.thumbnail,
-                        results.subtitles,
+            async with self.session.postprocess_limiter:
+                # Determine stable file
+                if self.ffmpeg_dir and len(results.streams) >= 2:
+                    file_path = await self._merge_streams(streams=results.streams)
+                else:
+                    file_path = results.streams[0].path
+
+                # Post-process file
+                if self.ffmpeg_dir:
+                    with logger.contextualize(status="processing"):
+                        file_path = await self._post_process(
+                            file_path,
+                            primary_stream,
+                            results.thumbnails,
+                            results.subtitles,
+                        )
+                else:
+                    await self._emit(
+                        MediaWarning(
+                            id=self.id,
+                            media=self.media,
+                            message="FFmpeg binaries unavailable, skipping post-processing",
+                        )
                     )
-            else:
-                await self._emit(
-                    MediaWarning(
-                        id=self.id,
-                        media=self.media,
-                        message="FFmpeg binaries unavailable, skipping post-processing",
-                    )
+
+            # Complete (Move file to target)
+            final_path = await self._move_file(file_path, output)
+
+            await self._emit(
+                MediaCompleted(
+                    id=self.id,
+                    media=self.media,
+                    file_path=Path(final_path),
+                    result="partial" if self.has_missing_data else "success",
                 )
-
-        # Complete (Move file to target)
-        await self._move_to_final(file_path, output)
+            )
 
     async def _check_output_duplicate(
         self,
@@ -219,44 +232,44 @@ class MediaDownloader(BaseDownloader[MediaState]):
         media: Media,
         streams: Iterable[Stream],
     ) -> _DownloadContext:
-        if not streams:
-            raise ValueError("At least one stream must be provided")
-
         context = _DownloadContext()
 
-        async def download_streams():
-            async with (
-                self.session.download_limiter,
-                BatchStreamDownloader(
-                    stream=[
-                        StreamContext(stream=s, path=create_temp_file())
-                        for s in streams
-                    ],
-                    session=self.session,
-                ) as progress,
-            ):
-                async for state in progress:
-                    if isinstance(state, BatchStreamDownloading):
-                        await self._emit(
-                            MediaDownloading(
-                                id=self.id,
-                                media=self.media,
-                                progress=state,
+        async def download_stream_files():
+            if self.session.download_options.streams:
+                async with (
+                    self.session.download_limiter,
+                    BatchStreamDownloader(
+                        stream=[
+                            StreamContext(stream=s, path=create_temp_file())
+                            for s in streams
+                        ],
+                        session=self.session,
+                    ) as progress,
+                ):
+                    async for state in progress:
+                        if isinstance(state, BatchStreamDownloading):
+                            await self._emit(
+                                MediaDownloading(
+                                    id=self.id,
+                                    media=self.media,
+                                    progress=state,
+                                )
                             )
-                        )
-                    elif isinstance(state, BatchStreamCompleted):
-                        context.streams = [
-                            StreamContext(stream=stream, path=path)
-                            for stream, path in zip(streams, state.paths)
-                        ]
-                        logger.debug(
-                            "Streams downloaded: {paths}",
-                            paths=[str(p.path) for p in context.streams],
-                        )
-            await self._emit(MediaWaiting(id=self.id, media=self.media))
+                        elif isinstance(state, BatchStreamCompleted):
+                            context.streams = [
+                                StreamContext(stream=stream, path=path)
+                                for stream, path in zip(streams, state.paths)
+                            ]
+                            logger.debug(
+                                "Streams downloaded: {paths}",
+                                paths=[str(p.path) for p in context.streams],
+                            )
+                await self._emit(MediaWaiting(id=self.id, media=self.media))
 
         async def download_subtitle_files():
-            if media.subtitles:
+            if media.subtitles and (
+                self.session.download_options.wants_metadata("subtitles")
+            ):
                 subtitles = self._resolve_subtitles(media)
                 paths = []
 
@@ -285,16 +298,20 @@ class MediaDownloader(BaseDownloader[MediaState]):
                 context.subtitles = paths
                 logger.debug("Subtitles downloaded")
 
-        async def download_thumbnail_file():
-            if media.thumbnails:
+        async def download_thumbnail_files():
+            if media.thumbnails and (
+                self.session.download_options.wants_metadata("thumbnail")
+            ):
                 try:
                     logger.debug("Downloading thumbnail")
-                    context.thumbnail = (
-                        await self.metatada_downloader.download_thumbnail(
-                            media.thumbnails[0],
-                            create_temp_file(),
+                    context.thumbnails = [
+                        (
+                            await self.metatada_downloader.download_thumbnail(
+                                media.thumbnails[0],
+                                create_temp_file(),
+                            )
                         )
-                    )
+                    ]
                     logger.debug("Thumbnail downloaded")
                 except MetadataDownloaderError as error:
                     await self._emit(
@@ -307,11 +324,9 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         try:
             async with anyio.create_task_group() as tg:
-                tg.start_soon(download_streams)
-
-                if self.ffmpeg_dir and self.session.download_options.embed_metadata:
-                    tg.start_soon(download_subtitle_files)
-                    tg.start_soon(download_thumbnail_file)
+                tg.start_soon(download_stream_files)
+                tg.start_soon(download_subtitle_files)
+                tg.start_soon(download_thumbnail_files)
         except* DownloaderError as eg:
             raise eg.exceptions[0] from eg
 
@@ -381,12 +396,35 @@ class MediaDownloader(BaseDownloader[MediaState]):
         # Return merged file path
         return Path(prc.file_path)
 
+    async def _write_metadata(
+        self,
+        context: _DownloadContext,
+        output: StrPath,
+    ) -> None:
+        output = anyio.Path(output)
+        opts = self.session.download_options
+
+        if opts.wants_sidecar("info"):
+            data = self.media.model_dump_json()
+            filepath = output.with_suffix(".info.json")
+            await filepath.write_text(data, encoding="utf-8")
+        if context.thumbnails and opts.wants_sidecar("thumbnail"):
+            for thumb in context.thumbnails:
+                await self._copy_file(
+                    thumb, output.with_name(f"{output.stem}.thumbnail{thumb.suffix}")
+                )
+        if context.subtitles and opts.wants_sidecar("subtitles"):
+            for sub in context.subtitles:
+                await self._copy_file(
+                    sub, output.with_name(f"{output.stem}.subtitle{thumb.suffix}")
+                )
+
     async def _post_process(
         self,
         file_path: Path,
         stream: Stream | None = None,
-        thumbnail: Path | None = None,
-        subtitles: Iterable[Path] | None = None,
+        thumbnails: Sequence[Path] | None = None,
+        subtitles: Sequence[Path] | None = None,
     ) -> Path:
         prc = processor.MediaProcessor(
             file_path=file_path,
@@ -479,34 +517,36 @@ class MediaDownloader(BaseDownloader[MediaState]):
 
         # Metadata
         # Must run before embed the thumbnail.
-        if self.session.download_options.embed_metadata:
+        if self.session.download_options.embeds:
             async with track_prc("embed_metadata"):
                 await prc.embed_metadata(self.media)
 
-        if thumbnail and prc.file_container.supports_thumbnails:
+        if thumbnails and prc.file_container.supports_thumbnails:
             async with track_prc("embed_thumbnail"):
-                await prc.embed_thumbnail(thumbnail, square=bool(self.media.music))
+                await prc.embed_thumbnail(thumbnails[0], square=bool(self.media.music))
 
         return Path(prc.file_path)
 
-    async def _move_to_final(self, src: StrPath, dest: StrPath) -> Path:
+    async def _move_file(self, src: StrPath, dest: StrPath) -> Path:
+        final_path = await self._prepare_file(src, dest)
+        final_path = await run_sync(partial(shutil.move, src, final_path))
+        return Path(final_path)
+
+    async def _copy_file(self, src: StrPath, dest: StrPath) -> Path:
+        final_path = await self._prepare_file(src, dest)
+        final_path = await run_sync(partial(shutil.copy, src, final_path))
+        return Path(final_path)
+
+    async def _prepare_file(self, src: StrPath, dest: StrPath) -> Path:
         _src, _dest = anyio.Path(src), anyio.Path(dest)
 
-        final_path = _dest.parent / f"{_dest.name}{_src.suffix}"
+        if not _dest.suffix:
+            full_suffix = "".join(_src.suffixes)
+            final_path = _dest.parent / f"{_dest.name}{full_suffix}"
+        else:
+            final_path = _dest
+
         await final_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Use shutil.move for compability between cross filesystems
-        await run_sync(shutil.move, src, final_path)
-
-        await self._emit(
-            MediaCompleted(
-                id=self.id,
-                media=self.media,
-                file_path=Path(final_path),
-                result="partial" if self.has_missing_data else "success",
-            )
-        )
-
         return Path(final_path)
 
     def _resolve_subtitles(self, media: Media) -> Subtitles:

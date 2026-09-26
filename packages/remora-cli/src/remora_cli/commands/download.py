@@ -15,9 +15,11 @@ from remora.ffmpeg import get_ffmpeg_dir, validate_ffmpeg_dir
 from remora.models import (
     AVContainerFormat,
     DownloadOptions,
+    EmbedKind,
     Playlist,
     RichAVContainer,
     Search,
+    SidecarKind,
     StreamQuality,
 )
 from remora.template import validate_template
@@ -80,6 +82,13 @@ async def download(
             group=Panel.FILTERS,
         ),
     ] = None,
+    streams: Annotated[
+        bool,
+        Parameter(
+            help="Include or skip streams download; fetch metadata only.",
+            group=Panel.FILTERS,
+        ),
+    ] = True,
     # DOWNLOADER
     output: Annotated[
         str,
@@ -91,6 +100,14 @@ async def download(
             validator=lambda type, v: validate_template(v),
         ),
     ] = DEFAULT_TEMPLATE,
+    sidecars: Annotated[
+        bool | tuple[SidecarKind, ...],
+        Parameter(
+            help="Which artifacts to write as separate files beside the media.",
+            negative=False,
+            group=Panel.DOWNLOADER,
+        ),
+    ] = False,
     skip_existing: Annotated[
         bool,
         Parameter(
@@ -118,11 +135,11 @@ async def download(
             group=Panel.POST_PROCESS,
         ),
     ] = None,
-    embed_metadata: Annotated[
-        bool,
+    embeds: Annotated[
+        bool | tuple[EmbedKind, ...],
         Parameter(
-            negative="--no-metadata",
-            help="Embed title, chapters, thumbnail and more into the file.",
+            help="Which artifacts to embed into the media file.",
+            negative=False,
             group=Panel.POST_PROCESS,
         ),
     ] = True,
@@ -159,13 +176,15 @@ async def download(
             download_options=DownloadOptions(
                 output_template=output,
                 skip_existing=skip_existing,
-                format_type=type,
-                languages=languages,
-                convert_to=convert,
-                quality=quality,
-                ffmpeg_location=ffmpeg_location,
                 concurrency=concurrency,
-                embed_metadata=embed_metadata,
+                format_type=type,
+                quality=quality,
+                languages=languages,
+                streams=streams,
+                embeds=embeds,
+                sidecars=sidecars,
+                convert_to=convert,
+                ffmpeg_location=ffmpeg_location,
             ),
             network_options=network.build_options(),
         )

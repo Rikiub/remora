@@ -165,7 +165,7 @@ def mock_pipeline(
             session=Session.create(
                 download_options=DownloadOptions(
                     output_template=tmp_path,
-                    embed_metadata=True,
+                    embeds=True,
                 )
             ),
         )
