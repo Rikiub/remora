@@ -80,13 +80,18 @@ class Processor:
         return self._sync(data)
 
     @catch
-    def embed_metadata(self, data: AnyDict) -> Self:
+    def embed_metadata(
+        self,
+        info: AnyDict,
+        add_info: bool = False,
+    ) -> Self:
         pp = FFmpegMetadataPP(
             self._ydl(),
             add_metadata=True,
             add_chapters=True,
+            add_infojson=add_info,
         )
-        pp.run(self._pp_params | data)
+        pp.run(self._pp_params | info)
         return self
 
     @catch
