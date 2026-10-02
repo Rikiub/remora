@@ -6,22 +6,22 @@ from rich import box
 from rich.highlighter import ReprHighlighter
 from rich.table import Table
 
-from remora import Remora
+import remora
 from remora.exceptions import RemoraError
-from remora.models.media import ExtractResult, Search
+from remora.models import ExtractResult, Search
 from remora_cli.parsers import Query, SearchTarget
 from remora_cli.ui.rich import CONSOLE
 
 
 async def extract_queries(
     queries: Iterable[Query],
-    remora: Remora,
+    client: remora.Client,
 ) -> AsyncIterable[tuple[SearchTarget, ExtractResult | Search]]:
     for query in queries:
         try:
             if (
                 query.target == "url"
-                and (cookies := remora._session.network_options.cookies)
+                and (cookies := client._session.network_options.cookies)
                 and (url_host := AnyUrl(query.entry).host)
                 and cookies.get_expired_cookies(url_host)
             ):
@@ -34,7 +34,7 @@ async def extract_queries(
             with CONSOLE.status("Searching[blink]...[/]"):
                 if query.target == "url":
                     logger.info('Extract URL: "{url}"', url=query.entry, icon="🔎")
-                    result = await remora.extract(query.entry)
+                    result = await client.extract(query.entry)
 
                     if result.type == "playlist":
                         logger.info(
@@ -51,7 +51,7 @@ async def extract_queries(
                         icon="🔎",
                     )
 
-                    result = await remora.extract_search(query.entry, query.target)
+                    result = await client.extract_search(query.entry, query.target)
 
                     if not result.entries.medias():
                         logger.warning("No results found")

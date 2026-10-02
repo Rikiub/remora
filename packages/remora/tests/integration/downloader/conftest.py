@@ -2,14 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from remora import DownloadOptions, Remora
+from remora import Client, DownloadOptions
 from remora.models.progress import MediaCompleted, MediaFailed, MediaState
 
 
 @pytest.fixture
 def download(tmp_path: Path):
     async def wrap(url: str):
-        remora = Remora(
+        remora = Client(
             download_options=DownloadOptions(
                 output_template=tmp_path,
                 quality=1,

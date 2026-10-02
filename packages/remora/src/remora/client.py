@@ -28,10 +28,10 @@ from remora.models.stream import Stream
 from remora.models.types import StrPath, StrUrl
 from remora.session import Session
 
-__all__ = ["Remora"]
+__all__ = ["Client"]
 
 
-class Remora(AsyncContextManagerMixin):
+class Client(AsyncContextManagerMixin):
     def __init__(
         self,
         download_options: DownloadOptions | None = None,

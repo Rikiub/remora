@@ -14,7 +14,6 @@ from remora.exceptions import FFmpegNotFoundError
 from remora.ffmpeg import get_ffmpeg_dir, validate_ffmpeg_dir
 from remora.models import (
     AVContainerFormat,
-    DownloadOptions,
     EmbedKind,
     Playlist,
     RichAVContainer,
@@ -161,7 +160,7 @@ async def download(
 
     # Lazy startup
     with CONSOLE.status("Starting[blink]...[/]"):
-        from remora import Remora
+        import remora
         from remora_cli.pipeline.extractor import extract_queries
 
         try:
@@ -172,8 +171,8 @@ async def download(
             )
             ffmpeg_location = None
 
-        remora = Remora(
-            download_options=DownloadOptions(
+        client = remora.Client(
+            download_options=remora.DownloadOptions(
                 output_template=output,
                 skip_existing=skip_existing,
                 concurrency=concurrency,
@@ -189,8 +188,8 @@ async def download(
             network_options=network.build_options(),
         )
 
-    async with remora:
-        async for target, result in extract_queries(query, remora):
+    async with client:
+        async for target, result in extract_queries(query, client):
             if isinstance(result, (Playlist, Search)) and not result.entries.medias():
                 url = (
                     result.url
@@ -204,7 +203,7 @@ async def download(
 
             async with (
                 ProgressDisplay(display.quiet) as bar,
-                remora.download_playlist(result) as progress,
+                client.download_playlist(result) as progress,
             ):
                 async for state in progress:
                     await bar.playlist_callback(state)

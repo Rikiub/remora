@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from remora import DownloadOptions, Remora
+from remora import Client, DownloadOptions
 
 # Disabled for now
 pytestmark = pytest.mark.skip
@@ -14,7 +14,7 @@ PLAYLIST = (
 
 
 async def test_single_media(tmp_path: Path):
-    remora = Remora(
+    remora = Client(
         download_options=DownloadOptions(
             output_template=tmp_path,
             format_type="audio",
@@ -34,7 +34,7 @@ async def test_single_media(tmp_path: Path):
 
 
 async def test_playlist(tmp_path: Path):
-    remora = Remora(
+    remora = Client(
         download_options=DownloadOptions(
             output_template=tmp_path,
             format_type="audio",
