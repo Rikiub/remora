@@ -1,9 +1,8 @@
 import pytest
 
-from remora import MediaExtractor
-from remora.session import Session
+from remora import Client
 
 
 @pytest.fixture
-async def extractor() -> MediaExtractor:
-    return MediaExtractor(Session.create())
+async def extractor() -> Client:
+    return Client()

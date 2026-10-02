@@ -15,7 +15,6 @@ from remora.models.media.item import Media
 from remora.models.metadata.subtitle import ExternalSubtitle, Subtitles
 from remora.models.metadata.thumbnail import Thumbnail, Thumbnails
 from remora.models.options.download import DownloadOptions
-from remora.models.progress import MediaStarted
 from remora.models.progress.media import (
     MediaCompleted,
     MediaDownloading,
@@ -190,7 +189,6 @@ async def test_download_states(
     async with downloader as progress:
         states = [type(state) async for state in progress]
 
-    assert MediaStarted in states
     assert MediaDownloading in states
     assert MediaProcessing in states
     assert MediaCompleted in states

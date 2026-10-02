@@ -1,6 +1,6 @@
 import pytest
 
-from remora import MediaExtractor
+from remora import Client
 from remora.exceptions import ExtractorError
 
 
@@ -12,6 +12,6 @@ from remora.exceptions import ExtractorError
         "https://www.youtube.com/watch?v=JUf1zxjR_Qw",  # Deleted video
     ],
 )
-async def test_exceptions(extractor: MediaExtractor, url: str):
+async def test_exceptions(client: Client, url: str):
     with pytest.raises(ExtractorError):
-        await extractor.extract(url)
+        await client.extract(url)
