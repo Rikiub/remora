@@ -28,20 +28,6 @@ class MetadataDownloader:
         elif isinstance(item, Storyboard):
             return await self.download_storyboard(item, output_path)
 
-    async def download_thumbnail(
-        self,
-        thumbnail: Thumbnail,
-        output_path: StrPath,
-    ) -> Path:
-        path = await run_sync(
-            partial(
-                self._ydl_downloader.download_thumbnail,
-                output_path,
-                thumbnail._to_ydl_dict(),
-            )
-        )
-        return path
-
     async def download_subtitle(
         self,
         subtitle: Subtitle,
@@ -55,6 +41,20 @@ class MetadataDownloader:
             )
         )
         return paths[0]
+
+    async def download_thumbnail(
+        self,
+        thumbnail: Thumbnail,
+        output_path: StrPath,
+    ) -> Path:
+        path = await run_sync(
+            partial(
+                self._ydl_downloader.download_thumbnail,
+                output_path,
+                thumbnail._to_ydl_dict(),
+            )
+        )
+        return path
 
     async def download_storyboard(
         self,
