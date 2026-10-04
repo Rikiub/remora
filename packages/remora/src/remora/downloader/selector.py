@@ -1,6 +1,6 @@
 from typing import TypeVar, cast
 
-from remora.constants import DEFAULT_STREAM_LANGUAGE
+from remora.constants import DEFAULT_LANGUAGE
 from remora.models.media import Media
 from remora.models.options.download import DownloadOptions
 from remora.models.rank import get_audio_rank, get_video_rank
@@ -104,7 +104,7 @@ class StreamSelector:
             raise TypeError(f"Unsupported stream type: {type}")
 
         if (values := candidates.filter(language=self.download_options.languages)) or (
-            values := candidates.filter(language=DEFAULT_STREAM_LANGUAGE)
+            values := candidates.filter(language=DEFAULT_LANGUAGE)
         ):
             candidates = values
 
