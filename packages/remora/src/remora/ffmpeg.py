@@ -224,3 +224,14 @@ def _validate_ffprobe(ffprobe_path: Path) -> Path:
         )
 
     return ffprobe_path
+
+
+def _clear_cache():
+    """Clears functools caches of ffmpeg binaries."""
+    find_wheel_ffmpeg_dir.cache_clear()
+    find_system_ffmpeg_dir.cache_clear()
+    get_system_ffmpeg_binary.cache_clear()
+    get_system_ffprobe_binary.cache_clear()
+    _validate_ffmpeg.cache_clear()
+    _validate_ffprobe.cache_clear()
+    _validate_ffmpeg_dir.cache_clear()

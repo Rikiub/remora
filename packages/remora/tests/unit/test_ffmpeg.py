@@ -8,15 +8,9 @@ from remora.exceptions import FFmpegNotFoundError
 
 
 @pytest.fixture(autouse=True)
-def clear_caches():
+def clear_cache():
     """Clears functools caches before every test to prevent state leakage."""
-    ffmpeg.find_wheel_ffmpeg_dir.cache_clear()
-    ffmpeg.find_system_ffmpeg_dir.cache_clear()
-    ffmpeg.get_system_ffmpeg_binary.cache_clear()
-    ffmpeg.get_system_ffprobe_binary.cache_clear()
-    ffmpeg._validate_ffmpeg.cache_clear()
-    ffmpeg._validate_ffprobe.cache_clear()
-    ffmpeg._validate_ffmpeg_dir.cache_clear()
+    ffmpeg._clear_cache()
 
 
 def test_validate_ffmpeg_none():
