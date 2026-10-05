@@ -26,7 +26,6 @@ from remora.models.progress.stream import (
     BatchStreamDownloading,
 )
 from remora.models.stream.item import AudioInfo, AudioStream, VideoInfo, VideoStream
-from remora.processor import MediaProcessor
 from remora.session import Session
 
 MODULE_PATH = pipeline_media.__name__
@@ -196,7 +195,6 @@ async def test_download_states(
 
 
 # Media Processor
-@pytest.mark.skip("Hard to test right now")
 async def test_processor_merge(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
@@ -214,7 +212,7 @@ async def test_processor_merge(
     mock_processor.merge_streams.assert_called_once()
 
 
-@pytest.mark.skip("Hard to test right now")
+@pytest.mark.skip("Hard to reproduce")
 async def test_processor_no_merge(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
@@ -222,14 +220,10 @@ async def test_processor_no_merge(
 ):
     """Test that the pipeline NOT merges the streams."""
 
-    # Get media proccesor
-    processor: MediaProcessor = mock_processor()
-
     # Init pipeline
-    pipeline = mock_pipeline(dummy_media)
-
     # Set only ONE stream to avoid merge streams
-    pipeline.media.streams = pipeline.media.streams.audio_only()  # ty: ignore[invalid-assignment]
+    media = dummy_media.model_copy(update={"streams": dummy_media.streams.audio_only()})
+    pipeline = mock_pipeline(media)
 
     # Consume the async generator
     async with pipeline as progress:
@@ -237,10 +231,9 @@ async def test_processor_no_merge(
             pass
 
     # Verify specific inner methods were called
-    processor.merge_streams.assert_not_called()  # ty: ignore[unresolved-attribute]
+    mock_processor.merge_streams.assert_not_called()
 
 
-@pytest.mark.skip("Hard to test right now")
 async def test_full_processor_metadata(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
@@ -248,9 +241,6 @@ async def test_full_processor_metadata(
 ):
     """Test that the pipeline correctly applies post-processing."""
 
-    # Get media proccesor
-    processor: MediaProcessor = mock_processor()
-
     # Init pipeline
     pipeline = mock_pipeline(dummy_media)
 
@@ -260,20 +250,16 @@ async def test_full_processor_metadata(
             pass
 
     # Verify specific inner methods were called
-    processor.embed_metadata.assert_called_once()  # ty: ignore[unresolved-attribute]
-    processor.embed_thumbnail.assert_called_once()  # ty: ignore[unresolved-attribute]
+    mock_processor.embed_metadata.assert_called_once()
+    mock_processor.embed_thumbnail.assert_called_once()
 
 
-@pytest.mark.skip("Hard to test right now")
 async def test_empty_processor_metadata(
     mock_pipeline: MockPipeline,
     mock_processor: AsyncMock,
     dummy_media: Media,
 ):
     """Test that the pipeline correctly extracts, downloads and completes."""
-
-    # Get media proccesor
-    processor: MediaProcessor = mock_processor()
 
     # Init pipeline
     # And remove metadata
@@ -291,5 +277,5 @@ async def test_empty_processor_metadata(
             pass
 
     # Verify specific inner methods were NOT called
-    processor.embed_metadata.assert_not_called()  # ty: ignore[unresolved-attribute]
-    processor.embed_thumbnail.assert_not_called()  # ty: ignore[unresolved-attribute]
+    mock_processor.embed_thumbnail.assert_not_called()
+    mock_processor.embed_subtitles.assert_not_called()
