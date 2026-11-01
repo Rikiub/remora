@@ -1,5 +1,3 @@
-set windows-shell := ["cmd.exe", "/c"]
-
 [doc('List available recipes')]
 default:
     @just --list
@@ -8,27 +6,13 @@ default:
 # Application
 # ==============================
 
-_temp_dir := "tmp"
-_run_doc := 'Run CLI app isolated in tmp/ directory'
-
-[doc(_run_doc)]
+[doc('Run CLI app isolated in tmp/ directory')]
 [group("app")]
 [positional-arguments]
-[unix]
 run *args:
-    -@mkdir {{ _temp_dir }}
-    -@cd {{ _temp_dir }}
+    -@mkdir -p "tmp"
+    -@cd "tmp"
     -@uv run remora "$@"
-
-[doc(_run_doc)]
-[group("app")]
-[positional-arguments]
-[windows]
-run *args:
-    #!powershell -NoProfile
-    if (!(Test-Path "{{ _temp_dir }}")) { $null = mkdir "{{ _temp_dir }}" }
-    cd "{{ _temp_dir }}"
-    uv run remora $args
 
 # ==============================
 # Environment
@@ -84,7 +68,7 @@ clean:
     # Clean build artifacts
     -rm -rf build/ dist/ *.egg-info/
 
-    # Clean Python bytecode 
+    # Clean Python bytecode
     -find . -type d -name "__pycache__" -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
 
