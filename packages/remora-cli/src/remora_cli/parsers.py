@@ -53,7 +53,7 @@ class Query:
         if query.startswith(("http://", "https://")):
             target = "url"
         elif selection in _SERVICES:
-            target = selection  # type: ignore
+            target = selection
 
             try:
                 entry = query.split(":")[1].strip()

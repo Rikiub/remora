@@ -1,3 +1,5 @@
+# ty: ignore[incompatible-attribute-override]
+
 from typing import Literal
 
 from remora.models.media.item import LazyMedia, Media

@@ -90,8 +90,8 @@ class Streams(BaseTuple[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]):
                 if isinstance(s, VideoStream)
                 and (codec := s.video.codec)
                 and (
-                    codec.normalized.startswith(values)
-                    or codec.original.startswith(values)
+                    codec.normalized.startswith(values)  # ty: ignore[invalid-argument-type]
+                    or codec.original.startswith(values)  # ty: ignore[invalid-argument-type]
                 )
             )
         if audio_codec:
@@ -107,7 +107,7 @@ class Streams(BaseTuple[Annotated[_Stream, _LogOnErrorOmit]], Generic[_Stream]):
                 )
             )
         if language:
-            values: tuple[str, ...] = to_tuple(language)  # ty: ignore[invalid-assignment]
+            values: tuple[str, ...] = to_tuple(language)
             items = (s for s in items if s.language and s.language.startswith(values))
 
         return self.__class__(items)

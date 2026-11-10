@@ -34,7 +34,7 @@ _T = TypeVar("_T")
 
 
 class BaseTuple(RootModel[Sequence], Sequence[_T], Generic[_T]):
-    root: tuple[_T, ...] = ()
+    root: tuple[_T, ...] = ()  # ty: ignore[incompatible-mutable-override]
 
     def __contains__(self, other) -> bool:
         return other in self.root
@@ -45,7 +45,7 @@ class BaseTuple(RootModel[Sequence], Sequence[_T], Generic[_T]):
     def __bool__(self) -> bool:
         return bool(self.root)
 
-    def __iter__(self) -> Iterator[_T]:  # ty: ignore[invalid-method-override]
+    def __iter__(self) -> Iterator[_T]:  # ty: ignore[incompatible-method-override]
         return iter(self.root)
 
     @overload

@@ -95,4 +95,4 @@ class LazyPlaylist(_BaseEntries, ExtractData):
 
 
 class Playlist(LazyPlaylist):
-    type: Literal["playlist"] = "playlist"
+    type: Literal["playlist"] = "playlist"  # ty: ignore[incompatible-attribute-override]

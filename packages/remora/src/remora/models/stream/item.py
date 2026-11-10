@@ -1,3 +1,5 @@
+# ty: ignore[incompatible-attribute-override]
+
 import re
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal

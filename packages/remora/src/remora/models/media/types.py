@@ -25,4 +25,4 @@ LazyExtractResult = LazyMedia | LazyPlaylist
 ExtractResult = Media | Playlist
 AnyExtractResult = LazyExtractResult | ExtractResult | Search | Sequence[LazyMedia]
 
-ExtractAdapter = TypeAdapter[ExtractResult](_ExtractDiscriminator)
+ExtractAdapter = TypeAdapter[ExtractResult](_ExtractDiscriminator)  # ty: ignore[invalid-argument-type]

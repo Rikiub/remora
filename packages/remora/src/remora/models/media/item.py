@@ -109,7 +109,7 @@ class LazyMedia(ExtractData):
 class Media(LazyMedia):
     """Online media representation."""
 
-    type: Annotated[
+    type: Annotated[  # ty: ignore[incompatible-attribute-override]
         Literal["media"],
         BeforeValidator(lambda v: _normalize_type(v, "media")),
         Field(alias="_type"),
